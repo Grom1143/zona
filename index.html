@@ -112,6 +112,8 @@ input.num:focus { border-color: var(--accent); outline: none; }
   background: rgba(10, 14, 17, .7); color: #fff; cursor: pointer; font: 600 16px/1 var(--font-body);
 }
 .dish .x:hover { background: var(--warn); }
+/* первое нажатие на × – «точно удалить?»: крестик становится галочкой, второе нажатие удаляет */
+.dish .x.arm { background: var(--warn); color: var(--warn-ink); font-size: 15px; box-shadow: 0 0 0 2px var(--panel); }
 .dish.add { border-style: dashed; place-items: center; align-content: center; min-height: 152px; color: var(--muted); text-align: center; font-size: 13px; }
 .dish.add b { font-size: 26px; font-weight: 400; color: var(--accent); }
 
@@ -2547,11 +2549,29 @@ $("checkMark").addEventListener("click", () => {
   setMsg("Поставьте концы линейки на края зоны. Если зона неровная, нажмите «Гибкий контур».");
 });
 
+// Удаление чашки в два нажатия, без окошка: × → ✓ → удалено. Нажатие в другом месте или 3 с без нажатия – снова ×
+let armTimer = 0;
+function disarmDel() {
+  clearTimeout(armTimer);
+  for (const b of $("dishes").querySelectorAll(".x.arm")) {
+    b.classList.remove("arm"); b.textContent = "×"; b.title = "Удалить чашку";
+    b.setAttribute("aria-label", b.dataset.label);
+  }
+}
+function armDel(x) {
+  disarmDel();
+  x.classList.add("arm"); x.textContent = "✓"; x.title = "Нажмите ещё раз, чтобы удалить (вернуть – ↶)";
+  x.dataset.label = x.getAttribute("aria-label"); x.setAttribute("aria-label", "Подтвердить удаление: " + x.dataset.label);
+  armTimer = setTimeout(disarmDel, 3000);
+}
+document.addEventListener("pointerdown", e => { if (!e.target.closest(".x.arm")) disarmDel(); });
 $("dishes").addEventListener("click", e => {
   const x = e.target.closest("[data-del]");
   if (x) {
-    const i = +x.dataset.del, d = P.dishes[i];
-    return ask(`Удалить чашку «${d.name}» вместе с разметкой? Вернуть можно стрелкой ↶ до перезагрузки страницы.`, "Удалить чашку", x, async () => {
+    const i = +x.dataset.del;
+    if (!x.classList.contains("arm")) return armDel(x);   // первое нажатие: × → ✓
+    disarmDel();
+    return (async () => {
       const [gone] = P.dishes.splice(i, 1);
       gone._base = null; gone._rgba = null;
       P.trash.push({ dish: gone, i, t: Date.now() });
@@ -2561,7 +2581,7 @@ $("dishes").addEventListener("click", e => {
       if (!P.dishes.length) { P.cur = -1; fillMeta(); renderDishes(); render(); return setMsg(text + " Чашек больше нет: загрузите фото."); }
       await openDish(Math.min(P.cur > i ? P.cur - 1 : P.cur === i ? i : P.cur, P.dishes.length - 1));
       setMsg(text);
-    });
+    })();
   }
   const t = e.target.closest(".dish[data-i]");
   if (t && +t.dataset.i !== P.cur) openDish(+t.dataset.i);
