@@ -982,6 +982,7 @@ function stepDish(k) {
   if (i >= 0 && i < P.dishes.length && !P.drag) openDish(i);
 }
 function renderDishes() {
+  const full = realDishes() >= MAX_DISHES;
   renderNav();
   $("dishes").innerHTML = P.dishes.map((d, i) => {
     const n = d.items.filter(needsCheck).length;
@@ -990,8 +991,12 @@ function renderDishes() {
       `<span class="nm" title="${esc(d.name)}">${esc(d.name)}</span>` +
       `<span class="ct${n ? " warn" : ""}">${d.items.length} ${disksWord(d.items.length)}${n ? ` · ${n} ?` : ""}</span>` +
       `<button class="x" type="button" data-del="${i}" aria-label="Удалить чашку ${esc(d.name)}" title="Удалить чашку">×</button></div>`;
-  }).join("") + `<label class="dish add" for="file" tabindex="0"><b>+</b>Добавить фото</label>`;
+  }).join("") + (full ? "" : `<label class="dish add" for="file" tabindex="0"><b>+</b>Добавить фото</label>`);
   $("delPickBtn").disabled = $("snapEditBtn").disabled = !P.dishes.length;
+  // 10 фото – максимум: плитки «Добавить фото» нет, «Загрузить фото» неактивна (снова активна, когда удалят чашку)
+  const up = $("uploadBtn");
+  up.classList.toggle("disabled", full); up.setAttribute("aria-disabled", String(full)); $("file").disabled = full;
+  up.title = full ? `Уже ${MAX_DISHES} фото – это максимум. Удалите лишнее крестиком на чашке` : "Выбрать фото чашек";
 }
 
 function fillMeta() {
