@@ -434,14 +434,16 @@ dialog.drugsheet[open] { display: grid; }
   .tools .tools-head, .tools .tools-head .row, .tools .tools-grid, .tools.folded .tools-grid { display: contents; }
   /* «Инструменты» – заголовок карточки: левый верхний угол, крупно, с бирюзовой меткой слева */
   .tools h3 { grid-column: 1; grid-row: 1; align-self: start; display: flex; align-items: center; gap: 10px;
-    font-size: 21px; font-weight: 700; letter-spacing: .01em; line-height: 46px; }   /* высота строки = высоте значков: верх и низ вровень */
-  .tools h3::before { content: ""; width: 6px; height: 24px; border-radius: 3px; background: var(--accent); flex: none; }
+    font-size: 17px; font-weight: 700; letter-spacing: .01em; line-height: 36px; }   /* высота строки = высоте значков: верх и низ вровень */
+  .tools h3::before { content: ""; width: 5px; height: 18px; border-radius: 3px; background: var(--accent); flex: none; }
+  .tools, .tools.folded { padding: 8px 12px; row-gap: 6px; }   /* плашка тоньше */
+  .tools .lookfold { font-size: 14px; }
   .tools #saveBtn2, .tools.folded #saveBtn2 { grid-column: 2; grid-row: 1; grid-area: auto / 2 / auto / 3; }
   .tools #calibBtn, .tools.folded #calibBtn { grid-column: 3; grid-row: 1; grid-area: auto / 3 / auto / 4; }
-  .tools #saveBtn2, .tools #calibBtn { width: 46px; height: 46px; padding: 0; justify-content: center; }
+  .tools #saveBtn2, .tools #calibBtn { width: 36px; height: 36px; padding: 0; justify-content: center; border-radius: 8px; }
   .tools #saveBtn2 .lbl, .tools #calibBtn .lbl, .tools.folded #saveBtn2 .lbl { display: none; }
-  .tools #saveBtn2 svg, .tools #calibBtn svg { width: 22px; height: 22px; }
-  .tools .btn.save.dirty::before { position: absolute; top: 5px; right: 5px; }   /* точка «не сохранено» – в углу значка */
+  .tools #saveBtn2 svg, .tools #calibBtn svg { width: 18px; height: 18px; }
+  .tools .btn.save.dirty::before { position: absolute; top: 3px; right: 3px; width: 7px; height: 7px; }   /* точка «не сохранено» – в углу значка */
   .tools #saveBtn2 { position: relative; }
   /* во время настройки масштаба линейка показывает «Готово» */
   .tools #calibBtn.on { width: auto; padding-inline: 12px; }
