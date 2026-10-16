@@ -2249,7 +2249,9 @@ function grabView() {
   const x1 = Math.min(cv.width, (vr.right - cr.left) * sx), y1 = Math.min(cv.height, (vr.bottom - cr.top) * sy);
   const w = Math.round(x1 - x0), h = Math.round(y1 - y0);
   if (w < 2 || h < 2) { setMsg("Фото не видно в окне – нажмите «Всё фото» (0).", true); return null; }
-  const date = d.meta.date ? d.meta.date.split("-").reverse().join(".") : "";
+  // в имени файла: дата учёта из паспорта (нет – сегодняшняя) и время сохранения; «:» в именах файлов Windows запрещено – ЧЧ-ММ
+  const now = new Date(), date = (d.meta.date || today()).split("-").reverse().join(".");
+  const time = `${String(now.getHours()).padStart(2, "0")}-${String(now.getMinutes()).padStart(2, "0")}`;
   // масштаб снимка – не меньше экранного: при приближении разметка на снимке тоже чёткая
   const sc = Math.max(1, (window.devicePixelRatio || 1) * cr.width / cv.width);
   const out = document.createElement("canvas"); out.width = Math.round(w * sc); out.height = Math.round(h * sc);
@@ -2258,7 +2260,7 @@ function grabView() {
   ctx = g; g.setTransform(sc, 0, 0, sc, -x0 * sc, -y0 * sc);
   drawMarks(d, d.w / cr.width);
   g.setTransform(1, 0, 0, 1, 0, 0); ctx = was;
-  const name = `${(d.name || "чашка").replace(/[\\/:*?"<>|]+/g, "_").trim() || "чашка"}${date ? " " + date : ""}.png`;
+  const name = `${(d.name || "чашка").replace(/[\\/:*?"<>|]+/g, "_").trim() || "чашка"}${" " + date + " " + time}.png`;
   return { canvas: out, name };
 }
 async function savePng(c, name) {
