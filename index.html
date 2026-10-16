@@ -802,7 +802,10 @@ function analyze(rgba, w, h) {
   const ok = disks.filter(d => isFinite(d.stretch));
   const ax = ok.reduce((t, d) => t + Math.cos(d.axis), 0), ay = ok.reduce((t, d) => t + Math.sin(d.axis), 0);
   const aligned = ok.length >= 3 && Math.hypot(ax, ay) / ok.length >= 0.7;
-  const stretch = aligned ? median(ok.map(d => d.stretch)) : null;
+  // На сильно наклонённом фото диски плохо находятся, и их бывает 1–2. Тогда предупреждаем, только если
+  // вытянутость явная (≥ 20 %, шум столько не даёт), а у двух дисков — ещё и в одну сторону
+  const few = ok.length >= 1 && ok.length <= 2 && Math.hypot(ax, ay) / ok.length >= 0.7 && ok.every(d => d.stretch >= TILT_FEW);
+  const stretch = aligned || few ? median(ok.map(d => d.stretch)) : null;
   measureZones(Z, w, h, disks);
   return { disks, diskPx, stretch };
 }
@@ -929,7 +932,7 @@ const disksWord = n => n % 10 === 1 && n % 100 !== 11 ? "диск" : [2, 3, 4].i
 // проверить: «нет зоны?» или зона, найденная неуверенно (пока её не поправили и не подтвердили)
 const needsCheck = it => !it.ok && (it.src === "none" || (it.doubt && it.src === "auto"));
 // Фото под углом: круглые диски выходят овалами. 1,06 — это наклон ~20°; у фото сверху вытянутость ~1,00–1,03
-const TILT_WARN = 1.06;
+const TILT_WARN = 1.06, TILT_FEW = 1.2;   // TILT_FEW — порог, когда дисков найдено всего 1–2
 const tiltOf = d => d && d.stretch >= TILT_WARN
   ? { pct: Math.round((d.stretch - 1) * 100), deg: Math.round(Math.acos(1 / d.stretch) * 180 / Math.PI) } : null;
 const tiltText = t => `Похоже, фото снято под углом (~${t.deg}°): диски вытянуты на ${t.pct} %. ` +
