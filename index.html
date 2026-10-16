@@ -202,6 +202,7 @@ body.focus .navcount { top: calc(10px + 100vh - 24px - 20px - 48px - 34px); }
    «Сохранить» — над снимком, выделяется заливкой; лупа — справа от снимка */
 .tools.folded .tools-grid { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 6px;
   grid-template-areas: "save save add del calib" "snap snap axis round ." "snap snap zoom zoom zoom" "cf cf cf cf cf"; }
+.tools.folded .tools-grid { align-items: stretch; }   /* кнопки занимают свою клетку целиком: снимок — ровно 2 строки */
 .tools.folded .tools-grid > * { min-width: 0; }   /* ни одна кнопка не вылезает за свою клетку */
 .tools.folded #snapEditBtn { grid-area: snap; }
 .tools.folded #snapEditBtn svg { width: 34px; height: 34px; stroke-width: 1.6; }
