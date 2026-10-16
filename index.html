@@ -251,8 +251,17 @@ details.meta summary span { font-weight: 400; color: var(--muted); }
 .scale { font-family: var(--font-mono); font-size: 13px; color: var(--muted); display: grid; gap: 2px; }
 .scale b { color: var(--ink); font-weight: 600; }
 .scale .tilt { color: var(--warn); }
-.msg { font-size: 14px; padding: 10px 12px; border-radius: 8px; background: var(--accent-soft); }
+.msg { font-size: 14px; padding: 8px 10px 10px 12px; border-radius: 8px; background: var(--accent-soft); }
 .msg.warn { background: transparent; border: 1px solid var(--warn); color: var(--warn); }
+/* сообщения — списком, «−» сворачивает до заголовка, «+» разворачивает */
+.msg-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.msg-head b { font-family: var(--font-display); font-size: 14px; }
+.msg-head b span { font-weight: 400; opacity: .75; }
+.msg-fold { flex: none; width: 26px; height: 26px; border: 1px solid currentColor; border-radius: 6px; background: none; color: inherit;
+  font: 700 17px/1 var(--font-mono); cursor: pointer; opacity: .7; }
+.msg-fold:hover, .msg-fold:focus-visible { opacity: 1; }
+.msg ul { margin: 6px 0 0; padding-left: 18px; display: grid; gap: 4px; }
+.msg.shut ul { display: none; }
 .ask { border: 1px solid var(--warn); border-radius: 8px; padding: 10px 12px; display: grid; gap: 10px; font-size: 14px; }
 .ask p { margin: 0; }
 .ask.pop { position: absolute; z-index: 20; width: min(300px, calc(100vw - 32px)); box-sizing: border-box; overflow-wrap: anywhere;
@@ -466,7 +475,10 @@ input.drug::placeholder { color: var(--muted); font-weight: 400; }
           <label class="f" for="zoomDrug">Препарат (надпись на диске) <input id="zoomDrug" type="text" list="drugList" placeholder="например, CIP" autocomplete="off"></label>
         </div>
       </div>
-      <div class="msg" id="msg">Загружаю…</div>
+      <div class="msg" id="msg" aria-live="polite">
+        <div class="msg-head"><b id="msgTitle">Подсказки</b><button class="msg-fold" id="msgFold" type="button" aria-expanded="true" aria-controls="msgList" title="Свернуть подсказки">−</button></div>
+        <ul id="msgList"><li>Загружаю…</li></ul>
+      </div>
       <div class="ask" id="check" hidden>
         <p id="checkText"></p>
         <div class="row"><button class="btn primary" id="checkYes" type="button">Да, зоны нет</button><button class="btn" id="checkMark" type="button">Разметить зону вручную</button></div>
@@ -1025,7 +1037,7 @@ const needsCheck = it => !it.ok && (it.src === "none" || (it.doubt && it.src ===
 const TILT_WARN = 1.06, TILT_FEW = 1.2;   // TILT_FEW — порог, когда дисков найдено всего 1–2
 const tiltOf = d => d && d.stretch >= TILT_WARN
   ? { pct: Math.round((d.stretch - 1) * 100), deg: Math.round(Math.acos(1 / d.stretch) * 180 / Math.PI) } : null;
-const tiltText = t => `Фото под углом (~${t.deg}°): диски вытянуты на ${t.pct} %. Лучше переснять сверху.`;
+const tiltText = t => `Фото под углом (~${t.deg}°): диски вытянуты на ${t.pct} %. Лучше переснять сверху.`;
 const STATUS = it => it.src === "none" ? (it.ok ? "нет зоны ✓" : "нет зоны?") :
   it.doubt && it.src === "auto" ? (it.ok ? "авто ✓" : "проверить?") : { auto: "авто", edited: "исправлено", manual: "вручную" }[it.src];
 
@@ -1638,7 +1650,7 @@ async function saveXlsx() {
     const mpp = mmPerPx(d), m = d.meta, t = tiltOf(d);
     dishes.push([d.name, m.date, m.medium, m.group, m.culture, m.dishMm ? +m.dishMm : "", m.person, d.items.length, d.items.filter(needsCheck).length,
       mpp ? round1(1 / mpp) : "", d.scaleSrc === "manual" ? "линейкой вручную" : "по дискам",
-      t ? `~${t.deg}°, диски вытянуты на ${t.pct} %` : ""]);
+      t ? `~${t.deg}°, диски вытянуты на ${t.pct} %` : ""]);
   }
   const s2 = XLSX.utils.aoa_to_sheet(dishes);
   s2["!cols"] = [18, 11, 18, 10, 20, 12, 18, 8, 13, 18, 18, 28].map(w => ({ wch: w }));
@@ -1702,7 +1714,30 @@ $("lookFold").addEventListener("click", () => foldLook(!$("lookBox").classList.c
 try { if (localStorage.getItem("zona-look-shut") === "1") foldLook(true); } catch {}
 
 // ----- сообщения и подтверждения -----
-function setMsg(t, warn) { $("msg").textContent = t; $("msg").className = "msg" + (warn ? " warn" : ""); }
+// Сообщение показывается списком: каждое предложение — отдельный пункт. «−» сворачивает список до заголовка
+// (видно, сколько там пунктов), «+» разворачивает; выбор запоминается в браузере
+let msgShut = false;
+try { msgShut = localStorage.getItem("zona-msg-shut") === "1"; } catch {}
+function setMsg(t, warn) {
+  const items = String(t).split(/(?<=[.!?])\s+(?=[«"(]?[А-ЯЁA-Z0-9⚠])/).map(x => x.trim()).filter(Boolean);
+  $("msgList").innerHTML = items.map(x => `<li>${esc(x)}</li>`).join("");
+  $("msg").dataset.n = items.length;
+  $("msg").classList.toggle("warn", !!warn);
+  showMsgFold();
+}
+function showMsgFold() {
+  const n = +$("msg").dataset.n || 0, warn = $("msg").classList.contains("warn");
+  $("msg").classList.toggle("shut", msgShut);
+  $("msgTitle").innerHTML = (warn ? "Внимание" : "Подсказки") + (msgShut && n ? ` <span>· ${n}</span>` : "");
+  $("msgFold").textContent = msgShut ? "+" : "−";
+  $("msgFold").title = msgShut ? "Показать подсказки" : "Свернуть подсказки";
+  $("msgFold").setAttribute("aria-expanded", String(!msgShut));
+}
+$("msgFold").addEventListener("click", () => {
+  msgShut = !msgShut;
+  try { localStorage.setItem("zona-msg-shut", msgShut ? "1" : "0"); } catch {}
+  showMsgFold();
+});
 // Окошко «Удалить? Да / Отмена» под кнопкой anchor, не вылезая за край экрана
 function ask(text, okLabel, anchor, onOk) {
   P.ask = onOk; P.askAt = anchor;
@@ -1949,7 +1984,7 @@ function renderSide() {
     ? `<span>Масштаб: <b>1 мм = ${fmt(1 / mpp)} px</b></span><span>${d.scaleSrc === "manual" ? "задан линейкой вручную" : `по ${d.nDisks} дискам, медиана`} · диск ${fmt(diskMm())} мм</span>`
     : `<span>Масштаб: <b>не задан</b></span>`;
   const tilt = tiltOf(d);
-  if (tilt) $("scale").innerHTML += `<span class="tilt">⚠ фото под углом ~${tilt.deg}°: диски вытянуты на ${tilt.pct} %</span>`;
+  if (tilt) $("scale").innerHTML += `<span class="tilt">⚠ фото под углом ~${tilt.deg}°: диски вытянуты на ${tilt.pct} %</span>`;
   renderZoom(d, it);
   $("check").hidden = !(it && needsCheck(it));
   if (it && needsCheck(it)) {
@@ -1977,7 +2012,7 @@ function render() { draw(); renderTable(); renderSide(); renderTiltBar(); }
 function renderTiltBar() {
   const d = D(), t = d && d._base && P.mode !== "calib" ? tiltOf(d) : null, show = !!t && !d._tiltHidden;
   $("tiltBar").hidden = !show;
-  if (show) $("tiltBarText").textContent = `⚠ Фото под углом (~${t.deg}°): диски вытянуты на ${t.pct} %`;
+  if (show) $("tiltBarText").textContent = `⚠ Фото под углом (~${t.deg}°): диски вытянуты на ${t.pct} %`;
 }
 $("tiltBarX").addEventListener("click", () => { const d = D(); if (d) d._tiltHidden = true; renderTiltBar(); });
 
