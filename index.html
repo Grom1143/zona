@@ -305,6 +305,7 @@ input.drug:hover, input.drug:focus { border-color: var(--line); background: var(
 input.drug::placeholder { color: var(--muted); font-weight: 400; }
 .chip { font-size: 12px; padding: 2px 8px; border-radius: 99px; border: 1px solid var(--line); color: var(--muted); white-space: nowrap; }
 .chip.edited { border-color: var(--ruler); color: var(--ruler); }
+.chip.ok { border-color: var(--accent); color: var(--accent); }   /* программа нашла верно, человек подтвердил */
 .chip.none { border-color: var(--warn); color: var(--warn); }
 .chip.check { border: 1px dashed var(--warn); color: var(--warn); font-weight: 600; }
 .empty { color: var(--muted); font-size: 14px; }
@@ -1072,7 +1073,7 @@ const tiltOf = d => d && d.stretch >= TILT_WARN
   ? { pct: Math.round((d.stretch - 1) * 100), deg: Math.round(Math.acos(1 / d.stretch) * 180 / Math.PI) } : null;
 const tiltText = t => `Фото под углом (~${t.deg}°): диски вытянуты на ${t.pct} %. Лучше переснять сверху.`;
 const STATUS = it => it.src === "none" ? (it.ok ? "нет зоны ✓" : "нет зоны?") :
-  it.doubt && it.src === "auto" ? (it.ok ? "авто ✓" : "проверить?") : { auto: "авто", edited: "исправлено", manual: "вручную" }[it.src];
+  it.doubt && it.src === "auto" ? (it.ok ? "подтверждено" : "проверить?") : { auto: "авто", edited: "исправлено", manual: "вручную" }[it.src];
 
 // ----- картинки -----
 function fileToImage(blob) {
@@ -1996,7 +1997,7 @@ function renderTable() {
       `<td><input class="drug" id="drug-${d.id}-${i}" data-i="${i}" list="drugList" value="${esc(it.drug)}" placeholder="–" aria-label="Препарат у диска ${i + 1}" autocomplete="off"><span class="dname" data-i="${i}"${guessOf(it.drug) ? ` title="Название предположительное – уточнить у тёти"` : ""}>${esc(dnameText(it))}</span></td>` +
       `<td class="num">${mpp ? fmt(diamPx(it) * mpp) : "–"}${it.pts && mpp && spanPx(it).max - spanPx(it).min > 0.5 / mpp ? `<span class="sub">${fmt(spanPx(it).min * mpp)}–${fmt(spanPx(it).max * mpp)}</span>` : ""}</td>` +
       `<td class="catcell" data-i="${i}">${catCell(it)}</td>` +
-      `<td><span class="chip ${needsCheck(it) ? "check" : it.src === "none" ? "none" : it.src === "auto" ? "" : "edited"}">${STATUS(it)}</span></td></tr>`).join("") +
+      `<td><span class="chip ${needsCheck(it) ? "check" : it.src === "none" ? "none" : it.src === "auto" ? (it.ok ? "ok" : "") : "edited"}">${STATUS(it)}</span></td></tr>`).join("") +
     `</tbody></table>`;
 }
 
@@ -2109,7 +2110,7 @@ cv.addEventListener("pointerdown", e => {
   if (!d || !d._base || e.button !== 0) return;     // правая кнопка – отдельно, через contextmenu
   const p = pos(e), hit = 16 * p.k;
   const grab = g => {
-    P.drag = { ...g, last: p, p: null, pre: P.mode === "calib" ? null : snap(d), moved: false };
+    P.drag = { ...g, last: p, p: null, pre: P.mode === "calib" ? null : snap(d), moved: false, sx: e.clientX, sy: e.clientY };
     cv.setPointerCapture(e.pointerId); e.preventDefault();
   };
   if (P.mode === "calib") {
@@ -2151,6 +2152,7 @@ cv.addEventListener("pointermove", e => {
     $("view").scrollLeft = g.sl - dx; $("view").scrollTop = g.st - dy;
     return;
   }
+  if (!g.moved && Math.hypot(e.clientX - g.sx, e.clientY - g.sy) < 4) return;   // дрожание руки при нажатии – ещё не правка
   const p = pos(e), r = g.r;
   if (g.what === "a") { r.ax = p.x; r.ay = p.y; g.p = p; }
   else if (g.what === "b") { r.bx = p.x; r.by = p.y; g.p = p; }
@@ -2174,6 +2176,15 @@ const endDrag = () => {
   if (!g) return;
   P.drag = null;
   if (g.what === "pan") { cv.style.cursor = "grab"; if (!g.moved) { hideAsk(); select(-1); } return; }
+  // Зону потрогали (например, проверяли край в лупе), но вернули на место с точностью до 0,1 мм – это проверка,
+  // а не правка: зона остаётся как была, с прежней отметкой, и вопрос «Всё верно?» не пропадает
+  if (g.pre && g.moved && P.sel >= 0) {
+    const d = D(), it = d.items[P.sel], was = JSON.parse(g.pre).items[P.sel], mpp = mmPerPx();
+    const ptsOf = z => z.pts || [{ x: z.r.ax, y: z.r.ay }, { x: z.r.bx, y: z.r.by }];
+    const a = was && ptsOf(was), b = ptsOf(it);
+    const same = a && a.length === b.length && a.every((q, j) => Math.hypot(q.x - b[j].x, q.y - b[j].y) * (mpp || 0.05) < 0.1);
+    if (same) { d.items[P.sel] = was; g.moved = false; }
+  }
   if (g.pre && g.moved) { commit(g.pre); renderDishes(); }
   render();
 };
