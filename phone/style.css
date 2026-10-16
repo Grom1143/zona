@@ -384,10 +384,15 @@ dialog.drugsheet[open] { display: grid; }
    ряд чашек, подсказки, паспорт, масштаб. Для этого блоки .left и aside «растворяются» (display: contents),
    а их содержимое выстраивается по order */
 @media (max-width: 700px) {
-  /* шапка телефона – одна строка: лягушка-значок, «МикроТест», ? и тема */
-  header { grid-template-columns: auto minmax(0, 1fr); column-gap: 10px; }
-  header .brand-logo { width: 40px; height: 40px; grid-row: auto; }
-  .title-row h1 { font-size: 20px; }
+  /* шапка телефона – как заставка: крупная лягушка по центру – символ программы, под ней название;
+     ? и тема – в правом верхнем углу, чтобы не спорить со значком */
+  header { display: flex; flex-direction: column; align-items: center; text-align: center; position: relative; gap: 6px; padding-top: 4px; }
+  header .brand-logo { width: 104px; height: 104px; box-shadow: 0 6px 22px rgba(0, 0, 0, .35); }
+  .title-row { flex-direction: column; gap: 0; }
+  .title-row h1 { flex: none; font-size: 26px; }
+  h1 small { display: block; margin: 4px 0 0; }
+  .title-row .help-btn { position: absolute; top: 0; }
+  #helpBtn { right: 42px; } #themeBtn { right: 0; }
   /* «Загрузить фото · Открыть проект · Скачать проект» – одной строкой, три равные кнопки */
   .wrap > .toolbar:not(.projbar) { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; }
   .wrap > .toolbar:not(.projbar) .btn { justify-content: center; text-align: center; padding: 10px 4px; font-size: 13px; line-height: 1.15; white-space: normal; }
