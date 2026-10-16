@@ -13,7 +13,7 @@
 <!-- SheetJS 0.20.3 лежит рядом с сайтом: Excel работает и без интернета -->
 <script async src="vendor/xlsx.full.min.js"></script>
 <!-- телефон → версия для телефона (только на GitHub, где она лежит рядом в phone/); ?full – остаться на полной версии -->
-<script>try { if (location.hostname === "grom1143.github.io" && !/[?&]full/.test(location.search) && matchMedia("(pointer: coarse)").matches && Math.min(screen.width, screen.height) < 768) location.replace("phone/" + location.hash); } catch {}</script>
+<script>try { if (location.hostname === "grom1143.github.io" && !/[?&]full/.test(location.search) && matchMedia("(pointer: coarse)").matches && Math.min(screen.width, screen.height) < 768) location.replace("phone/" + location.hash); } catch {}</script>
 <!-- тема ставится до показа страницы, чтобы она не мигала другой темой -->
 <script>try { const t = localStorage.getItem("zona-theme"); if (t === "light" || t === "dark") document.documentElement.dataset.theme = t; } catch {}</script>
 <link rel="stylesheet" href="style.css">
