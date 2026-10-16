@@ -198,6 +198,20 @@ body.focus .navcount { top: calc(10px + 100vh - 24px - 20px - 48px - 34px); }
 .tools.folded .zoombar output { min-width: 5ch; font-size: 12px; }
 .tools.folded .wide { grid-column: auto; }
 .tools.folded #calibField:not([hidden]) { flex-basis: 100%; }
+/* свёрнутые инструменты — сетка: крупный «Снимок» (место 4 кнопок), рядом маленькие кнопки зон и линейки,
+   «Сохранить» — тёмная, выделяется; лупа — отдельной строкой */
+.tools.folded .tools-grid { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 6px;
+  grid-template-areas: "snap snap add del calib" "snap snap axis round save" "zoom zoom zoom zoom zoom" "cf cf cf cf cf"; }
+.tools.folded #snapEditBtn { grid-area: snap; }
+.tools.folded #snapEditBtn svg { width: 34px; height: 34px; stroke-width: 1.6; }
+.tools.folded #addBtn { grid-area: add; }
+.tools.folded #delBtn { grid-area: del; }
+.tools.folded #calibBtn { grid-area: calib; }
+.tools.folded #axisBtn { grid-area: axis; }
+.tools.folded #roundBtn { grid-area: round; }
+.tools.folded #saveBtn2 { grid-area: save; padding-inline: 0; }
+.tools.folded .zoombar { grid-area: zoom; justify-content: flex-end; }
+.tools.folded #calibField { grid-area: cf; }
 @media (min-width: 901px) {
   /* блок инструментов остаётся на экране, пока прокручиваешь фото */
   .tools { position: sticky; top: 0; z-index: 5; margin: -16px -16px 0; padding: 16px; border-radius: 10px 10px 0 0; }
