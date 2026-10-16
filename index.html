@@ -2025,7 +2025,7 @@ $("undoBtn").addEventListener("click", undo);
 $("redoBtn").addEventListener("click", redo);
 $("saveBtn2").addEventListener("click", () => saveBrowser(false));
 // Снимок для отчёта: видимая часть окна разметки — как на экране (видимость разметки, приближение, выбранная зона),
-// в разрешении фото, снизу подпись: чашка, дата, культура, микроорганизм
+// в разрешении фото, без надписей поверх: чашка и дата — только в имени файла
 async function snapshot() {
   const d = D();
   if (!d || !d._base) return setMsg("Сначала откройте фото чашки.", true);
@@ -2036,15 +2036,9 @@ async function snapshot() {
   const x1 = Math.min(cv.width, (vr.right - cr.left) * sx), y1 = Math.min(cv.height, (vr.bottom - cr.top) * sy);
   const w = Math.round(x1 - x0), h = Math.round(y1 - y0);
   if (w < 2 || h < 2) return setMsg("Фото не видно в окне — нажмите «Вписать».", true);
-  const m = d.meta, date = m.date ? m.date.split("-").reverse().join(".") : "";
-  const text = [d.name, date, m.culture, m.org && BREAKPOINTS[m.org] ? BREAKPOINTS[m.org].name : ""].filter(Boolean).join(" · ");
-  const fs = Math.max(14, Math.round(Math.max(w, 500) / 45)), bar = Math.round(fs * 2);
-  const out = document.createElement("canvas"); out.width = Math.max(w, 1); out.height = h + bar;
-  const g = out.getContext("2d");
-  g.fillStyle = "#1b2329"; g.fillRect(0, 0, out.width, out.height);
-  g.drawImage(cv, x0, y0, w, h, 0, 0, w, h);
-  g.fillStyle = "#e3e9ee"; g.font = `500 ${fs}px "Onest", "Segoe UI", sans-serif`; g.textBaseline = "middle";
-  g.fillText(text, Math.round(fs * 0.7), h + bar / 2, w - fs * 1.4);
+  const date = d.meta.date ? d.meta.date.split("-").reverse().join(".") : "";
+  const out = document.createElement("canvas"); out.width = w; out.height = h;
+  out.getContext("2d").drawImage(cv, x0, y0, w, h, 0, 0, w, h);
   const blob = await new Promise(r => out.toBlob(r, "image/png"));
   if (!blob) return setMsg("Снимок не получился.", true);
   const name = `${(d.name || "чашка").replace(/[\\/:*?"<>|]+/g, "_").trim() || "чашка"}${date ? " " + date : ""}.png`;
