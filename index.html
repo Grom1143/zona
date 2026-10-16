@@ -199,10 +199,10 @@ body.focus .navcount { top: calc(10px + 100vh - 24px - 20px - 48px - 34px); }
 .tools.folded .wide { grid-column: auto; }
 .tools.folded #calibField:not([hidden]) { flex-basis: 100%; }
 /* свёрнутые инструменты — сетка: слева «Сохранить» и «Снимок» с подписями, рядом маленькие кнопки зон и линейки,
-   по схеме «Кнопочки.jpg»: слева «Сохранить» и под ним крупный «Снимок» на 2 строки; справа контур, скругление, линейка
-   и добавить / удалить зону, лупа; «Вписать» в этом виде не показываем */
+   по схеме «Кнопочки.jpg»: слева «Сохранить» и под ним крупный «Снимок» на 2 строки; справа контур, добавить зону,
+   скругление, линейка (справа от скругления), удалить зону, лупа; «Вписать» в этом виде не показываем */
 .tools.folded .tools-grid { display: grid; grid-template-columns: minmax(0, 1.5fr) minmax(0, 1fr) minmax(0, 1fr); gap: 6px;
-  grid-template-areas: "save axis add" "snap round del" "snap calib zoom" "cf cf cf"; }
+  grid-template-areas: "save axis add" "snap round calib" "snap del zoom" "cf cf cf"; }
 .tools.folded .tools-grid { align-items: stretch; }   /* кнопки занимают свою клетку целиком: снимок — ровно 2 строки */
 .tools.folded .tools-grid > * { min-width: 0; }   /* ни одна кнопка не вылезает за свою клетку */
 .tools.folded #snapEditBtn { grid-area: snap; }
