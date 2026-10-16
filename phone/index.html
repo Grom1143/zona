@@ -12,9 +12,11 @@
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Onest:wght@400;500;700&family=JetBrains+Mono:wght@400;600&display=swap">
 <!-- SheetJS 0.20.3 лежит рядом с сайтом: Excel работает и без интернета -->
 <script async src="vendor/xlsx.full.min.js"></script>
+<!-- компьютер → обычный сайт (только на GitHub); ?phone – остаться на версии для телефона -->
+<script>try { if (location.hostname === "grom1143.github.io" && !/[?&]phone/.test(location.search) && !(matchMedia("(pointer: coarse)").matches && Math.min(screen.width, screen.height) < 768)) location.replace("../" + location.hash); } catch {}</script>
 <!-- тема ставится до показа страницы, чтобы она не мигала другой темой -->
 <script>try { const t = localStorage.getItem("zona-theme"); if (t === "light" || t === "dark") document.documentElement.dataset.theme = t; } catch {}</script>
-<link rel="stylesheet" href="style.css?v=2026101704">
+<link rel="stylesheet" href="style.css?v=2026101705">
 
 <div class="wrap">
   <header>
@@ -337,10 +339,10 @@
     <p class="note">Сохранение: работа сама сохраняется в этом браузере на этом компьютере через пару секунд после каждого изменения (кнопка «Сохранить» и Ctrl+S – сразу). Чтобы перенести работу или сделать резервную копию, нажмите «Скачать проект», а на другом компьютере – «Открыть проект». Фото никуда не отправляются. Ограничения: фото сверху, без сильных бликов. Это исследовательский и учебный инструмент, не для клинической диагностики. Категория S / I / R (Ч / У / Р) ставится по таблицам «Российских рекомендаций. Определение чувствительности микроорганизмов к антимикробным препаратам», версия 2024-02 (МАКМАХ, по EUCAST), для микроорганизма из паспорта чашки; зона сравнивается с порогом с точностью до 1 мм; попадание в ЗТН (зону технической неопределённости) отмечается. Таблицы пересматриваются ежегодно – сверяйте с актуальной версией. Нейросеть не используется, только обработка изображения.</p>
   </dialog>
   <!-- предупреждение – в самом низу, чтобы не мешало работе -->
-  <footer class="disclaimer-foot">Программа предназначена не для клинической диагностики, а в качестве учебного инструмента.</footer>
+  <footer class="disclaimer-foot">Программа предназначена не для клинической диагностики, а в качестве учебного инструмента.<br><a href="../?full">Полная версия сайта</a></footer>
 </div>
 
 <!-- анализ изображения (без интерфейса) и интерфейс – в отдельных файлах -->
-<script src="analysis.js?v=2026101704" charset="utf-8"></script>
+<script src="analysis.js?v=2026101705" charset="utf-8"></script>
 
-<script src="app.js?v=2026101704" charset="utf-8"></script>
+<script src="app.js?v=2026101705" charset="utf-8"></script>
