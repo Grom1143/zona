@@ -198,10 +198,14 @@ body.focus .navcount { top: calc(10px + 100vh - 24px - 20px - 48px - 34px); }
 .tools.folded .zoombar output { min-width: 5ch; font-size: 12px; }
 .tools.folded .wide { grid-column: auto; }
 .tools.folded #calibField:not([hidden]) { flex-basis: 100%; }
-/* свёрнутые инструменты — сетка по картинке «Кнопки.png»: «Сохранить» на 2 клетки, добавить / удалить зону;
-   «Снимок» на 4 клетки; контур, скругление, линейка и лупа с «Вписать» */
-.tools.folded .tools-grid { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 6px; align-items: stretch;
-  grid-template-areas: "save save add del ." "snap snap snap snap ." "axis round calib zoom zoom" "cf cf cf cf cf"; }
+/* свёрнутые инструменты — сетка по картинке «Кнопки.png» (12 узких колонок): «Сохранить» на половину ширины,
+   добавить / удалить зону; «Снимок» на всю ширину; контур, скругление, линейка и лупа с «Вписать» */
+.tools.folded .tools-grid { display: grid; grid-template-columns: repeat(12, minmax(0, 1fr)); gap: 6px; align-items: stretch;
+  grid-template-areas:
+    "save save save save save save add add add del del del"
+    "snap snap snap snap snap snap snap snap snap snap snap snap"
+    "axis axis round round calib calib zoom zoom zoom zoom zoom zoom"
+    "cf cf cf cf cf cf cf cf cf cf cf cf"; }
 .tools.folded .tools-grid > * { min-width: 0; }   /* ни одна кнопка не вылезает за свою клетку */
 /* у «Сохранить» и «Снимок» в свёрнутом виде остаются короткие подписи */
 .tools.folded #saveBtn2 .lbl, .tools.folded #snapEditBtn .lbl-short { display: inline; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
@@ -410,14 +414,14 @@ input.drug::placeholder { color: var(--muted); font-weight: 400; }
           </div>
         </div>
         <!-- видимость разметки и цвета фото: прячутся треугольником слева -->
-        <button class="lookfold tools-more" id="lookFold" type="button" aria-expanded="true" aria-controls="lookBox" title="Скрыть / показать видимость разметки и цвета фото">
+        <button class="lookfold" id="lookFold" type="button" aria-expanded="true" aria-controls="lookBox" title="Скрыть / показать видимость разметки и цвета фото">
           <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5l10 7-10 7z"/></svg><span>Видимость и цвета</span></button>
-        <div class="lookbox tools-more" id="lookBox">
-          <label class="field tools-more" for="alpha">Видимость разметки, % <input type="range" id="alpha" title="Вправо — ярче, влево — бледнее; 0 % — разметка скрыта, видно только фото" min="0" max="100" step="1" value="100"><input type="text" inputmode="decimal" class="num" id="alphaOut" value="100" aria-label="Значение числом" autocomplete="off"></label>
-          <label class="field tools-more" for="lkBright" title="Только для просмотра: на поиск зон и измерения не влияет. Двойной клик — вернуть 0">Яркость <input type="range" id="lkBright" min="-100" max="100" step="1" value="0"><input type="text" inputmode="decimal" class="num" id="lkBrightOut" value="0" aria-label="Значение числом" autocomplete="off"></label>
-          <label class="field tools-more" for="lkContrast" title="Только для просмотра: на поиск зон и измерения не влияет. Двойной клик — вернуть 0">Контраст <input type="range" id="lkContrast" min="-100" max="100" step="1" value="0"><input type="text" inputmode="decimal" class="num" id="lkContrastOut" value="0" aria-label="Значение числом" autocomplete="off"></label>
-          <label class="field tools-more" for="lkSat" title="Только для просмотра: на поиск зон и измерения не влияет. Двойной клик — вернуть 0">Насыщенность <input type="range" id="lkSat" min="-100" max="100" step="1" value="0"><input type="text" inputmode="decimal" class="num" id="lkSatOut" value="0" aria-label="Значение числом" autocomplete="off"></label>
-          <div class="field tools-more"><span class="lookhint">Цвета — только для просмотра, на измерения не влияют</span><button class="btn" id="lkReset" type="button" disabled>Сбросить</button></div>
+        <div class="lookbox" id="lookBox">
+          <label class="field" for="alpha">Видимость разметки, % <input type="range" id="alpha" title="Вправо — ярче, влево — бледнее; 0 % — разметка скрыта, видно только фото" min="0" max="100" step="1" value="100"><input type="text" inputmode="decimal" class="num" id="alphaOut" value="100" aria-label="Значение числом" autocomplete="off"></label>
+          <label class="field" for="lkBright" title="Только для просмотра: на поиск зон и измерения не влияет. Двойной клик — вернуть 0">Яркость <input type="range" id="lkBright" min="-100" max="100" step="1" value="0"><input type="text" inputmode="decimal" class="num" id="lkBrightOut" value="0" aria-label="Значение числом" autocomplete="off"></label>
+          <label class="field" for="lkContrast" title="Только для просмотра: на поиск зон и измерения не влияет. Двойной клик — вернуть 0">Контраст <input type="range" id="lkContrast" min="-100" max="100" step="1" value="0"><input type="text" inputmode="decimal" class="num" id="lkContrastOut" value="0" aria-label="Значение числом" autocomplete="off"></label>
+          <label class="field" for="lkSat" title="Только для просмотра: на поиск зон и измерения не влияет. Двойной клик — вернуть 0">Насыщенность <input type="range" id="lkSat" min="-100" max="100" step="1" value="0"><input type="text" inputmode="decimal" class="num" id="lkSatOut" value="0" aria-label="Значение числом" autocomplete="off"></label>
+          <div class="field"><span class="lookhint">Цвета — только для просмотра, на измерения не влияют</span><button class="btn" id="lkReset" type="button" disabled>Сбросить</button></div>
         </div>
         <label class="field tools-more" for="diskMm">Диаметр диска, мм <input type="number" id="diskMm" value="6" min="1" max="20" step="0.1"></label>
       </section>
@@ -1647,6 +1651,7 @@ function setLabel(id, text) {
 // Свернуть / развернуть инструменты; выбор запоминается в этом браузере
 function foldTools(on) {
   document.querySelector(".tools").classList.toggle("folded", on);
+  if (on && typeof foldLook === "function") foldLook(true);   // «Видимость и цвета» в мини-режиме свёрнута, но не спрятана
   const t = $("toolsToggle"), text = on ? "Развернуть инструменты" : "Свернуть инструменты в иконки";
   t.setAttribute("aria-expanded", String(!on)); t.setAttribute("aria-label", text); t.title = text;
   try { localStorage.setItem("zona-tools-folded", on ? "1" : "0"); } catch {}
