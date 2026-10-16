@@ -763,7 +763,9 @@ document.addEventListener("fullscreenchange", () => {
 $("toolsToggle").addEventListener("click", () => foldTools(!document.querySelector(".tools").classList.contains("folded")));
 try { if (localStorage.getItem("zona-tools-folded") === "1") foldTools(true, true); } catch {}
 // «Чашка» (паспорт) свёрнута или развёрнута – запоминается в браузере
-try { if (localStorage.getItem("zona-meta-open") === "0") $("metaBox").open = false; } catch {}
+// на телефоне паспорт и «Видимость и цвета» по умолчанию свёрнуты: на маленьком экране главное – фото
+const PHONE = matchMedia("(max-width: 700px)").matches;
+try { const v = localStorage.getItem("zona-meta-open"); if (v === "0" || (v === null && PHONE)) $("metaBox").open = false; } catch {}
 $("metaBox").addEventListener("toggle", () => { try { localStorage.setItem("zona-meta-open", $("metaBox").open ? "1" : "0"); } catch {} });
 // треугольник «Видимость и цвета»: свернуть / развернуть, выбор запоминается в браузере
 function foldLook(shut) {
@@ -772,7 +774,7 @@ function foldLook(shut) {
   try { localStorage.setItem("zona-look-shut", shut ? "1" : "0"); } catch {}
 }
 $("lookFold").addEventListener("click", () => foldLook(!$("lookBox").classList.contains("shut")));
-try { if (localStorage.getItem("zona-look-shut") === "1") foldLook(true); } catch {}
+try { const v = localStorage.getItem("zona-look-shut"); if (v === "1" || (v === null && PHONE)) foldLook(true); } catch {}
 
 // ----- сообщения и подтверждения -----
 // Сообщение показывается списком: каждое предложение – отдельный пункт. «−» сворачивает список до заголовка
@@ -1045,7 +1047,7 @@ function renderSide() {
   if (P.mode === "idle") $("hint").textContent = !it ? "" : it.pts
     ? "Тяните точку или край; изнутри – сдвинуть зону."
     : "Тяните концы линейки к краям зоны.";
-  $("undoBtn").disabled = !(d && d._undo.length) && !P.trash.length;
+  $("undoBtn").disabled = $("undoBtn2").disabled = !(d && d._undo.length) && !P.trash.length;
   $("redoBtn").disabled = !d || !d._redo.length;
   for (const id of ["addBtn", "calibBtn", "resetBtn", "copyBtn"]) $(id).disabled = !d;
   $("xlsxBtn").disabled = $("projSaveBtn").disabled = !P.dishes.length;
@@ -1070,8 +1072,10 @@ function select(i) {
 // ----- мышь и палец -----
 function pos(e) {
   const b = cv.getBoundingClientRect(), d = D();
-  return { x: (e.clientX - b.left) * d.w / b.width, y: (e.clientY - b.top) * d.h / b.height, k: d.w / b.width };
+  return { x: (e.clientX - b.left) * d.w / b.width, y: (e.clientY - b.top) * d.h / b.height, k: d.w / b.width, touch: e.pointerType === "touch" };
 }
+// насколько близко надо попасть в ручку или край: пальцем – почти вдвое дальше, чем мышью
+const HIT = p => (p.touch ? 30 : 16) * p.k;
 function distSeg(p, r) {
   const L2 = (r.bx - r.ax) ** 2 + (r.by - r.ay) ** 2 || 1;
   const t = Math.max(0, Math.min(1, ((p.x - r.ax) * (r.bx - r.ax) + (p.y - r.ay) * (r.by - r.ay)) / L2));
@@ -1081,7 +1085,7 @@ function distSeg(p, r) {
 // Что под курсором у зон: конец линейки (a, b) или точка контура / край (pt),
 // линейка или середина контура (move), другая зона (pick)
 function hitZone(p) {
-  const d = D(), hit = 16 * p.k, it = P.sel >= 0 ? d.items[P.sel] : null;
+  const d = D(), hit = HIT(p), it = P.sel >= 0 ? d.items[P.sel] : null;
   if (it && !it.pts) {
     const r = it.r;
     if (Math.hypot(p.x - r.ax, p.y - r.ay) < hit) return { what: "a", r };
@@ -1118,7 +1122,7 @@ function pullPt(it, i, dx, dy) {
 cv.addEventListener("pointerdown", e => {
   const d = D();
   if (!d || !d._base || e.button !== 0) return;     // правая кнопка – отдельно, через contextmenu
-  const p = pos(e), hit = 16 * p.k;
+  const p = pos(e), hit = HIT(p);
   const grab = g => {
     P.drag = { ...g, last: p, p: null, pre: P.mode === "calib" ? null : snap(d), moved: false, sx: e.clientX, sy: e.clientY };
     cv.setPointerCapture(e.pointerId); e.preventDefault();
@@ -1132,10 +1136,9 @@ cv.addEventListener("pointerdown", e => {
     return;
   }
   if (P.mode === "add") {
-    commit();
-    const mpp = mmPerPx(), dd = mpp ? 12 / mpp : d.w * 0.12;
-    d.items.push({ x: p.x, y: p.y, src: "manual", r: rulerAt(p.x, p.y, dd), shape: null, drug: "", ok: false });
-    P.sel = d.items.length - 1; setMode("idle"); renderDishes(); render(); return;
+    // пальцем зона ставится, когда палец отпустили: так касание двумя пальцами (лупа) не добавит лишнюю зону
+    if (p.touch) { P.pendingAdd = { id: e.pointerId, p, sx: e.clientX, sy: e.clientY }; return; }
+    return addZoneAt(p);
   }
   const g = hitZone(p);
   if (g && g.what !== "pick") return grab(g);
@@ -1183,6 +1186,13 @@ cv.addEventListener("pointermove", e => {
   }
   if (P.mode === "calib") draw(); else render();
 });
+function addZoneAt(p) {
+  const d = D();
+  commit();
+  const mpp = mmPerPx(), dd = mpp ? 12 / mpp : d.w * 0.12;
+  d.items.push({ x: p.x, y: p.y, src: "manual", r: rulerAt(p.x, p.y, dd), shape: null, drug: "", ok: false });
+  P.sel = d.items.length - 1; setMode("idle"); renderDishes(); render();
+}
 const endDrag = () => {
   const g = P.drag;
   if (!g) return;
@@ -1202,6 +1212,47 @@ const endDrag = () => {
 };
 cv.addEventListener("pointerup", endDrag);
 cv.addEventListener("pointercancel", endDrag);
+
+// ----- телефон: два пальца – лупа и сдвиг фото -----
+// Слушаем раньше остальных обработчиков (capture): второй палец не должен хватать зону или линейку.
+// Если первый палец уже начал тянуть зону, эта правка отменяется – пальцы просто приближают фото
+const fingers = new Map();
+const pinchState = () => {
+  const [a, b] = [...fingers.values()];
+  return { d: Math.hypot(a.x - b.x, a.y - b.y) || 1, mx: (a.x + b.x) / 2, my: (a.y + b.y) / 2 };
+};
+cv.addEventListener("pointerdown", e => {
+  if (e.pointerType !== "touch") return;
+  fingers.set(e.pointerId, { x: e.clientX, y: e.clientY });
+  if (fingers.size !== 2) return;
+  e.stopImmediatePropagation(); e.preventDefault();
+  const g = P.drag, d = D();
+  if (g && g.pre && g.moved && d) restore(d, g.pre);
+  P.drag = null; P.pendingAdd = null;
+  const st = pinchState();
+  P.pinch = { d0: st.d, z0: P.zoom, mx: st.mx, my: st.my };
+  render();
+}, { capture: true });
+cv.addEventListener("pointermove", e => {
+  if (!fingers.has(e.pointerId)) return;
+  fingers.set(e.pointerId, { x: e.clientX, y: e.clientY });
+  if (P.pendingAdd && P.pendingAdd.id === e.pointerId && Math.hypot(e.clientX - P.pendingAdd.sx, e.clientY - P.pendingAdd.sy) > 10) P.pendingAdd = null;   // палец поехал – это не касание
+  if (!P.pinch || fingers.size < 2) return;
+  e.stopImmediatePropagation();
+  const st = pinchState(), v = $("view");
+  v.scrollLeft -= st.mx - P.pinch.mx; v.scrollTop -= st.my - P.pinch.my;     // два пальца двигают фото
+  P.pinch.mx = st.mx; P.pinch.my = st.my;
+  setZoom(P.pinch.z0 * st.d / P.pinch.d0, st.mx, st.my);                     // и приближают его
+}, { capture: true });
+const fingerUp = e => {
+  if (!fingers.has(e.pointerId)) return;
+  fingers.delete(e.pointerId);
+  const a = P.pendingAdd;
+  if (a && a.id === e.pointerId && e.type === "pointerup" && !P.pinch && D()) { P.pendingAdd = null; addZoneAt(a.p); }
+  if (fingers.size < 2) P.pinch = null;
+};
+cv.addEventListener("pointerup", fingerUp, { capture: true });
+cv.addEventListener("pointercancel", fingerUp, { capture: true });
 
 // ----- кнопки -----
 async function loadSample() {
@@ -1247,6 +1298,7 @@ $("helpBox").addEventListener("click", e => {          // клик мимо ок
   if (e.clientX < b.left || e.clientX > b.right || e.clientY < b.top || e.clientY > b.bottom) $("helpBox").close();
 });
 $("undoBtn").addEventListener("click", undo);
+$("undoBtn2").addEventListener("click", undo);
 $("redoBtn").addEventListener("click", redo);
 $("saveBtn2").addEventListener("click", () => saveBrowser(false));
 // Снимок для отчёта: видимая часть окна разметки – как на экране (видимость разметки, приближение, выбранная зона),
