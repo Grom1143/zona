@@ -133,6 +133,7 @@ body.focus .main > aside { max-height: calc(100vh - 24px); overflow-y: auto; box
 }
 .ask.pop { z-index: 40; }
 .stage { background: var(--stage); border-radius: 10px; padding: 10px; position: relative; min-width: 0; }
+.ov { position: absolute; pointer-events: none; z-index: 2; }   /* разметка поверх окна разметки, клики проходят к фото */
 /* при приближении фото больше окна: лишнее скрыто, фото двигается перетаскиванием (без полос прокрутки) */
 .view { height: 600px; display: flex; overflow: hidden; }
 .view #cv { margin: auto; }
@@ -326,6 +327,7 @@ input.drug::placeholder { color: var(--muted); font-weight: 400; }
     <div class="left">
       <div class="stage" id="stage">
         <div class="view" id="view"><canvas id="cv" width="900" height="900"></canvas></div>
+        <canvas class="ov" id="ov" aria-hidden="true"></canvas>
         <!-- переключение между фото: стрелки по краям окна и клавиши ← → -->
         <button class="navbtn prev" id="prevDish" type="button" aria-label="Предыдущее фото (←)" title="Предыдущее фото (←)" hidden>‹</button>
         <button class="navbtn next" id="nextDish" type="button" aria-label="Следующее фото (→)" title="Следующее фото (→)" hidden>›</button>
@@ -888,7 +890,10 @@ function makeSample() {
 <script>
 // ===== Интерфейс =====
 const $ = id => document.getElementById(id);
-const cv = $("cv"), ctx = cv.getContext("2d");
+// cv — только фото (в его разрешении); разметка рисуется отдельно на ov — в разрешении экрана, поэтому
+// при приближении не размывается. ctx — холст, на котором сейчас рисуется разметка (ov, лупа или снимок)
+const cv = $("cv"), pctx = cv.getContext("2d"), ov = $("ov"), octx = ov.getContext("2d");
+let ctx = pctx;
 const MAX_SIDE = 1100;   // большие фото уменьшаем: точность не страдает, анализ быстрее
 // P — всё приложение; чашки лежат в P.dishes, открыта P.dishes[P.cur]
 const P = { dishes: [], cur: -1, sel: -1, mode: "idle", calib: null, drag: null, hover: -1, zoom: 1, breaks: [], general: { on: true, s: 22, r: 19 }, dirty: false, savedAt: null, alpha: 1, ask: null, ver: 0, trash: [] };
@@ -1731,24 +1736,18 @@ function drawLoupe(p, k) {
   g.imageSmoothingEnabled = false;
   g.fillStyle = "#000"; g.fillRect(0, 0, L.width, L.height);
   g.drawImage(cv, p.x - s / 2, p.y - s / 2, s, s, 0, 0, L.width, L.height);
+  const z = L.width / s, was = ctx;                               // разметку в лупе рисуем заново — она чёткая
+  ctx = g; g.setTransform(z, 0, 0, z, -(p.x - s / 2) * z, -(p.y - s / 2) * z);
+  drawMarks(D(), k);
+  g.setTransform(1, 0, 0, 1, 0, 0); ctx = was;
   const c = L.width / 2;
   g.strokeStyle = "rgba(255,255,255,.85)"; g.lineWidth = 2;
   g.beginPath(); g.moveTo(c - 28, c); g.lineTo(c - 8, c); g.moveTo(c + 8, c); g.lineTo(c + 28, c);
   g.moveTo(c, c - 28); g.lineTo(c, c - 8); g.moveTo(c, c + 8); g.lineTo(c, c + 28); g.stroke();
 }
 
-function draw() {
-  const d = D();
-  if (!d || !d._base) {
-    ctx.fillStyle = "#1b2329"; ctx.fillRect(0, 0, cv.width, cv.height);
-    ctx.fillStyle = "#c9d3da"; ctx.font = `500 ${Math.round(cv.width / 30)}px "Onest", "Segoe UI", sans-serif`;
-    ctx.textAlign = "center"; ctx.textBaseline = "middle";
-    ctx.fillText(d ? "Фото этой чашки не открылось — загрузите его заново" : "Загрузите фото чашки или нажмите «Пример»", cv.width / 2, cv.height / 2);
-    return;
-  }
-  const k = d.w / (cv.getBoundingClientRect().width || d.w);   // 1 экранный пиксель в пикселях фото
-  ctx.globalAlpha = 1;
-  ctx.drawImage(viewBase(d), 0, 0);
+// Разметка (зоны, подписи, линейки) на холсте ctx в координатах фото; k — сколько px фото в 1 экранном px
+function drawMarks(d, k) {
   ctx.globalAlpha = P.alpha;
   const mpp = mmPerPx();
   // при настройке масштаба зоны прячем: видны только линейка и сам диск
@@ -1782,6 +1781,34 @@ function draw() {
     label(`${fmt(calibMm())} мм`, mid(P.calib).x, Math.min(P.calib.ay, P.calib.by) - 14 * k, k, "#ffe066");
   }
   ctx.globalAlpha = 1;
+}
+// Холст разметки ov — ровно по окну разметки, в пикселях экрана (с учётом devicePixelRatio).
+// Возвращает масштаб и сдвиг «координаты фото → px холста ov»
+function placeOverlay() {
+  const v = $("view"), dpr = window.devicePixelRatio || 1;
+  const w = Math.max(1, Math.round(v.clientWidth * dpr)), h = Math.max(1, Math.round(v.clientHeight * dpr));
+  Object.assign(ov.style, { left: v.offsetLeft + "px", top: v.offsetTop + "px", width: v.clientWidth + "px", height: v.clientHeight + "px" });
+  if (ov.width !== w || ov.height !== h) { ov.width = w; ov.height = h; }
+  octx.setTransform(1, 0, 0, 1, 0, 0); octx.clearRect(0, 0, w, h);
+  const cr = cv.getBoundingClientRect(), vr = v.getBoundingClientRect();
+  return { scale: dpr * cr.width / cv.width, ox: dpr * (cr.left - vr.left), oy: dpr * (cr.top - vr.top) };
+}
+function draw() {
+  const d = D(), o = placeOverlay();
+  ctx = pctx;
+  if (!d || !d._base) {
+    ctx.fillStyle = "#1b2329"; ctx.fillRect(0, 0, cv.width, cv.height);
+    ctx.fillStyle = "#c9d3da"; ctx.font = `500 ${Math.round(cv.width / 30)}px "Onest", "Segoe UI", sans-serif`;
+    ctx.textAlign = "center"; ctx.textBaseline = "middle";
+    ctx.fillText(d ? "Фото этой чашки не открылось — загрузите его заново" : "Загрузите фото чашки или нажмите «Пример»", cv.width / 2, cv.height / 2);
+    return;
+  }
+  const k = d.w / (cv.getBoundingClientRect().width || d.w);   // 1 экранный пиксель в пикселях фото
+  pctx.globalAlpha = 1;
+  pctx.drawImage(viewBase(d), 0, 0);
+  ctx = octx; octx.setTransform(o.scale, 0, 0, o.scale, o.ox, o.oy);
+  drawMarks(d, k);
+  octx.setTransform(1, 0, 0, 1, 0, 0); ctx = pctx;
   if (P.drag && P.drag.what !== "move" && P.drag.what !== "pan" && P.drag.p) drawLoupe(P.drag.p, k);   // лупа: и для точки контура, и для линейки масштаба
   else $("loupe").hidden = true;
 }
@@ -2082,8 +2109,14 @@ function grabView() {
   const w = Math.round(x1 - x0), h = Math.round(y1 - y0);
   if (w < 2 || h < 2) { setMsg("Фото не видно в окне — нажмите «Вписать».", true); return null; }
   const date = d.meta.date ? d.meta.date.split("-").reverse().join(".") : "";
-  const out = document.createElement("canvas"); out.width = w; out.height = h;
-  out.getContext("2d").drawImage(cv, x0, y0, w, h, 0, 0, w, h);
+  // масштаб снимка — не меньше экранного: при приближении разметка на снимке тоже чёткая
+  const sc = Math.max(1, (window.devicePixelRatio || 1) * cr.width / cv.width);
+  const out = document.createElement("canvas"); out.width = Math.round(w * sc); out.height = Math.round(h * sc);
+  const g = out.getContext("2d"), was = ctx;
+  g.drawImage(cv, x0, y0, w, h, 0, 0, out.width, out.height);
+  ctx = g; g.setTransform(sc, 0, 0, sc, -x0 * sc, -y0 * sc);
+  drawMarks(d, d.w / cr.width);
+  g.setTransform(1, 0, 0, 1, 0, 0); ctx = was;
   const name = `${(d.name || "чашка").replace(/[\\/:*?"<>|]+/g, "_").trim() || "чашка"}${date ? " " + date : ""}.png`;
   return { canvas: out, name };
 }
@@ -2550,6 +2583,7 @@ function setZoom(z, cx, cy) {
   draw();
 }
 window.addEventListener("resize", () => { fitCanvas(); draw(); });
+$("view").addEventListener("scroll", () => draw(), { passive: true });
 $("view").addEventListener("wheel", e => {         // лупа — Shift + колёсико; без Shift страница прокручивается как обычно
   const d = D();
   if (!d || !d._base || !e.shiftKey) return;
