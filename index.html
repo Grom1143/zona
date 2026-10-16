@@ -175,6 +175,10 @@ body.focus .navcount { top: calc(10px + 100vh - 24px - 20px - 48px - 34px); }
 .edit-ctl input[type="range"] { width: 100%; accent-color: var(--accent); }
 .edit-ctl output { font: 600 13px var(--font-mono); color: var(--ink); text-align: right; }
 .tools .field { justify-content: space-between; }
+.lookhint { font-size: 12px; color: var(--muted); flex: 1; }
+/* ползунки инструментов — в одну колонку: подпись | ползунок | число */
+.tools .field:has(input[type="range"]) { display: grid; grid-template-columns: minmax(0, 1fr) 110px 6ch; gap: 8px; }
+#lkReset { padding: 6px 10px; font-size: 13px; }
 .tools .btn svg { width: 18px; height: 18px; flex: none; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
 .tools .fold svg { transition: transform .15s; }
 /* свёрнуто: одна полоска маленьких иконок, подписи и ползунки спрятаны (подсказка — при наведении) */
@@ -380,6 +384,10 @@ input.drug::placeholder { color: var(--muted); font-weight: 400; }
           </div>
         </div>
         <label class="field tools-more" for="alpha">Видимость разметки <input type="range" id="alpha" title="Вправо — ярче, влево — бледнее; 0 % — разметка скрыта, видно только фото" min="0" max="100" step="1" value="100"><output id="alphaOut" for="alpha">100 %</output></label>
+        <label class="field tools-more" for="lkBright" title="Только для просмотра: на поиск зон и измерения не влияет. Двойной клик — вернуть 0">Яркость <input type="range" id="lkBright" min="-100" max="100" step="1" value="0"><output id="lkBrightOut" for="lkBright">0</output></label>
+        <label class="field tools-more" for="lkContrast" title="Только для просмотра: на поиск зон и измерения не влияет. Двойной клик — вернуть 0">Контраст <input type="range" id="lkContrast" min="-100" max="100" step="1" value="0"><output id="lkContrastOut" for="lkContrast">0</output></label>
+        <label class="field tools-more" for="lkSat" title="Только для просмотра: на поиск зон и измерения не влияет. Двойной клик — вернуть 0">Насыщенность <input type="range" id="lkSat" min="-100" max="100" step="1" value="0"><output id="lkSatOut" for="lkSat">0</output></label>
+        <div class="field tools-more"><span class="lookhint">Цвета — только для просмотра, на измерения не влияют</span><button class="btn" id="lkReset" type="button" disabled>Сбросить</button></div>
         <label class="field tools-more" for="diskMm">Диаметр диска, мм <input type="number" id="diskMm" value="6" min="1" max="20" step="0.1"></label>
       </section>
       <details class="meta" id="metaBox" open>
@@ -1740,7 +1748,7 @@ function draw() {
   }
   const k = d.w / (cv.getBoundingClientRect().width || d.w);   // 1 экранный пиксель в пикселях фото
   ctx.globalAlpha = 1;
-  ctx.drawImage(d._base, 0, 0);
+  ctx.drawImage(viewBase(d), 0, 0);
   ctx.globalAlpha = P.alpha;
   const mpp = mmPerPx();
   // при настройке масштаба зоны прячем: видны только линейка и сам диск
@@ -1848,7 +1856,7 @@ function renderZoom(d, it) {
   if (!it || !d._base) return;
   const zc = $("zoomCv"), z = zc.getContext("2d"), s = (d.scalePx || d.w * 0.05) * 1.9;
   z.fillStyle = "#000"; z.fillRect(0, 0, zc.width, zc.height);
-  z.drawImage(d._base, it.x - s / 2, it.y - s / 2, s, s, 0, 0, zc.width, zc.height);
+  z.drawImage(viewBase(d), it.x - s / 2, it.y - s / 2, s, s, 0, 0, zc.width, zc.height);
   $("zoomTitle").textContent = `Диск ${P.sel + 1} крупно: прочитайте надпись`;
   if (document.activeElement !== $("zoomDrug")) $("zoomDrug").value = it.drug;
 }
@@ -2094,18 +2102,22 @@ $("snapBtn").addEventListener("click", snapshot);
 // E.src — исходный снимок, E.adj — он же после яркости / контраста / насыщенности, E.R — рамка обрезки (в px снимка)
 const E = { src: null, adj: null, R: null, name: "", drag: null };
 const EDIT_IDS = ["edBright", "edContrast", "edSat"];
-function editAdjust() {
-  const b = +$("edBright").value * 2.55, c = +$("edContrast").value * 2.55, sat = 1 + $("edSat").value / 100;
+// Яркость, контраст, насыщенность (каждое от −100 до +100): из холста src в холст dst того же размера
+function adjustInto(src, dst, bright, contrast, saturation) {
+  const b = bright * 2.55, c = contrast * 2.55, sat = 1 + saturation / 100;
   const f = 259 * (c + 255) / (255 * (259 - c));                 // стандартная формула контраста
   const lut = new Uint8ClampedArray(256);
   for (let v = 0; v < 256; v++) lut[v] = f * (v - 128) + 128 + b;
-  const g = E.adj.getContext("2d"), img = E.src.getContext("2d").getImageData(0, 0, E.src.width, E.src.height), p = img.data;
+  const img = src.getContext("2d").getImageData(0, 0, src.width, src.height), p = img.data;
   for (let i = 0; i < p.length; i += 4) {
     let r = lut[p[i]], gg = lut[p[i + 1]], bb = lut[p[i + 2]];
     if (sat !== 1) { const y = 0.299 * r + 0.587 * gg + 0.114 * bb; r = y + (r - y) * sat; gg = y + (gg - y) * sat; bb = y + (bb - y) * sat; }
     p[i] = r; p[i + 1] = gg; p[i + 2] = bb;                       // Uint8ClampedArray сам обрежет до 0…255
   }
-  g.putImageData(img, 0, 0);
+  dst.getContext("2d").putImageData(img, 0, 0);
+}
+function editAdjust() {
+  adjustInto(E.src, E.adj, +$("edBright").value, +$("edContrast").value, +$("edSat").value);
   for (const id of EDIT_IDS) $(id + "Out").textContent = $(id).value;
   editDraw();
 }
@@ -2380,6 +2392,34 @@ for (const id of ["mName", ...Object.keys(metaKeys)]) $(id).addEventListener("in
   if (id === "mOrg") refreshCats();   // другой микроорганизм — другие пороги
 });
 $("diskMm").addEventListener("input", () => { const d = D(), v = parseFloat($("diskMm").value); if (d && v > 0) { d.diskMm = v; markDirty(); } render(); });
+// Яркость / контраст / насыщенность фото в окне разметки — только для глаз: анализ всегда идёт по исходному фото (_base).
+// Исправленная копия считается один раз и хранится, пока не сменятся чашка или ползунки
+const LOOK_IDS = ["lkBright", "lkContrast", "lkSat"];
+let lookCache = null;
+function viewBase(d) {
+  const v = LOOK_IDS.map(id => +$(id).value);
+  if (v.every(x => x === 0)) return d._base;
+  const key = v.join(",");
+  if (!lookCache || lookCache.base !== d._base || lookCache.key !== key) {
+    const c = lookCache && lookCache.base === d._base ? lookCache.c : document.createElement("canvas");
+    c.width = d._base.width; c.height = d._base.height;
+    adjustInto(d._base, c, v[0], v[1], v[2]);
+    lookCache = { base: d._base, key, c };
+  }
+  return lookCache.c;
+}
+function lookChanged() {
+  const v = LOOK_IDS.map(id => +$(id).value);
+  LOOK_IDS.forEach((id, i) => { $(id + "Out").textContent = v[i]; });
+  $("lkReset").disabled = v.every(x => x === 0);
+  try { localStorage.setItem("zona-look", JSON.stringify(v)); } catch {}
+  draw(); renderSide();
+}
+for (const id of LOOK_IDS) {
+  $(id).addEventListener("input", lookChanged);
+  $(id).addEventListener("dblclick", () => { $(id).value = 0; lookChanged(); });
+}
+$("lkReset").addEventListener("click", () => { for (const id of LOOK_IDS) $(id).value = 0; lookChanged(); });
 $("alpha").addEventListener("input", () => {
   const v = +$("alpha").value; P.alpha = v / 100; $("alphaOut").textContent = `${v} %`;
   try { localStorage.setItem("zona-vis", String(v)); } catch {}
@@ -2527,6 +2567,14 @@ try {
   const old = parseInt(localStorage.getItem("zona-alpha"), 10), saved = parseInt(localStorage.getItem("zona-vis"), 10);
   const v = saved >= 0 && saved <= 100 ? saved : old >= 0 && old <= 85 ? 100 - old : NaN;
   if (v >= 0) { $("alpha").value = v; $("alphaOut").textContent = `${v} %`; P.alpha = v / 100; }
+} catch {}
+try {
+  const v = JSON.parse(localStorage.getItem("zona-look"));
+  if (Array.isArray(v) && v.length === 3) {
+    LOOK_IDS.forEach((id, i) => { const x = Math.round(+v[i]); if (x >= -100 && x <= 100) $(id).value = x; });
+    LOOK_IDS.forEach(id => { $(id + "Out").textContent = $(id).value; });
+    $("lkReset").disabled = LOOK_IDS.every(id => +$(id).value === 0);
+  }
 } catch {}
 try { const b = JSON.parse(localStorage.getItem("zona-breaks")); if (Array.isArray(b)) P.breaks = b; } catch {}
 try { const g = JSON.parse(localStorage.getItem("zona-general")); if (g && typeof g === "object") P.general = { ...P.general, ...g }; } catch {}
