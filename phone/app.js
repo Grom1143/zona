@@ -710,9 +710,8 @@ function tableRows() {
   }
   return rows;
 }
-async function saveXlsx() {
-  if (!P.dishes.length) return setMsg("Нет чашек для таблицы.", true);
-  if (!window.XLSX) return setMsg("Не загрузилась библиотека для Excel (файл vendor/xlsx.full.min.js рядом с сайтом). Пока можно нажать «Копировать таблицу» и вставить в Excel.", true);
+// Книга Excel: лист «Зоны» и лист «Чашки». Общая для «Скачать Excel» и «Поделиться Excel»
+function xlsxBlob() {
   const wb = XLSX.utils.book_new();
   const z = XLSX.utils.aoa_to_sheet(tableRows());
   z["!cols"] = [18, 11, 18, 10, 20, 12, 8, 14, 26, 28, 15, 12, 30].map(w => ({ wch: w }));
@@ -728,7 +727,12 @@ async function saveXlsx() {
   s2["!cols"] = [18, 11, 18, 10, 20, 12, 18, 8, 13, 18, 18, 28].map(w => ({ wch: w }));
   XLSX.utils.book_append_sheet(wb, s2, "Чашки");
   const buf = XLSX.write(wb, { bookType: "xlsx", type: "array" });
-  const blob = new Blob([buf], { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" });
+  return new Blob([buf], { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" });
+}
+async function saveXlsx() {
+  if (!P.dishes.length) return setMsg("Нет чашек для таблицы.", true);
+  if (!window.XLSX) return setMsg("Не загрузилась библиотека для Excel (файл vendor/xlsx.full.min.js рядом с сайтом). Пока можно нажать «Копировать таблицу» и вставить в Excel.", true);
+  const blob = xlsxBlob();
   const unchecked = P.dishes.reduce((t, d) => t + d.items.filter(needsCheck).length, 0);
   if (await saveFile(`Зоны ингибирования ${today()}.xlsx`, blob))
     setMsg(`Таблица Excel готова: чашек ${P.dishes.length}.` + (unchecked ? ` Не проверено зон: ${unchecked} – они помечены в таблице.` : ""), !!unchecked);
@@ -1068,7 +1072,7 @@ function renderSide() {
   $("undoBtn").disabled = $("undoBtn2").disabled = !(d && d._undo.length) && !P.trash.length;
   $("redoBtn").disabled = !d || !d._redo.length;
   for (const id of ["addBtn", "calibBtn", "resetBtn", "copyBtn"]) $(id).disabled = !d;
-  $("xlsxBtn").disabled = $("projSaveBtn").disabled = $("shareBtn").disabled = !P.dishes.length;
+  $("xlsxBtn").disabled = $("projSaveBtn").disabled = $("shareBtn").disabled = $("shareXlsxBtn").disabled = !P.dishes.length;
 }
 
 function render() { draw(); renderTable(); renderSide(); renderTiltBar(); }
@@ -1842,6 +1846,33 @@ $("zoomDrug").addEventListener("input", () => {
   if (nm) nm.textContent = dnameText(it);
   markDirty(); draw(); refreshCats();
 });
+// ----- «Поделиться Excel»: файл таблицы → меню «Поделиться» телефона (заказчик попросил) -----
+// iPhone делится .xlsx; Chrome на Android файлами Excel делиться не даёт – тогда та же таблица уходит как .csv
+// (Excel его открывает: «;» между колонками и метка UTF-8 в начале – чтобы русские буквы не превратились в «кракозябры»).
+// Если нельзя и так – файл .xlsx просто скачивается
+function csvBlob() {
+  const cell = v => { const t = typeof v === "number" ? String(v).replace(".", ",") : String(v ?? ""); return /[;"\n]/.test(t) ? `"${t.replace(/"/g, '""')}"` : t; };
+  return new Blob(["\ufeff" + tableRows().map(r => r.map(cell).join(";")).join("\r\n")], { type: "text/csv" });
+}
+async function shareXlsx() {
+  if (!P.dishes.length) return setMsg("Нет чашек для таблицы.", true);
+  if (!window.XLSX) return setMsg("Не загрузилась библиотека для Excel – проверьте интернет и обновите страницу.", true);
+  const t = new Date(), stamp = `${today().split("-").reverse().join(".")} ${[t.getHours(), t.getMinutes()].map(v => String(v).padStart(2, "0")).join("-")}`;
+  const base = `Зоны ингибирования ${stamp}`, unchecked = P.dishes.reduce((n, d) => n + d.items.filter(needsCheck).length, 0);
+  const note = unchecked ? ` Не проверено зон: ${unchecked} – они помечены в таблице.` : "";
+  const xlsx = new File([xlsxBlob()], base + ".xlsx", { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" });
+  const csv = new File([csvBlob()], base + ".csv", { type: "text/csv" });
+  for (const [file, kind] of [[xlsx, "Excel"], [csv, "CSV (открывается в Excel)"]]) {
+    if (!(navigator.canShare && navigator.canShare({ files: [file] }))) continue;
+    try {
+      await navigator.share({ files: [file], title: "Измерения зон подавления" });
+      return setMsg(`Таблица отправлена: ${kind}.` + note, !!unchecked);
+    } catch (e) { if (e && e.name === "AbortError") return; }
+  }
+  if (await saveFile(xlsx.name, xlsx)) setMsg(`Поделиться файлом этот браузер не даёт – таблица Excel скачана: ${xlsx.name}.` + note, !!unchecked);
+}
+$("shareXlsxBtn").addEventListener("click", shareXlsx);
+
 // ----- «Отправить таблицу»: картинка с измерениями всех чашек → меню «Поделиться» телефона -----
 // Сценарий: сфотографировал, проверил зоны, отправил руководителю в мессенджер – без скриншотов и Excel.
 // Картинка светлая (читается в любом мессенджере), в 2× разрешении, чтобы текст был чёткий
