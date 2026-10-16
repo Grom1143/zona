@@ -14,11 +14,11 @@
 <script async src="vendor/xlsx.full.min.js"></script>
 <!-- тема ставится до показа страницы, чтобы она не мигала другой темой -->
 <script>try { const t = localStorage.getItem("zona-theme"); if (t === "light" || t === "dark") document.documentElement.dataset.theme = t; } catch {}</script>
-<link rel="stylesheet" href="style.css">
+<link rel="stylesheet" href="style.css?v=2026101701">
 
 <div class="wrap">
   <header>
-    <img class="brand-logo" src="logo.png" alt="" width="128" height="128">
+    <img class="brand-logo" src="logo.png" alt="МикроТест – нажмите на лягушку" width="128" height="128" role="button" tabindex="0">
     <div class="title-row">
       <h1>МикроТест <span class="brand-pc">Вижн</span><span class="brand-phone">Петри</span> <small>диско-диффузионный метод</small></h1>
       <button class="help-btn" id="helpBtn" type="button" title="Как это работает" aria-label="Справка: как это работает" aria-haspopup="dialog">?</button>
@@ -285,6 +285,12 @@
   </dialog>
 
   <!-- выбор чашек для удаления галочками -->
+  <!-- пасхалка: нажатие на лягушку – посев штрихом и рост колоний -->
+  <dialog class="egg" id="eggBox" aria-label="Лягушка сеет бактерии">
+    <canvas id="eggCv"></canvas>
+    <p class="egg-hint">нажмите, чтобы закрыть</p>
+  </dialog>
+
   <!-- выбор препарата пальцем (телефон): список снизу, одно нажатие – записано -->
   <dialog class="how drugsheet" id="drugBox" aria-labelledby="drugTitle">
     <div class="how-head">
@@ -334,6 +340,6 @@
 </div>
 
 <!-- анализ изображения (без интерфейса) и интерфейс – в отдельных файлах -->
-<script src="analysis.js" charset="utf-8"></script>
+<script src="analysis.js?v=2026101701" charset="utf-8"></script>
 
-<script src="app.js" charset="utf-8"></script>
+<script src="app.js?v=2026101701" charset="utf-8"></script>

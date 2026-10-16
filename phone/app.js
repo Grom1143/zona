@@ -2043,3 +2043,100 @@ try { localStorage.removeItem("zona-templates"); } catch {}     // пример�
 renderBreaks(); renderGeneral();
 renderSaveState(); fillMeta(); renderDishes(); fitCanvas(); render();
 loadBrowser().then(ok => { if (!ok) loadSample(); });
+
+// ----- Пасхалка: нажать на лягушку в шапке -----
+// Лягушка лапкой делает посев «истощающим штрихом» в 4 сектора чашки, вдоль штрихов вырастают оранжевые колонии:
+// в первом секторе – густо и мелко, дальше – реже и крупнее, в последнем – отдельные колонии (как при настоящем посеве)
+const frogImg = new Image();
+frogImg.src = "frog.png?v=" + (document.querySelector('script[src^="app.js"]').getAttribute("src").split("v=")[1] || "1");
+const FROG_PAW = { x: 0.86, y: 0.17 };   // кончик правой передней лапки на картинке frog.png (доли ширины и высоты)
+let eggRun = 0;
+function playEgg() {
+  const box = $("eggBox"), c = $("eggCv"), S = Math.round(Math.min(440, innerWidth * 0.92)), dpr = window.devicePixelRatio || 1;
+  c.width = S * dpr; c.height = S * dpr; c.style.width = c.style.height = S + "px";
+  const g = c.getContext("2d"); g.setTransform(dpr, 0, 0, dpr, 0, 0);
+  const cx = S / 2, cy = S / 2, R = S * 0.46;
+  let seed = 11 + Math.floor(Math.random() * 1000);
+  const rnd = () => (seed = (seed * 1664525 + 1013904223) >>> 0) / 4294967296;
+  // штрихи: 4 сектора по кругу, в каждом – зигзаг от края к центру; сектор начинается с конца предыдущего
+  const zones = [
+    { a: -2.35, n: 8, step: 4, p: 0.95, r: [1.6, 3.2] },     // густо и мелко
+    { a: -0.79, n: 6, step: 7, p: 0.55, r: [2.5, 4.5] },
+    { a: 0.79, n: 5, step: 11, p: 0.38, r: [3.5, 6] },
+    { a: 2.35, n: 4, step: 17, p: 0.32, r: [5, 8.5] },      // отдельные колонии
+  ];
+  const pts = [];                                         // точки пути лапки: { x, y, zone }
+  zones.forEach((z, k) => {
+    for (let i = 0; i <= z.n; i++) {
+      const t = i / z.n, rr = R * (0.86 - 0.42 * t), sp = 0.5 * (1 - 0.35 * t), side = i % 2 ? 1 : -1;
+      pts.push({ x: cx + Math.cos(z.a + side * sp) * rr, y: cy + Math.sin(z.a + side * sp) * rr, zone: k });
+    }
+  });
+  // путь с длиной: равномерная скорость лапки
+  const seg = []; let L = 0;
+  for (let i = 1; i < pts.length; i++) { const l = Math.hypot(pts[i].x - pts[i - 1].x, pts[i].y - pts[i - 1].y); seg.push({ a: pts[i - 1], b: pts[i], s: L, l }); L += l; }
+  const DRAW = 5200, BORN = 700, GROW = 2300, HOP = 600;   // мс
+  const at = s => { const q = seg.find(q => s <= q.s + q.l) || seg[seg.length - 1], t = Math.min(1, (s - q.s) / q.l);
+    return { x: q.a.x + (q.b.x - q.a.x) * t, y: q.a.y + (q.b.y - q.a.y) * t, zone: q.b.zone, dir: Math.atan2(q.b.y - q.a.y, q.b.x - q.a.x) }; };
+  // колонии: вдоль пути, плотность и размер – по сектору; в последних секторах не налезают друг на друга
+  const cols = [];
+  for (let s = 0; s < L; ) {
+    const p = at(s), z = zones[p.zone];
+    if (rnd() < z.p) {
+      const r = z.r[0] + rnd() * (z.r[1] - z.r[0]), j = 2 + r * 0.6;
+      const x = p.x + (rnd() - 0.5) * 2 * j, y = p.y + (rnd() - 0.5) * 2 * j;
+      const free = p.zone < 2 || cols.every(o => Math.hypot(o.x - x, o.y - y) > o.r + r + 2);
+      if (free && Math.hypot(x - cx, y - cy) < R - r - 3) cols.push({ x, y, r, t0: (s / L) * DRAW + BORN + rnd() * 900, zone: p.zone });
+    }
+    s += z.step * (0.7 + rnd() * 0.6);
+  }
+  const END = Math.max(...cols.map(o => o.t0)) + GROW;
+  const rest = { x: cx + R * 0.27, y: cy - R * 0.05 };      // в конце лягушка садится в центр – туда штрихи не доходят
+  const fw = R * 0.62, fh = fw * (frogImg.naturalHeight / frogImg.naturalWidth || 1);
+  const ease = t => 1 - Math.pow(1 - Math.min(1, Math.max(0, t)), 3);
+  const run = ++eggRun, start = performance.now();
+  const reduce = matchMedia("(prefers-reduced-motion: reduce)").matches;
+  function frame(now) {
+    if (run !== eggRun || !box.open) return;
+    const t = reduce ? END + HOP : now - start;
+    g.clearRect(0, 0, S, S);
+    // чашка с агаром
+    const ag = g.createRadialGradient(cx - R * 0.25, cy - R * 0.3, R * 0.1, cx, cy, R);
+    ag.addColorStop(0, "#f4e8cc"); ag.addColorStop(1, "#dfcb9f");
+    g.fillStyle = ag; g.beginPath(); g.arc(cx, cy, R, 0, 7); g.fill();
+    g.lineWidth = R * 0.035; g.strokeStyle = "rgba(200, 214, 224, .9)"; g.beginPath(); g.arc(cx, cy, R * 1.015, 0, 7); g.stroke();
+    // след лапки – едва заметная линия посева
+    const sNow = Math.min(L, (t / DRAW) * L);
+    g.strokeStyle = "rgba(255, 255, 255, .45)"; g.lineWidth = 1.4; g.lineJoin = g.lineCap = "round";
+    g.beginPath(); g.moveTo(pts[0].x, pts[0].y);
+    for (const q of seg) { if (q.s > sNow) break; const e = at(Math.min(sNow, q.s + q.l)); g.lineTo(e.x, e.y); }
+    g.stroke();
+    // колонии
+    for (const o of cols) {
+      const k = ease((t - o.t0) / GROW);
+      if (k <= 0) continue;
+      const r = o.r * k, cg = g.createRadialGradient(o.x - r * 0.3, o.y - r * 0.3, r * 0.1, o.x, o.y, r);
+      cg.addColorStop(0, "#ffd08a"); cg.addColorStop(0.55, "#ff9a2e"); cg.addColorStop(1, "#e06c12");
+      g.fillStyle = cg; g.beginPath(); g.arc(o.x, o.y, r, 0, 7); g.fill();
+      g.lineWidth = Math.max(0.6, r * 0.12); g.strokeStyle = "rgba(160, 70, 10, .55)"; g.stroke();
+      if (r > 3) { g.fillStyle = "rgba(255, 255, 255, .45)"; g.beginPath(); g.arc(o.x - r * 0.35, o.y - r * 0.35, r * 0.25, 0, 7); g.fill(); }
+    }
+    // лягушка: кончик лапки – на пути; немного покачивается по ходу штриха; в конце отходит к краю
+    let px, py, rot;
+    if (t < DRAW) { const p = at(sNow); px = p.x; py = p.y; rot = Math.sin(t / 140) * 0.12 + Math.cos(p.dir) * 0.08; }
+    else { const p = at(L), k = ease((t - DRAW) / HOP); px = p.x + (rest.x - p.x) * k; py = p.y + (rest.y - p.y) * k - Math.sin(k * Math.PI) * R * 0.15; rot = 0; }
+    if (frogImg.complete && frogImg.naturalWidth) {
+      g.save(); g.translate(px, py); g.rotate(rot);
+      g.shadowColor = "rgba(0, 0, 0, .25)"; g.shadowBlur = 8; g.shadowOffsetY = 3;
+      g.drawImage(frogImg, -FROG_PAW.x * fw, -FROG_PAW.y * fh, fw, fh);
+      g.restore();
+    }
+    if (t < END + HOP) requestAnimationFrame(frame);
+  }
+  box.showModal();
+  requestAnimationFrame(frame);
+}
+const brandLogo = document.querySelector("header .brand-logo");
+brandLogo.addEventListener("click", playEgg);
+brandLogo.addEventListener("keydown", e => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); playEgg(); } });
+$("eggBox").addEventListener("click", () => { eggRun++; $("eggBox").close(); });   // нажатие – закрыть

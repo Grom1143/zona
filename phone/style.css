@@ -48,6 +48,12 @@ header { display: grid; grid-template-columns: auto minmax(0, 1fr); column-gap: 
 header .brand-logo { grid-row: 1 / span 3; }
 /* название: на компьютере – «МикроТест Вижн», на телефоне – «МикроТест Петри» */
 .brand-phone { display: none; }
+.brand-logo[role="button"] { cursor: pointer; -webkit-tap-highlight-color: transparent; }
+/* пасхалка: чашка с лягушкой поверх страницы */
+dialog.egg { padding: 0; border: 0; background: transparent; overflow: visible; }
+dialog.egg::backdrop { background: rgba(10, 14, 17, .78); }
+dialog.egg canvas { display: block; }
+.egg-hint { margin: 10px 0 0; text-align: center; color: rgba(255, 255, 255, .6); font-size: 13px; }
 .disclaimer-foot { margin: 8px 0 0; padding-top: 12px; border-top: 1px solid var(--line); font-size: 12px; color: var(--muted); text-align: center; }
 @media (max-width: 600px) {
   header { column-gap: 12px; } header .brand-logo { width: 72px; height: 72px; }
