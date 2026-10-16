@@ -175,10 +175,9 @@ body.focus .navcount { top: calc(10px + 100vh - 24px - 20px - 48px - 34px); }
 .edit-ctl output { font: 600 13px var(--font-mono); color: var(--ink); text-align: right; }
 .tools .field { justify-content: space-between; }
 .lookhint { font-size: 12px; color: var(--muted); flex: 1; }
-/* треугольник слева: скрыть / показать видимость разметки и цвета */
+/* жирный треугольник слева: скрыть / показать видимость разметки и цвета */
 .lookfold { display: flex; align-items: center; gap: 6px; padding: 2px 0; border: 0; background: none; color: var(--ink); font: 700 15px var(--font-display);   /* как заголовок «Чашка» */ cursor: pointer; text-align: left; }
-.lookfold svg { width: 12px; height: 12px; fill: currentColor; opacity: .5; transform: rotate(90deg); transition: transform .15s, opacity .15s; }
-.lookfold:hover svg, .lookfold:focus-visible svg { opacity: .9; }
+.lookfold svg { width: 14px; height: 14px; fill: currentColor; stroke: currentColor; stroke-width: 2.5; stroke-linejoin: round; transform: rotate(90deg); transition: transform .15s; }   /* жирный треугольник */
 .lookfold:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 4px; }
 .lookfold[aria-expanded="false"] svg { transform: none; }
 .lookbox { display: grid; gap: 10px; }
@@ -224,8 +223,8 @@ body.focus .navcount { top: calc(10px + 100vh - 24px - 20px - 48px - 34px); }
 .tools.folded .zoombar output { flex: 1 1 auto; min-width: 0; font-size: 11px; display: flex; align-items: center; justify-content: center; }
 .tools.folded #calibField { grid-area: cf; }
 @media (min-width: 901px) {
-  /* блок инструментов остаётся на экране, пока прокручиваешь фото */
-  .tools { position: sticky; top: 0; z-index: 5; margin: -16px -16px 0; padding: 16px; border-radius: 10px 10px 0 0; }
+  /* инструменты не прилипают к экрану — уезжают вместе со страницей (так понравилось больше) */
+  .tools { margin: -16px -16px 0; padding: 16px; border-radius: 10px 10px 0 0; }
 }
 
 aside { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 16px; display: grid; gap: 14px; min-width: 0;
