@@ -173,8 +173,17 @@ body.focus .navcount { top: calc(10px + 100vh - 24px - 20px - 48px - 34px); }
 #cv { display: block; flex: none; touch-action: none; border-radius: 6px; cursor: default; }
 #cv.adding { cursor: crosshair; }
 .hint { color: #c9d3da; font-size: 13px; margin: 8px 2px 0; width: 0; min-width: calc(100% - 4px); }   /* переносится по ширине фото, а не раздвигает окно */
+.hint:empty { display: none; }   /* общее управление – в «?» у инструментов; здесь только подсказка к текущему действию */
+.help { display: inline-flex; }
+.help-tip { display: none; position: absolute; right: 0; top: calc(100% + 6px); z-index: 50; width: min(320px, calc(100vw - 48px)); box-sizing: border-box;
+  background: var(--panel); color: var(--ink); border: 1px solid var(--line); border-radius: 8px; padding: 10px 12px; box-shadow: 0 6px 20px rgba(0,0,0,.18);
+  font-size: 13px; line-height: 1.4; overflow-wrap: normal; }
+.help:hover .help-tip, .help:focus-within .help-tip { display: block; }   /* наведение мышью или нажатие (на телефоне) */
+.help-tip h4 { margin: 0 0 6px; font-size: 13px; }
+.help-tip ul { margin: 0; padding-left: 18px; display: grid; gap: 4px; }
+.help-tip kbd { font: 12px var(--font-mono); border: 1px solid var(--line); border-radius: 4px; padding: 0 4px; }
 .tools { display: grid; gap: 10px; padding-bottom: 14px; border-bottom: 1px solid var(--line); background: var(--panel); }
-.tools-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.tools-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; position: relative; }   /* к ней привязано окно «?» */
 .tools-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
 .tools-grid .btn { justify-content: center; }
 .tools-grid .wide { grid-column: 1 / -1; }
@@ -389,7 +398,7 @@ input.drug::placeholder { color: var(--muted); font-weight: 400; }
         <div class="tiltbar" id="tiltBar" role="alert" hidden><span id="tiltBarText"></span><button type="button" id="tiltBarX" aria-label="Скрыть предупреждение для этой чашки" title="Скрыть для этой чашки">×</button></div>
         <!-- лупа ×3, пока тянешь край: всегда в правом верхнем углу окна (уходит влево, только если точка под ней) -->
         <canvas class="loupe" id="loupe" width="360" height="360" hidden aria-hidden="true"></canvas>
-        <p class="hint" id="hint">Нажмите на зону, чтобы выбрать её. Shift + колёсико – лупа; приближенное фото двигается за пустое место. Правая кнопка мыши по зоне – удалить (вернуть – ↶).</p>
+        <p class="hint" id="hint"></p>
       </div>
       <!-- фото чашек – под окном разметки -->
       <div class="dishes" id="dishes" aria-label="Чашки"></div>
@@ -400,6 +409,20 @@ input.drug::placeholder { color: var(--muted); font-weight: 400; }
         <div class="tools-head">
           <h3>Инструменты</h3>
           <div class="row">
+            <span class="help">
+              <button class="btn icon" id="ctrlHelpBtn" type="button" aria-label="Управление" aria-describedby="helpTip">?</button>
+              <span class="help-tip" id="helpTip" role="tooltip">
+                <h4>Управление</h4>
+                <ul>
+                  <li>Нажмите на зону, чтобы выбрать её.</li>
+                  <li><kbd>Shift</kbd> + колёсико – лупа; приближенное фото двигается за пустое место.</li>
+                  <li>Правая кнопка мыши по зоне или <kbd>Delete</kbd> – удалить.</li>
+                  <li><kbd>Ctrl</kbd>+<kbd>Z</kbd> / ↶ – отменить, <kbd>Ctrl</kbd>+<kbd>Y</kbd> / ↷ – вернуть.</li>
+                  <li><kbd>←</kbd> <kbd>→</kbd> – предыдущее / следующее фото.</li>
+                  <li><kbd>Ctrl</kbd>+<kbd>S</kbd> – сохранить, <kbd>Esc</kbd> – отменить режим или выйти из «Во весь экран».</li>
+                </ul>
+              </span>
+            </span>
             <button class="btn icon" id="undoBtn" type="button" title="Отменить действие (Ctrl+Z)" aria-label="Отменить действие">↶</button>
             <button class="btn icon" id="redoBtn" type="button" title="Вернуть действие (Ctrl+Y)" aria-label="Вернуть действие">↷</button>
             <button class="btn icon" id="focusBtn" type="button" title="Во весь экран (выход – Esc)" aria-label="Во весь экран" aria-pressed="false">
@@ -1772,7 +1795,7 @@ function setMode(m) {
   $("hint").textContent =
     m === "add" ? "Нажмите в центр диска, вокруг которого нужна зона." :
     m === "calib" ? "Поставьте концы жёлтой линейки на отрезок известной длины (диск или деления настоящей линейки), введите длину и нажмите «Готово»." :
-    "Нажмите на зону, чтобы выбрать её. Shift + колёсико – лупа; приближенное фото двигается за пустое место. Правая кнопка мыши по зоне – удалить (вернуть – ↶).";
+    "";
 }
 
 // ----- рисование -----
@@ -2003,7 +2026,7 @@ function renderSide() {
   $("axisBtn").disabled = !it;
   setLabel("axisBtn", it && it.pts ? "Сделать кругом" : "Гибкий контур");
   $("roundBtn").disabled = !(it && it.pts);
-  if (P.mode === "idle") $("hint").textContent = !it ? "Нажмите на зону, чтобы выбрать её. Shift + колёсико – лупа; приближенное фото двигается за пустое место. Правая кнопка мыши по зоне – удалить (вернуть – ↶)." : it.pts
+  if (P.mode === "idle") $("hint").textContent = !it ? "" : it.pts
     ? "Тяните точку или край – контур прогнётся, как резинка. Тяните внутри – зона сдвинется. Отмена – ↶ или Ctrl+Z."
     : "Тяните за концы линейки, чтобы исправить диаметр. Для неровной зоны – «Гибкий контур». Отмена – ↶ или Ctrl+Z.";
   $("undoBtn").disabled = !(d && d._undo.length) && !P.trash.length;
