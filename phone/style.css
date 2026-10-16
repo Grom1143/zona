@@ -419,6 +419,9 @@ dialog.drugsheet[open] { display: grid; }
   .navbtn { top: calc(10px + var(--vh) / 2); }
   .navcount { top: calc(10px + var(--vh) - 34px); left: 18px; transform: none; }   /* слева: справа – кнопки */
   .tiltbar { top: calc(10px + var(--vh) / 2); }
+  /* предупреждение о наклоне: текст переносится на две строки, плашка – внутри окна, крестик всегда виден */
+  .tiltbar { white-space: normal; max-width: calc(100% - 40px); width: max-content; font-size: 14px; padding: 8px 6px 8px 12px; }
+  .tiltbar span { min-width: 0; }
   /* кнопки на фото: справа внизу, крупные, полупрозрачные – как стрелки ‹ › */
   .photo-tools { display: flex; gap: 6px; position: absolute; z-index: 5; right: 18px; top: calc(10px + var(--vh) - 56px); }
   .photo-tools button { width: 44px; height: 44px; border: 0; border-radius: 12px; background: rgba(10, 14, 17, .62); color: #fff;

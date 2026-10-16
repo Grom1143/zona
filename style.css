@@ -359,3 +359,8 @@ input.drug::placeholder { color: var(--muted); font-weight: 400; }
 .how li b { font-family: var(--font-display); }
 .how .note { color: var(--muted); font-size: 14px; max-width: 80ch; margin: 0; }
 @media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+/* узкий экран (телефон): предупреждение о наклоне переносится на две строки, крестик всегда виден */
+@media (max-width: 700px) {
+  .tiltbar { white-space: normal; max-width: calc(100% - 40px); width: max-content; font-size: 14px; padding: 8px 6px 8px 12px; }
+  .tiltbar span { min-width: 0; }
+}
