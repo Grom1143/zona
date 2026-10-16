@@ -417,7 +417,8 @@ dialog.drugsheet[open] { display: grid; }
   #xlsxBtn, #copyBtn, #resetBtn,   /* Excel, копирование, «Найти заново» – на компьютере */
   #generalBar, #breaksBox          /* настройка порогов S / I / R – на компьютере */
   { display: none !important; }
-  .tools-grid #calibBtn { grid-column: 1 / -1; }   /* осталась одна линейка – на всю ширину */
+  /* «Сохранить» и «Масштаб по линейке» – рядом, одной строкой, одинаковой высоты */
+  .tools-grid #saveBtn2, .tools-grid #calibBtn { grid-column: auto; min-height: 46px; padding: 8px 6px; white-space: normal; text-align: center; line-height: 1.15; }
   /* ↶ ↷ ⊕ 🗑 ⛶ теперь на фото – в инструментах их нет */
   #undoBtn, #redoBtn, #focusBtn, #addBtn, #delBtn { display: none; }
 
