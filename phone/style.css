@@ -398,14 +398,18 @@ dialog.drugsheet[open] { display: grid; }
   #sampleBtn,                      /* «Пример» – открывается сам, когда чашек нет */
   #snapEditBtn,                    /* снимок для отчёта – его заменяет «Отправить таблицу» */
   .tools-grid .zoombar,            /* лупа кнопками – на телефоне двумя пальцами */
-  #roundBtn,                       /* «Скруглить» – редко нужно */
   #toolsToggle,                    /* свернуть инструменты в иконки – их и так мало */
   #scale,                          /* «Масштаб: 1 мм = 9,4 px» – служебное */
   .projbar,                        /* «Выбрать и удалить…» – удалить можно крестиком на чашке */
   #xlsxBtn, #copyBtn, #resetBtn,   /* Excel, копирование, «Найти заново» – на компьютере */
   #generalBar, #breaksBox          /* настройка порогов S / I / R – на компьютере */
   { display: none !important; }
-  .tools-grid #axisBtn { grid-column: 1 / -1; }   /* «Гибкий контур» – на всю ширину, раз «Скруглить» спрятан */
+  /* «Гибкий контур · Скруглить · Масштаб по линейке» – одним рядом, значок сверху, подпись снизу */
+  .tools .tools-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .tools-grid #saveBtn2 { grid-column: 1 / -1; }
+  .tools-grid #axisBtn, .tools-grid #roundBtn, .tools-grid #calibBtn { grid-column: auto; flex-direction: column; gap: 4px; padding: 8px 4px;
+    white-space: normal; text-align: center; line-height: 1.15; font-size: 13px; }
+  .tools-grid #axisBtn svg, .tools-grid #roundBtn svg, .tools-grid #calibBtn svg { width: 22px; height: 22px; }
   /* ↶ ↷ ⊕ 🗑 ⛶ теперь на фото – в инструментах их нет */
   #undoBtn, #redoBtn, #focusBtn, #addBtn, #delBtn { display: none; }
 
