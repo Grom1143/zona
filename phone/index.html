@@ -1,0 +1,318 @@
+<!doctype html>
+<html lang="ru">
+<!-- кодировка и масштаб на телефоне: на claude.ai их добавляла платформа, на GitHub Pages и localhost – нужны свои -->
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>МикроТест Вижн – диско-диффузионный метод</title>
+<link rel="icon" type="image/png" href="favicon.png">
+<link rel="apple-touch-icon" href="logo.png">
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Onest:wght@400;500;700&family=JetBrains+Mono:wght@400;600&display=swap">
+<!-- SheetJS 0.20.3 лежит рядом с сайтом: Excel работает и без интернета -->
+<script async src="vendor/xlsx.full.min.js"></script>
+<!-- тема ставится до показа страницы, чтобы она не мигала другой темой -->
+<script>try { const t = localStorage.getItem("zona-theme"); if (t === "light" || t === "dark") document.documentElement.dataset.theme = t; } catch {}</script>
+<link rel="stylesheet" href="style.css">
+
+<div class="wrap">
+  <header>
+    <img class="brand-logo" src="logo.png" alt="" width="128" height="128">
+    <div class="title-row">
+      <h1>МикроТест Вижн <small>диско-диффузионный метод</small></h1>
+      <button class="help-btn" id="helpBtn" type="button" title="Как это работает" aria-label="Справка: как это работает" aria-haspopup="dialog">?</button>
+      <button class="help-btn theme-btn" id="themeBtn" type="button"></button>
+    </div>
+    <p>Загрузите фото чашек Петри – программа найдёт диски и измерит зоны подавления. Неверную границу поправьте вручную.</p>
+    <p class="disclaimer">Учебный инструмент, не для клинической диагностики: результат проверяет человек.</p>
+  </header>
+
+  <div class="toolbar">
+    <input type="file" id="file" accept="image/*" multiple>
+    <label class="btn primary" for="file" id="uploadBtn" tabindex="0" title="Выбрать файлы. Можно и перетащить фото на окно или вставить из буфера обмена – Ctrl+V">Загрузить фото</label>
+    <button class="btn" id="sampleBtn" type="button">Пример</button>
+    <span class="spacer"></span>
+    <span class="savestate" id="saveState" aria-live="polite"></span>
+  </div>
+
+  <div class="main">
+    <div class="left">
+      <div class="stage" id="stage">
+        <div class="view" id="view"><canvas id="cv" width="900" height="900"></canvas></div>
+        <canvas class="ov" id="ov" aria-hidden="true"></canvas>
+        <!-- переключение между фото: стрелки по краям окна и клавиши ← → -->
+        <button class="navbtn prev" id="prevDish" type="button" aria-label="Предыдущее фото (←)" title="Предыдущее фото (←)" hidden>‹</button>
+        <button class="navbtn next" id="nextDish" type="button" aria-label="Следующее фото (→)" title="Следующее фото (→)" hidden>›</button>
+        <span class="navcount" id="navCount" hidden></span>
+        <!-- фото под углом: крупное красное предупреждение прямо над фото -->
+        <div class="tiltbar" id="tiltBar" role="alert" hidden><span id="tiltBarText"></span><button type="button" id="tiltBarX" aria-label="Скрыть предупреждение для этой чашки" title="Скрыть для этой чашки">×</button></div>
+        <!-- лупа ×3, пока тянешь край: всегда в правом верхнем углу окна (уходит влево, только если точка под ней) -->
+        <canvas class="loupe" id="loupe" width="360" height="360" hidden aria-hidden="true"></canvas>
+        <p class="hint" id="hint"></p>
+      </div>
+      <!-- фото чашек – под окном разметки -->
+      <div class="dishes" id="dishes" aria-label="Чашки"></div>
+    </div>
+    <aside>
+      <!-- инструменты быстрого доступа: справа от фото, на компьютере не уезжают при прокрутке -->
+      <section class="tools" aria-label="Инструменты">
+        <div class="tools-head">
+          <h3>Инструменты</h3>
+          <div class="row">
+            <span class="help">
+              <button class="btn icon" id="ctrlHelpBtn" type="button" aria-label="Управление и клавиши" aria-describedby="helpTip">
+                <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="2" y="6" width="20" height="12" rx="2"/><path d="M6 10h.01M10 10h.01M14 10h.01M18 10h.01M7 14h10"/></svg>
+              </button>
+              <span class="help-tip" id="helpTip" role="tooltip">
+                <h4>Управление</h4>
+                <ul>
+                  <li>Нажмите на зону, чтобы выбрать её; приближенное фото двигается за пустое место.</li>
+                  <li><kbd>A</kbd> – добавить зону, <kbd>Del</kbd> или правая кнопка мыши – удалить.</li>
+                  <li><kbd>C</kbd> – гибкий контур / снова круг, <kbd>R</kbd> – скруглить.</li>
+                  <li><kbd>L</kbd> – масштаб по линейке, <kbd>P</kbd> – снимок для отчёта.</li>
+                  <li><kbd>+</kbd> <kbd>−</kbd> – лупа, <kbd>0</kbd> – всё фото целиком; <kbd>Shift</kbd> + колёсико – лупа к точке.</li>
+                  <li><kbd>Ctrl</kbd>+<kbd>Z</kbd> – отменить, <kbd>Ctrl</kbd>+<kbd>Y</kbd> – вернуть, <kbd>Ctrl</kbd>+<kbd>S</kbd> – сохранить.</li>
+                  <li><kbd>←</kbd> <kbd>→</kbd> – другое фото, <kbd>F</kbd> – во весь экран, <kbd>T</kbd> – свернуть инструменты, <kbd>Esc</kbd> – отменить режим.</li>
+                  <li>Буквы работают и в русской раскладке.</li>
+                  <li><b>Граница зоны – середина цветной линии.</b> Ставьте её на край, где рост исчезает полностью.</li>
+                </ul>
+              </span>
+            </span>
+            <button class="btn icon" id="undoBtn" type="button" title="Отменить действие (Ctrl+Z)" aria-label="Отменить действие">↶</button>
+            <button class="btn icon" id="redoBtn" type="button" title="Вернуть действие (Ctrl+Y)" aria-label="Вернуть действие">↷</button>
+            <button class="btn icon" id="focusBtn" type="button" aria-keyshortcuts="F" title="Во весь экран (F, выход – Esc)" aria-label="Во весь экран" aria-pressed="false">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/></svg>
+            </button>
+            <button class="btn icon fold" id="toolsToggle" type="button" aria-keyshortcuts="T" title="Свернуть инструменты в иконки (T)" aria-expanded="true" aria-label="Свернуть инструменты">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 15l6-6 6 6"/></svg>
+            </button>
+          </div>
+        </div>
+        <!-- у каждой кнопки иконка и подпись; в свёрнутом виде остаются только иконки -->
+        <div class="tools-grid">
+          <!-- ↶ ещё раз – только на телефоне: там эта сетка становится панелью внизу экрана -->
+          <button class="btn icon mob-only" id="undoBtn2" type="button" title="Отменить" aria-label="Отменить действие">↶</button>
+          <button class="btn save wide" id="saveBtn2" type="button" data-hk="Ctrl+S" aria-keyshortcuts="Control+S" title="Сохранить все чашки в этом браузере (Ctrl+S)">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 3h11l3 3v15H5z"/><path d="M8 3v5h7V3M8 21v-7h8v7"/></svg><span class="lbl">Сохранить</span><kbd class="key">Ctrl+S</kbd></button>
+          <button class="btn wide" id="snapEditBtn" type="button" data-hk="P" aria-keyshortcuts="P" title="Снимок окна разметки для презентаций и отчётов: обрезка, яркость, контраст; сохранить PNG или скопировать (P)" disabled>
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5"/></svg><span class="lbl">Снимок для отчёта</span><span class="lbl-short">Снимок</span><kbd class="key">P</kbd></button>
+          <button class="btn" id="addBtn" type="button" data-hk="A" aria-keyshortcuts="A" title="Добавить зону (A)">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8"/><path d="M12 8v8M8 12h8"/></svg><span class="lbl">Добавить зону</span><kbd class="key">A</kbd></button>
+          <button class="btn" id="delBtn" type="button" disabled data-hk="Del" aria-keyshortcuts="Delete" title="Удалить зону (Delete, правая кнопка мыши)">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M10 7V4h4v3M6 7l1 13h10l1-13"/></svg><span class="lbl">Удалить зону</span><kbd class="key">Del</kbd></button>
+          <button class="btn" id="axisBtn" type="button" disabled data-hk="C" aria-keyshortcuts="C" title="Гибкий контур: для зоны неправильной формы. Нажмите ещё раз – снова круг (C)">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4c5 0 8.5 3 7.5 8s-4 8-8.5 7.5S4 16 4 12s3-8 8-8z"/><circle cx="12" cy="4" r="1.6"/><circle cx="19.5" cy="12" r="1.6"/><circle cx="4" cy="12" r="1.6"/></svg><span class="lbl">Гибкий контур</span><kbd class="key">C</kbd></button>
+          <button class="btn" id="roundBtn" type="button" disabled data-hk="R" aria-keyshortcuts="R" title="Скруглить: гибкий контур – ровным кругом того же диаметра, точки остаются (R)">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8"/></svg><span class="lbl">Скруглить</span><kbd class="key">R</kbd></button>
+          <button class="btn wide" id="calibBtn" type="button" data-hk="L" aria-keyshortcuts="L" title="Масштаб по линейке (L)">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="8" width="18" height="8" rx="1"/><path d="M7 8v3M11 8v4M15 8v3M19 8v2"/></svg><span class="lbl">Масштаб по линейке</span><kbd class="key">L</kbd></button>
+          <label class="field wide" for="calibMm" id="calibField" hidden>Длина отрезка, мм <input type="number" id="calibMm" value="6" min="0.5" max="200" step="0.1"></label>
+          <div class="zoombar wide" title="Shift + колёсико мыши над фото тоже приближает">
+            <span class="lbl">Лупа</span>
+            <button class="btn icon" id="zoomMinus" type="button" aria-label="Отдалить" aria-keyshortcuts="-" title="Отдалить (−)" disabled>−</button>
+            <output id="zoomOut" aria-live="polite">100 %</output>
+            <button class="btn icon" id="zoomPlus" type="button" aria-label="Приблизить" aria-keyshortcuts="+" title="Приблизить (+)">+</button>
+            <button class="btn" id="zoomFit" type="button" aria-keyshortcuts="0" title="Показать всё фото целиком – убрать приближение (0)" disabled>
+              <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="2"/><circle cx="9" cy="10" r="1.6"/><path d="M4 18l5-5 4 4 3-3 4 4"/></svg><span class="lbl">Всё фото</span><kbd class="key">0</kbd></button>
+          </div>
+        </div>
+        <!-- видимость разметки и цвета фото: прячутся треугольником слева -->
+        <button class="lookfold" id="lookFold" type="button" aria-expanded="true" aria-controls="lookBox" title="Скрыть / показать видимость разметки и цвета фото">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5l10 7-10 7z"/></svg><span>Видимость и цвета</span></button>
+        <div class="lookbox" id="lookBox">
+          <label class="field" for="alpha">Видимость разметки, % <input type="range" id="alpha" title="Вправо – ярче, влево – бледнее; 0 % – разметка скрыта, видно только фото" min="0" max="100" step="1" value="100"><input type="text" inputmode="decimal" class="num" id="alphaOut" value="100" aria-label="Значение числом" autocomplete="off"></label>
+          <label class="field" for="lkBright" title="Только для просмотра: на поиск зон и измерения не влияет. Двойной клик – вернуть 0">Яркость <input type="range" id="lkBright" min="-100" max="100" step="1" value="0"><input type="text" inputmode="decimal" class="num" id="lkBrightOut" value="0" aria-label="Значение числом" autocomplete="off"></label>
+          <label class="field" for="lkContrast" title="Только для просмотра: на поиск зон и измерения не влияет. Двойной клик – вернуть 0">Контраст <input type="range" id="lkContrast" min="-100" max="100" step="1" value="0"><input type="text" inputmode="decimal" class="num" id="lkContrastOut" value="0" aria-label="Значение числом" autocomplete="off"></label>
+          <label class="field" for="lkSat" title="Только для просмотра: на поиск зон и измерения не влияет. Двойной клик – вернуть 0">Насыщенность <input type="range" id="lkSat" min="-100" max="100" step="1" value="0"><input type="text" inputmode="decimal" class="num" id="lkSatOut" value="0" aria-label="Значение числом" autocomplete="off"></label>
+          <div class="field"><span class="lookhint">Только для просмотра, на измерения не влияют</span><button class="btn" id="lkReset" type="button" disabled>Сбросить</button></div>
+        </div>
+      </section>
+      <details class="meta" id="metaBox" open>
+        <summary>Чашка <span id="metaTitle"></span></summary>
+        <div class="meta-grid">
+          <label class="f full" for="mName">Название / № чашки <input id="mName" type="text" autocomplete="off"></label>
+          <label class="f" for="mDate">Дата учёта <input id="mDate" type="date"></label>
+          <label class="f" for="mGroup">Группа
+            <select id="mGroup"><option value="опыт">Опыт</option><option value="контроль">Контроль</option></select>
+          </label>
+          <label class="f" for="mMedium">Питательная среда <input id="mMedium" type="text" list="mediaList" placeholder="Мюллер-Хинтон" autocomplete="off"></label>
+          <label class="f" for="mDishMm">Диаметр чашки, мм <input id="mDishMm" type="number" list="dishList" min="30" max="200" step="1" placeholder="90" autocomplete="off"></label>
+          <label class="f" for="mCulture">Культура <input id="mCulture" type="text" placeholder="S. aureus ATCC 25923" autocomplete="off"></label>
+          <label class="f" for="diskMm" title="Обычно 6 мм – по нему считается масштаб">Диаметр диска, мм <input type="number" id="diskMm" value="6" min="1" max="20" step="0.1"></label>
+          <label class="f full" for="mOrg">Микроорганизм – для категорий S / I / R
+            <select id="mOrg">
+              <option value="">– не выбран (только свои пороги) –</option>
+              <option value="entero">Enterobacterales (E. coli, Klebsiella, Proteus…)</option>
+              <option value="saureus">Staphylococcus aureus</option>
+              <option value="cons">Коагулазонегативные стафилококки</option>
+              <option value="paer">Pseudomonas aeruginosa</option>
+              <option value="entc">Enterococcus spp.</option>
+            </select>
+          </label>
+          <label class="f full" for="mPerson">Ответственный (кто проводил учёт) <input id="mPerson" type="text" autocomplete="name"></label>
+        </div>
+      </details>
+      <div class="scale" id="scale"></div>
+      <div class="zoom" id="zoomBox" hidden>
+        <canvas id="zoomCv" width="264" height="264" aria-label="Выбранный диск крупно"></canvas>
+        <div>
+          <p id="zoomTitle"></p>
+          <label class="f" for="zoomDrug">Препарат (надпись на диске) <input id="zoomDrug" type="text" list="drugList" placeholder="например, CIP" autocomplete="off"></label>
+        </div>
+      </div>
+      <div class="msg" id="msg" aria-live="polite">
+        <div class="msg-head"><b id="msgTitle"></b><button class="msg-fold" id="msgFold" type="button" aria-expanded="true" aria-controls="msgList" title="Свернуть подсказки">−</button></div>
+        <ul id="msgList"><li>Загружаю…</li></ul>
+      </div>
+      <div class="ask" id="check" hidden>
+        <p id="checkText"></p>
+        <div class="row"><button class="btn primary" id="checkYes" type="button">Да, зоны нет</button><button class="btn" id="checkMark" type="button">Разметить зону вручную</button></div>
+      </div>
+    </aside>
+  </div>
+
+  <!-- файл проекта: между чашками и таблицей -->
+  <div class="toolbar projbar">
+    <button class="btn" id="projSaveBtn" type="button" title="Файл со всеми фото и разметкой, чтобы перенести на другой компьютер">Скачать проект</button>
+    <input type="file" id="projFile" accept=".json,application/json">
+    <label class="btn" for="projFile" id="projOpenBtn" tabindex="0">Открыть проект</label>
+    <button class="btn" id="delPickBtn" type="button" title="Отметить галочками, какие чашки удалить" disabled>Выбрать и удалить…</button>
+  </div>
+
+  <section class="results">
+    <div class="results-head">
+      <h2>Измерения</h2>
+      <div class="row">
+        <button class="btn primary" id="xlsxBtn" type="button">Скачать Excel</button>
+        <button class="btn" id="copyBtn" type="button">Копировать таблицу</button>
+        <button class="btn" id="resetBtn" type="button">Найти заново</button>
+      </div>
+    </div>
+    <div class="tablewrap" id="tableBox"></div>
+    <!-- главное правило категорий: по размеру зоны, для всех зон -->
+    <div class="general" id="generalBar">
+      <label class="gchk"><input type="checkbox" id="gOn" checked> Категория по размеру зоны:</label>
+      <label>S, если зона ≥ <input type="number" id="gS" value="22" min="1" max="60" step="1" aria-label="S, если зона не меньше, мм"> мм</label>
+      <label>R, если зона &lt; <input type="number" id="gR" value="19" min="1" max="60" step="1" aria-label="R, если зона меньше, мм"> мм</label>
+      <span class="gnote">между – I. Зона округляется до целого мм.</span>
+    </div>
+    <!-- пороги S / I / R: свои для каждого препарата (и культуры), берутся из актуальной таблицы EUCAST -->
+    <details class="breaks" id="breaksBox">
+      <summary>Свои пороги S / I / R <span id="breaksCount"></span></summary>
+      <p class="note">Обычно пороги подставляются сами: выберите микроорганизм в паспорте чашки (таблицы «Российских рекомендаций», МАКМАХ 2024-02, по EUCAST; зона округляется до 1 мм). Здесь – свои пороги для препаратов, которых нет в таблице, или если нужно другое значение; свои пороги важнее табличных. Зона ≥ «S, если» – <b>S</b>, чувствительный (стандартная доза); между порогами – <b>I</b>, чувствительный при повышенной экспозиции; зона &lt; «R, если» – <b>R</b>, резистентный. Если пороги равны, категории I нет. Название препарата – как в колонке «Препарат».</p>
+      <div class="tablewrap" id="breaksTable"></div>
+      <div class="row">
+        <button class="btn" id="breakAdd" type="button">Добавить препарат</button>
+        <button class="btn" id="breakFromDishes" type="button">Добавить препараты из чашек</button>
+      </div>
+    </details>
+  </section>
+
+  <datalist id="dishList"><option value="35"></option><option value="60"></option><option value="90"></option><option value="100"></option><option value="120"></option><option value="150"></option></datalist>
+  <datalist id="mediaList">
+    <option value="Мюллер-Хинтон"></option><option value="Мюллер-Хинтон с кровью"></option>
+    <option value="МПА"></option><option value="Кровяной агар"></option><option value="Сабуро"></option>
+  </datalist>
+  <datalist id="drugList">
+    <option value="AMP">ампициллин</option><option value="AMC">амоксициллин/клавуланат</option>
+    <option value="AZM">азитромицин</option><option value="CAZ">цефтазидим</option>
+    <option value="CIP">ципрофлоксацин</option><option value="CN">гентамицин</option>
+    <option value="CRO">цефтриаксон</option><option value="CTX">цефотаксим</option>
+    <option value="C">хлорамфеникол</option><option value="E">эритромицин</option>
+    <option value="FOX">цефокситин</option><option value="IPM">имипенем</option>
+    <option value="LEV">левофлоксацин</option><option value="LZD">линезолид</option>
+    <option value="MEM">меропенем</option><option value="OX">оксациллин</option>
+    <option value="P">пенициллин</option><option value="SXT">ко-тримоксазол</option>
+    <option value="TE">тетрациклин</option><option value="VA">ванкомицин</option>
+    <option value="AK">амикацин</option><option value="TOB">тобрамицин</option>
+    <option value="TZP">пиперациллин-тазобактам</option><option value="FEP">цефепим</option>
+    <option value="ETP">эртапенем</option><option value="ATM">азтреонам</option>
+    <option value="MXF">моксифлоксацин</option><option value="OFX">офлоксацин</option>
+    <option value="DA">клиндамицин</option><option value="TEC">тейкопланин</option>
+    <option value="RD">рифампицин</option><option value="FD">фузидовая кислота</option>
+    <option value="TGC">тигециклин</option>
+    <option value="АМП">ампициллин</option><option value="ПЕН">бензилпенициллин</option>
+    <option value="ОКС">оксациллин</option><option value="ЦИП">ципрофлоксацин</option>
+    <option value="ГЕН">гентамицин</option><option value="ВАН">ванкомицин</option>
+    <option value="ЭРИ">эритромицин</option><option value="ТЕТ">тетрациклин</option>
+  </datalist>
+
+  <!-- обрезка фото сразу после выбора файла -->
+  <dialog class="how crop" id="cropBox" aria-labelledby="cropTitle">
+    <div class="how-head">
+      <h2 id="cropTitle">Обрезка фото</h2>
+      <span class="crop-info" id="cropInfo"></span>
+    </div>
+    <div class="crop-stage"><canvas id="cropCv" aria-label="Фото с рамкой обрезки"></canvas></div>
+    <p class="crop-hint">Тяните углы или стороны рамки, чтобы оставить только чашку. Внутри рамки – сдвиг. Лишнее затемнено.</p>
+    <div class="row">
+      <button class="btn primary" id="cropOk" type="button">Обрезать</button>
+      <button class="btn" id="cropFull" type="button">Без обрезки</button>
+      <button class="btn" id="cropAll" type="button">Без обрезки для всех</button>
+      <button class="btn" id="cropSkip" type="button">Не добавлять это фото</button>
+    </div>
+  </dialog>
+
+  <!-- редактор снимка: обрезка, яркость, контраст, насыщенность -->
+  <dialog class="how crop" id="editBox" aria-labelledby="editTitle">
+    <div class="how-head">
+      <h2 id="editTitle">Редактор снимка</h2>
+      <span class="crop-info" id="editInfo"></span>
+    </div>
+    <div class="crop-stage"><canvas id="editCv" aria-label="Снимок с рамкой обрезки"></canvas></div>
+    <div class="edit-ctl">
+      <label for="edBright">Яркость <input type="range" id="edBright" min="-100" max="100" step="1" value="0"><input type="text" inputmode="decimal" class="num" id="edBrightOut" value="0" aria-label="Значение числом" autocomplete="off"></label>
+      <label for="edContrast">Контраст <input type="range" id="edContrast" min="-100" max="100" step="1" value="0"><input type="text" inputmode="decimal" class="num" id="edContrastOut" value="0" aria-label="Значение числом" autocomplete="off"></label>
+      <label for="edSat">Насыщенность <input type="range" id="edSat" min="-100" max="100" step="1" value="0"><input type="text" inputmode="decimal" class="num" id="edSatOut" value="0" aria-label="Значение числом" autocomplete="off"></label>
+    </div>
+    <p class="crop-hint">Обрезка: потяните по снимку новую рамку, углы и стороны – изменить, внутри – сдвинуть. Двойной клик по ползунку – вернуть 0.</p>
+    <div class="row">
+      <button class="btn primary" id="editSave" type="button">Сохранить PNG</button>
+      <button class="btn" id="editCopy" type="button" title="В буфер обмена – вставить Ctrl+V в презентацию, документ или чат">Скопировать</button>
+      <button class="btn" id="editReset" type="button">Сбросить всё</button>
+      <button class="btn" id="editCancel" type="button">Отмена</button>
+    </div>
+  </dialog>
+
+  <!-- выбор чашек для удаления галочками -->
+  <dialog class="how" id="pickBox" aria-labelledby="pickTitle">
+    <div class="how-head">
+      <h2 id="pickTitle">Какие чашки удалить?</h2>
+      <button class="btn icon" id="pickClose" type="button" aria-label="Закрыть">×</button>
+    </div>
+    <div class="row">
+      <button class="btn" id="pickAll" type="button">Отметить все</button>
+      <button class="btn" id="pickNone" type="button">Снять все</button>
+    </div>
+    <div class="pick-grid" id="pickGrid"></div>
+    <p class="crop-hint">Вернуть удалённые можно стрелкой ↶ (Ctrl+Z) до перезагрузки страницы.</p>
+    <div class="row">
+      <button class="btn danger" id="pickDel" type="button" disabled>Удалить выбранные</button>
+      <button class="btn" id="pickCancel" type="button">Отмена</button>
+    </div>
+  </dialog>
+
+  <dialog class="how" id="helpBox" aria-labelledby="helpTitle">
+    <div class="how-head">
+      <h2 id="helpTitle">Как это работает</h2>
+      <button class="btn icon" id="helpClose" type="button" aria-label="Закрыть справку">×</button>
+    </div>
+    <ol>
+      <li><b>Масштаб по дискам.</b> Бумажный диск с антибиотиком стандартный, 6 мм. Программа ищет белые пятна без цветового оттенка, круглые и одного размера. Надписи на дисках закрашиваются «закрытием»: белая область сначала расширяется, потом сужается обратно. Диаметр дисков в пикселях даёт масштаб; дисков несколько, поэтому берётся медиана. Размер самой чашки не нужен: подойдёт чашка любого диаметра.</li>
+      <li><b>Лучи от центра диска.</b> От каждого диска проводится 96 лучей. Вдоль луча записывается самый тёмный из каналов R, G, B: у жёлтого газона мало синего, у прозрачной зоны больше. Тень под диском пропускается. Край зоны – место, где значение переходит середину между уровнем зоны у диска и уровнем газона по всей чашке.</li>
+      <li><b>Отсев выбросов.</b> Луч может уйти в соседнюю зону или упереться в блик. Радиус берётся по самой плотной группе лучей с почти одинаковым краем (±7 %). Если зона почти не отличается от газона, она помечается «нет зоны?», и человек подтверждает это или размечает зону сам. Если внутри зоны пятнистый рост, как от отдельных колоний, зона тоже помечается «проверить?»: по правилам её меряют по внутреннему краю, а если колонии доходят до диска – зоны нет.</li>
+      <li><b>Как мерить.</b> Граница зоны – <b>середина</b> цветной линии разметки (не внутренний и не внешний её край); концы линейки – центры кружков. Ставьте линию на край <b>полного</b> подавления роста, видимый глазом: где газон исчезает совсем. Мелкие колонии внутри зоны – мерить по внутреннему краю, до колоний; двойная зона – тоже по внутреннему краю. Едва заметный рост у края, видимый только с лупой, не учитывают; особые правила для отдельных препаратов (например, ко-тримоксазола) – в рекомендациях. Для точности приблизьте фото (Shift + колёсико, на телефоне – двумя пальцами): толщина линии не зависит от приближения, поэтому чем крупнее фото, тем точнее.</li>
+      <li><b>Проверка человеком.</b> Обычная зона – круг: выберите её и тяните концы линейки к краям зоны; при этом в углу появляется лупа ×3. Деления на линейке – миллиметры. Для зоны неправильной формы нажмите «Гибкий контур»: появится линия через 12 точек, уже поставленных на найденный край. Тяните любую точку или сам край – контур прогибается, соседние точки немного идут следом; тяните внутри – зона сдвигается. Диаметр такой зоны – диаметр круга той же площади; в таблице мелко показан самый узкий и самый широкий размер. «Сделать кругом» возвращает линейку. Любое действие можно отменить стрелкой ↶ – в том числе правку текста и удаление чашки. Правки (последние 50 на чашку) можно отменять и после перезагрузки страницы; удалённую чашку – только до перезагрузки.</li>
+      <li><b>Калибровка вручную.</b> Если диски не найдены или на фото лежит линейка, нажмите «Масштаб по линейке», поставьте концы жёлтой линейки на отрезок известной длины (диск или деления настоящей линейки), введите его длину в миллиметрах и нажмите «Готово».</li>
+    </ol>
+    <p class="note">Почему диск может показать 5,9 мм вместо 6,0: масштаб – это медиана по всем дискам, а каждый диск ещё раз измеряется отдельно. Если на фото он вышел на 1–2 пикселя меньше остальных (наклон, тень, размытый край), получается 5,9. Это погрешность около 0,1 мм; зоны принято записывать с точностью до 1 мм.</p>
+    <p class="note">Если диски на фото заметно вытянуты, программа предупреждает: скорее всего, фото снято под углом, и размеры в разных направлениях отличаются. Лучше переснять строго сверху.</p>
+    <p class="note">Сохранение: работа сама сохраняется в этом браузере на этом компьютере через пару секунд после каждого изменения (кнопка «Сохранить» и Ctrl+S – сразу). Чтобы перенести работу или сделать резервную копию, нажмите «Скачать проект», а на другом компьютере – «Открыть проект». Фото никуда не отправляются. Ограничения: фото сверху, без сильных бликов. Это исследовательский и учебный инструмент, не для клинической диагностики. Категория S / I / R (Ч / У / Р) ставится по таблицам «Российских рекомендаций. Определение чувствительности микроорганизмов к антимикробным препаратам», версия 2024-02 (МАКМАХ, по EUCAST), для микроорганизма из паспорта чашки; зона сравнивается с порогом с точностью до 1 мм; попадание в ЗТН (зону технической неопределённости) отмечается. Таблицы пересматриваются ежегодно – сверяйте с актуальной версией. Нейросеть не используется, только обработка изображения.</p>
+  </dialog>
+</div>
+
+<!-- анализ изображения (без интерфейса) и интерфейс – в отдельных файлах -->
+<script src="analysis.js" charset="utf-8"></script>
+
+<script src="app.js" charset="utf-8"></script>
