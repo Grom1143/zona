@@ -1854,22 +1854,45 @@ function csvBlob() {
   const cell = v => { const t = typeof v === "number" ? String(v).replace(".", ",") : String(v ?? ""); return /[;"\n]/.test(t) ? `"${t.replace(/"/g, '""')}"` : t; };
   return new Blob(["\ufeff" + tableRows().map(r => r.map(cell).join(";")).join("\r\n")], { type: "text/csv" });
 }
+// Таблица обычным текстом – для сообщения в мессенджер, когда файлом поделиться нельзя
+function tableText() {
+  const lines = [`Измерения зон подавления, ${today().split("-").reverse().join(".")}`];
+  for (const d of P.dishes.filter(d => d.items.length)) {
+    const m = d.meta, mpp = mmPerPx(d), org = BREAKPOINTS[m.org];
+    lines.push("", [d.name, m.date && m.date.split("-").reverse().join("."), m.culture || (org && org.name)].filter(Boolean).join(" · "));
+    d.items.forEach((it, i) => {
+      const c = categoryOf(it, d);
+      lines.push(`${i + 1}. ${it.drug || "–"} — ${mpp ? fmt(diamPx(it) * mpp) + " мм" : "–"}` + (c ? ` — ${c.cat}${c.atu ? " (ЗТН)" : ""}` : "") + (needsCheck(it) ? " — проверить" : ""));
+    });
+  }
+  return lines.join("\n");
+}
+// «Поделиться»: без скачивания, если хоть как-то можно. Порядок: файл Excel → файл CSV → таблица текстом в сообщение →
+// таблица в буфер обмена (вставить в чат) → и только если не вышло ничего – скачать файл.
+// «Поделиться» вызывается один раз: браузер разрешает его только сразу после нажатия на кнопку
 async function shareXlsx() {
   if (!P.dishes.length) return setMsg("Нет чашек для таблицы.", true);
-  if (!window.XLSX) return setMsg("Не загрузилась библиотека для Excel – проверьте интернет и обновите страницу.", true);
   const t = new Date(), stamp = `${today().split("-").reverse().join(".")} ${[t.getHours(), t.getMinutes()].map(v => String(v).padStart(2, "0")).join("-")}`;
   const base = `Зоны ингибирования ${stamp}`, unchecked = P.dishes.reduce((n, d) => n + d.items.filter(needsCheck).length, 0);
-  const note = unchecked ? ` Не проверено зон: ${unchecked} – они помечены в таблице.` : "";
-  const xlsx = new File([xlsxBlob()], base + ".xlsx", { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" });
+  const note = unchecked ? ` Не проверено зон: ${unchecked} – они помечены.` : "";
+  const xlsx = window.XLSX ? new File([xlsxBlob()], base + ".xlsx", { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" }) : null;
   const csv = new File([csvBlob()], base + ".csv", { type: "text/csv" });
-  for (const [file, kind] of [[xlsx, "Excel"], [csv, "CSV (открывается в Excel)"]]) {
-    if (!(navigator.canShare && navigator.canShare({ files: [file] }))) continue;
+  const text = tableText(), title = "Измерения зон подавления";
+  const can = data => { try { return !!(navigator.canShare && navigator.canShare(data)); } catch { return false; } };
+  const plan = [xlsx && [{ files: [xlsx], title }, "файл Excel"], [{ files: [csv], title }, "файл CSV (открывается в Excel)"], [{ title, text }, "текстом"]]
+    .filter(Boolean).find(([data]) => can(data)) || (navigator.share ? [{ title, text }, "текстом"] : null);
+  if (plan) {
     try {
-      await navigator.share({ files: [file], title: "Измерения зон подавления" });
-      return setMsg(`Таблица отправлена: ${kind}.` + note, !!unchecked);
+      await navigator.share(plan[0]);
+      return setMsg(`Таблица отправлена ${plan[1]}.` + note, !!unchecked);
     } catch (e) { if (e && e.name === "AbortError") return; }
   }
-  if (await saveFile(xlsx.name, xlsx)) setMsg(`Поделиться файлом этот браузер не даёт – таблица Excel скачана: ${xlsx.name}.` + note, !!unchecked);
+  try {
+    await navigator.clipboard.writeText(text);
+    return setMsg("Поделиться отсюда браузер не даёт – таблица скопирована: откройте чат и вставьте (долгое нажатие → «Вставить»)." + note, !!unchecked);
+  } catch {}
+  const f = xlsx || csv;
+  if (await saveFile(f.name, f)) setMsg(`Поделиться и скопировать браузер не даёт – таблица скачана: ${f.name}.` + note, !!unchecked);
 }
 $("shareXlsxBtn").addEventListener("click", shareXlsx);
 
