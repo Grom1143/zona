@@ -1649,9 +1649,10 @@ function setLabel(id, text) {
   b.setAttribute("aria-label", text); b.title = text;
 }
 // Свернуть / развернуть инструменты; выбор запоминается в этом браузере
-function foldTools(on) {
+function foldTools(on, restoring) {
   document.querySelector(".tools").classList.toggle("folded", on);
-  if (on && typeof foldLook === "function") foldLook(true);   // «Видимость и цвета» в мини-режиме свёрнута, но не спрятана
+  // при сворачивании кнопкой «Видимость и цвета» тоже сворачивается (но не прячется); при загрузке страницы — как было
+  if (on && !restoring && typeof foldLook === "function") foldLook(true);
   const t = $("toolsToggle"), text = on ? "Развернуть инструменты" : "Свернуть инструменты в иконки";
   t.setAttribute("aria-expanded", String(!on)); t.setAttribute("aria-label", text); t.title = text;
   try { localStorage.setItem("zona-tools-folded", on ? "1" : "0"); } catch {}
@@ -1679,7 +1680,10 @@ document.addEventListener("fullscreenchange", () => {
   else requestAnimationFrame(() => { fitCanvas(); draw(); });
 });
 $("toolsToggle").addEventListener("click", () => foldTools(!document.querySelector(".tools").classList.contains("folded")));
-try { if (localStorage.getItem("zona-tools-folded") === "1") foldTools(true); } catch {}
+try { if (localStorage.getItem("zona-tools-folded") === "1") foldTools(true, true); } catch {}
+// «Чашка» (паспорт) свёрнута или развёрнута — запоминается в браузере
+try { if (localStorage.getItem("zona-meta-open") === "0") $("metaBox").open = false; } catch {}
+$("metaBox").addEventListener("toggle", () => { try { localStorage.setItem("zona-meta-open", $("metaBox").open ? "1" : "0"); } catch {} });
 // треугольник «Видимость и цвета»: свернуть / развернуть, выбор запоминается в браузере
 function foldLook(shut) {
   $("lookBox").classList.toggle("shut", shut);
