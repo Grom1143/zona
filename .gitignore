@@ -7,3 +7,6 @@ Tests/
 *.heic
 *.json
 *.xlsx
+# кроме логотипа сайта (лягушка МикроТест Вижн)
+!logo.png
+!favicon.png
