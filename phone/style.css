@@ -432,7 +432,10 @@ dialog.drugsheet[open] { display: grid; }
      и кнопки становятся ячейками одной сетки .tools. Свёрнутый вид (.folded) на телефоне не используется */
   .tools, .tools.folded { display: grid; grid-template-columns: minmax(0, 1fr) auto auto; align-items: center; column-gap: 8px; row-gap: 10px; }
   .tools .tools-head, .tools .tools-head .row, .tools .tools-grid, .tools.folded .tools-grid { display: contents; }
-  .tools h3 { grid-column: 1; grid-row: 1; }
+  /* «Инструменты» – заголовок карточки: левый верхний угол, крупно, с бирюзовой меткой слева */
+  .tools h3 { grid-column: 1; grid-row: 1; align-self: start; display: flex; align-items: center; gap: 10px;
+    font-size: 21px; font-weight: 700; letter-spacing: .01em; line-height: 46px; }   /* высота строки = высоте значков: верх и низ вровень */
+  .tools h3::before { content: ""; width: 6px; height: 24px; border-radius: 3px; background: var(--accent); flex: none; }
   .tools #saveBtn2, .tools.folded #saveBtn2 { grid-column: 2; grid-row: 1; grid-area: auto / 2 / auto / 3; }
   .tools #calibBtn, .tools.folded #calibBtn { grid-column: 3; grid-row: 1; grid-area: auto / 3 / auto / 4; }
   .tools #saveBtn2, .tools #calibBtn { width: 46px; height: 46px; padding: 0; justify-content: center; }
