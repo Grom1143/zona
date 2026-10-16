@@ -255,8 +255,9 @@ details.meta summary span { font-weight: 400; color: var(--muted); }
 .msg.warn { background: transparent; border: 1px solid var(--warn); color: var(--warn); }
 /* сообщения — списком, «−» сворачивает до заголовка, «+» разворачивает */
 .msg-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
-.msg-head b { font-family: var(--font-display); font-size: 14px; }
-.msg-head b span { font-weight: 400; opacity: .75; }
+.msg-head b { font-weight: 400; font-size: 13px; opacity: .75; }
+.msg:not(.shut) .msg-head { float: right; margin: 0 0 4px 8px; }   /* развёрнуто: «−» справа сверху, текст обтекает */
+.msg:not(.shut) ul { margin-top: 0; }
 .msg-fold { flex: none; width: 26px; height: 26px; border: 1px solid currentColor; border-radius: 6px; background: none; color: inherit;
   font: 700 17px/1 var(--font-mono); cursor: pointer; opacity: .7; }
 .msg-fold:hover, .msg-fold:focus-visible { opacity: 1; }
@@ -476,7 +477,7 @@ input.drug::placeholder { color: var(--muted); font-weight: 400; }
         </div>
       </div>
       <div class="msg" id="msg" aria-live="polite">
-        <div class="msg-head"><b id="msgTitle">Подсказки</b><button class="msg-fold" id="msgFold" type="button" aria-expanded="true" aria-controls="msgList" title="Свернуть подсказки">−</button></div>
+        <div class="msg-head"><b id="msgTitle"></b><button class="msg-fold" id="msgFold" type="button" aria-expanded="true" aria-controls="msgList" title="Свернуть подсказки">−</button></div>
         <ul id="msgList"><li>Загружаю…</li></ul>
       </div>
       <div class="ask" id="check" hidden>
@@ -1726,9 +1727,9 @@ function setMsg(t, warn) {
   showMsgFold();
 }
 function showMsgFold() {
-  const n = +$("msg").dataset.n || 0, warn = $("msg").classList.contains("warn");
+  const n = +$("msg").dataset.n || 0;
   $("msg").classList.toggle("shut", msgShut);
-  $("msgTitle").innerHTML = (warn ? "Внимание" : "Подсказки") + (msgShut && n ? ` <span>· ${n}</span>` : "");
+  $("msgTitle").textContent = msgShut && n ? `свёрнуто: ${n}` : "";   // без заголовка; в свёрнутом виде — сколько пунктов
   $("msgFold").textContent = msgShut ? "+" : "−";
   $("msgFold").title = msgShut ? "Показать подсказки" : "Свернуть подсказки";
   $("msgFold").setAttribute("aria-expanded", String(!msgShut));
