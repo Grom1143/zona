@@ -199,9 +199,9 @@ body.focus .navcount { top: calc(10px + 100vh - 24px - 20px - 48px - 34px); }
 .tools.folded .wide { grid-column: auto; }
 .tools.folded #calibField:not([hidden]) { flex-basis: 100%; }
 /* свёрнутые инструменты — сетка: крупный «Снимок» (место 4 кнопок), рядом маленькие кнопки зон и линейки,
-   «Сохранить» — тёмная, выделяется; лупа — отдельной строкой */
+   «Сохранить» — под снимком, выделяется заливкой; рядом с ней — лупа */
 .tools.folded .tools-grid { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 6px;
-  grid-template-areas: "snap snap add del calib" "snap snap axis round save" "zoom zoom zoom zoom zoom" "cf cf cf cf cf"; }
+  grid-template-areas: "snap snap add del calib" "snap snap axis round ." "save save zoom zoom zoom" "cf cf cf cf cf"; }
 .tools.folded #snapEditBtn { grid-area: snap; }
 .tools.folded #snapEditBtn svg { width: 34px; height: 34px; stroke-width: 1.6; }
 .tools.folded #addBtn { grid-area: add; }
