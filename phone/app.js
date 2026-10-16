@@ -2103,7 +2103,7 @@ loadBrowser().then(ok => { if (!ok) loadSample(); });
 // в первом секторе – густо и мелко, дальше – реже и крупнее, в последнем – отдельные колонии (как при настоящем посеве)
 const frogImg = new Image();
 frogImg.src = "frog.png?v=" + (document.querySelector('script[src^="app.js"]').getAttribute("src").split("v=")[1] || "1");
-const FROG_PAW = { x: 0.86, y: 0.17 };   // кончик правой передней лапки на картинке frog.png (доли ширины и высоты)
+const FROG_PAW = { x: 0.877, y: 0.138 }; // кончик верхнего пальца правой передней лапы на frog.png (доли ширины и высоты); новая иконка 17.10.2026
 let eggRun = 0;
 function playEgg() {
   const box = $("eggBox"), c = $("eggCv"), S = Math.round(Math.min(440, innerWidth * 0.92)), dpr = window.devicePixelRatio || 1;
