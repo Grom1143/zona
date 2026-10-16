@@ -410,8 +410,9 @@ dialog.drugsheet[open] { display: grid; }
   .main { display: grid; grid-template-columns: minmax(0, 1fr); gap: 12px; }
   .main > .left > *, .main > aside > * { min-width: 0; }   /* блок не шире экрана, даже если внутри широкое (таблица, фото) */
   .main > .left, .main > aside { display: contents; }
-  #stage { order: 1; } #check { order: 2; } .tools { order: 3; } #dishes { order: 4; }
-  #msg { order: 5; } #metaBox { order: 6; } #scale { order: 7; } #zoomBox { order: 8; }
+  /* порядок: фото → ряд чашек → вопрос «Всё верно?» → Инструменты → Чашка (вплотную) → подсказки */
+  #stage { order: 1; } #dishes { order: 2; } #check { order: 3; } .tools { order: 4; } #metaBox { order: 5; margin-top: -6px; }
+  #msg { order: 6; } #zoomBox { order: 7; } #scale { order: 8; }
   /* бывшая правая панель растворилась – каждому блоку своя карточка */
   .tools, details.meta, .scale, .zoom { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 12px; margin: 0; }
   /* «Самое вкусное»: на телефоне – только сценарий «сфотографировал → проверил → отправил».
