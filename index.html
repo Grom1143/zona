@@ -404,6 +404,7 @@ input.drug::placeholder { color: var(--muted); font-weight: 400; }
     <button class="btn" id="projSaveBtn" type="button" title="Файл со всеми фото и разметкой, чтобы перенести на другой компьютер">Скачать проект</button>
     <input type="file" id="projFile" accept=".json,application/json">
     <label class="btn" for="projFile" id="projOpenBtn" tabindex="0">Открыть проект</label>
+    <button class="btn" id="delAllBtn" type="button" title="Удалить все чашки серии (вернуть — ↶ до перезагрузки страницы)" disabled>Удалить серию</button>
     <span class="projnote">Файл со всеми чашками, фото, разметкой и порогами — для другого компьютера или резервной копии.</span>
   </div>
 
@@ -1140,7 +1141,13 @@ function redo() {
 }
 // Удалённые чашки (до 10 последних) лежат в P.trash до перезагрузки страницы — вместе со своей историей
 async function undeleteDish() {
-  const { dish, i } = P.trash.pop(), at = Math.min(i, P.dishes.length);
+  const e = P.trash.pop();
+  if (e.all) {                                     // вся серия: встаёт в начало ряда в прежнем порядке
+    P.dishes.unshift(...e.all); markDirty();
+    await openDish(e.cur);
+    return setMsg(`Серия возвращена: ${e.all.length} ${dishWord(e.all.length)}.`);
+  }
+  const { dish, i } = e, at = Math.min(i, P.dishes.length);
   P.dishes.splice(at, 0, dish); markDirty();
   await openDish(at);
   setMsg(`Чашка «${dish.name}» возвращена.`);
@@ -1729,6 +1736,7 @@ function renderDishes() {
       `<span class="ct${n ? " warn" : ""}">${d.items.length} ${disksWord(d.items.length)}${n ? ` · ${n} ?` : ""}</span>` +
       `<button class="x" type="button" data-del="${i}" aria-label="Удалить чашку ${esc(d.name)}" title="Удалить чашку">×</button></div>`;
   }).join("") + `<label class="dish add" for="file" tabindex="0"><b>+</b>Добавить фото</label>`;
+  $("delAllBtn").disabled = !P.dishes.length;
 }
 
 function fillMeta() {
@@ -2113,6 +2121,20 @@ $("dishes").addEventListener("click", e => {
   }
   const t = e.target.closest(".dish[data-i]");
   if (t && +t.dataset.i !== P.cur) openDish(+t.dataset.i);
+});
+// удалить всю серию одним действием; ↶ возвращает её целиком
+const dishWord = n => n % 10 === 1 && n % 100 !== 11 ? "чашка" : n % 10 >= 2 && n % 10 <= 4 && (n % 100 < 12 || n % 100 > 14) ? "чашки" : "чашек";
+$("delAllBtn").addEventListener("click", () => {
+  const n = P.dishes.length;
+  if (!n) return;
+  ask(`Удалить всю серию: ${n} ${dishWord(n)} вместе с разметкой? Вернуть можно стрелкой ↶ до перезагрузки страницы.`, "Удалить серию", $("delAllBtn"), () => {
+    const all = P.dishes.splice(0, n);
+    for (const d of all) { d._base = null; d._rgba = null; }
+    P.trash.push({ all, cur: Math.max(0, P.cur), t: Date.now() });
+    if (P.trash.length > 10) P.trash.shift();
+    P.cur = -1; P.sel = -1; markDirty(); fillMeta(); renderDishes(); render();
+    setMsg(`Серия удалена: ${n} ${dishWord(n)}. Вернуть — стрелка ↶ или Ctrl+Z.`);
+  });
 });
 $("dishes").addEventListener("keydown", e => {
   if (e.key !== "Enter" && e.key !== " ") return;
