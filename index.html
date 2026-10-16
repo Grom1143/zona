@@ -58,10 +58,17 @@ html { scrollbar-gutter: stable; }   /* полоса прокрутки не с�
 html:has(dialog[open]) { overflow: hidden; }
 dialog, .pick-grid { overscroll-behavior: contain; }   /* окно докрутили до конца – прокрутка не уходит дальше */
 .wrap { max-width: 1280px; margin: 0 auto; display: grid; gap: 14px; }
-header { display: grid; gap: 6px; }
+/* шапка: лягушка слева на три строки, справа название с кнопками, описание и предупреждение */
+header { display: grid; grid-template-columns: auto minmax(0, 1fr); column-gap: 20px; row-gap: 4px; align-items: center; }
+header .brand-logo { grid-row: 1 / span 3; }
+@media (max-width: 600px) {
+  header { column-gap: 12px; } header .brand-logo { width: 72px; height: 72px; }
+  .title-row { flex-wrap: nowrap; gap: 8px; } .title-row h1 { flex: 1; min-width: 0; font-size: 22px; }
+  h1 small { display: block; margin: 2px 0 0; }   /* подпись – под названием, кнопки остаются справа */
+}
 h1 { font-family: var(--font-display); font-weight: 700; font-size: 28px; line-height: 1.15; margin: 0; letter-spacing: -0.01em; text-wrap: balance; }
 h1 small { font-family: var(--font-mono); font-weight: 400; font-size: 13px; color: var(--muted); letter-spacing: 0.04em; margin-left: 8px; }
-header p { margin: 0; color: var(--muted); }   /* описание во всю ширину: меньше строк, рабочая зона выше */
+header p { margin: 0; color: var(--muted); max-width: 75ch; }
 header p.disclaimer { font-size: 13px; color: var(--warn); }
 h2 { font-family: var(--font-display); font-size: 18px; margin: 0; text-wrap: balance; }
 h3 { font-family: var(--font-display); font-size: 15px; margin: 0; }
@@ -135,7 +142,7 @@ body.focus .dish .ct { font-size: 11px; }
 body.focus .dish .x { top: 6px; right: 6px; width: 20px; height: 20px; font-size: 13px; }
 body.focus .dish.add { min-height: 0; height: 96px; font-size: 11px; box-sizing: border-box; }
 body.focus .dish.add b { font-size: 20px; }
-body.focus .main > aside { max-height: calc(100vh - 24px); overflow-y: auto; box-sizing: border-box; scrollbar-width: thin; }
+body.focus .main > aside { max-height: calc(100vh - 24px); overflow-y: auto; overflow-x: hidden; box-sizing: border-box; scrollbar-width: thin; }
 /* во весь экран страница не прокручивается – место под её полосу прокрутки справа не нужно */
 html:has(body.focus) { scrollbar-gutter: auto; }
 @media (max-width: 900px) {
@@ -319,7 +326,7 @@ input.drug::placeholder { color: var(--muted); font-weight: 400; }
 .empty { color: var(--muted); font-size: 14px; }
 .row { display: flex; gap: 8px; flex-wrap: wrap; }
 
-.title-row { display: flex; align-items: center; gap: 12px; }
+.title-row { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
 .brand-logo { width: 128px; height: 128px; flex: none; border-radius: 50%; }   /* лягушка в чашке – логотип МикроТест Вижн */
 .help-btn {
   flex: none; width: 34px; height: 34px; border-radius: 50%; border: 1px solid var(--line); background: var(--panel);
@@ -379,14 +386,14 @@ input.drug::placeholder { color: var(--muted); font-weight: 400; }
 
 <div class="wrap">
   <header>
+    <img class="brand-logo" src="logo.png" alt="" width="128" height="128">
     <div class="title-row">
-      <img class="brand-logo" src="logo.png" alt="" width="128" height="128">
       <h1>МикроТест Вижн <small>диско-диффузионный метод</small></h1>
       <button class="help-btn" id="helpBtn" type="button" title="Как это работает" aria-label="Справка: как это работает" aria-haspopup="dialog">?</button>
       <button class="help-btn theme-btn" id="themeBtn" type="button"></button>
     </div>
-    <p>Загрузите одно или несколько фото чашек Петри – кнопкой, перетаскиванием или вставкой из буфера обмена (Ctrl+V). Программа найдёт диски с антибиотиком и измерит диаметр прозрачной зоны вокруг каждого. Если граница найдена неверно, выберите зону и передвиньте концы линейки; для неровной зоны есть гибкий контур. Разметка каждой чашки хранится отдельно.</p>
-    <p class="disclaimer">Исследовательский и учебный инструмент, не для клинической диагностики: каждый результат проверяет человек.</p>
+    <p>Загрузите фото чашек Петри – программа найдёт диски и измерит зоны подавления. Неверную границу поправьте мышью.</p>
+    <p class="disclaimer">Учебный инструмент, не для клинической диагностики: результат проверяет человек.</p>
   </header>
 
   <div class="toolbar">
@@ -481,7 +488,7 @@ input.drug::placeholder { color: var(--muted); font-weight: 400; }
           <label class="field" for="lkBright" title="Только для просмотра: на поиск зон и измерения не влияет. Двойной клик – вернуть 0">Яркость <input type="range" id="lkBright" min="-100" max="100" step="1" value="0"><input type="text" inputmode="decimal" class="num" id="lkBrightOut" value="0" aria-label="Значение числом" autocomplete="off"></label>
           <label class="field" for="lkContrast" title="Только для просмотра: на поиск зон и измерения не влияет. Двойной клик – вернуть 0">Контраст <input type="range" id="lkContrast" min="-100" max="100" step="1" value="0"><input type="text" inputmode="decimal" class="num" id="lkContrastOut" value="0" aria-label="Значение числом" autocomplete="off"></label>
           <label class="field" for="lkSat" title="Только для просмотра: на поиск зон и измерения не влияет. Двойной клик – вернуть 0">Насыщенность <input type="range" id="lkSat" min="-100" max="100" step="1" value="0"><input type="text" inputmode="decimal" class="num" id="lkSatOut" value="0" aria-label="Значение числом" autocomplete="off"></label>
-          <div class="field"><span class="lookhint">Цвета – только для просмотра, на измерения не влияют</span><button class="btn" id="lkReset" type="button" disabled>Сбросить</button></div>
+          <div class="field"><span class="lookhint">Только для просмотра, на измерения не влияют</span><button class="btn" id="lkReset" type="button" disabled>Сбросить</button></div>
         </div>
         <label class="field tools-more" for="diskMm">Диаметр диска, мм <input type="number" id="diskMm" value="6" min="1" max="20" step="0.1"></label>
       </section>
@@ -1210,7 +1217,7 @@ async function addFiles(files) {
   markDirty();
   await openDish(first);
   const added = files.length - bad - skipped;
-  if (added > 1 || bad || skipped) setMsg(`Добавлено чашек: ${added}${skipped ? `, пропущено: ${skipped}` : ""}${bad ? `, не открылось файлов: ${bad}` : ""}. Открыта первая; остальные – в ряду сверху. ` + summary(D()), !!bad);
+  if (added > 1 || bad || skipped) setMsg(`Добавлено чашек: ${added}${skipped ? `, пропущено: ${skipped}` : ""}${bad ? `, не открылось файлов: ${bad}` : ""}. ` + summary(D()), !!bad);
 }
 
 // ----- обрезка при загрузке -----
@@ -1304,10 +1311,9 @@ async function openDish(i) {
 }
 
 function summary(d) {
-  if (!d.items.length) return "Диски не найдены. Нажмите «Масштаб по линейке», поставьте линейку на диск, затем добавьте зоны вручную.";
+  if (!d.items.length) return "Диски не найдены: задайте «Масштаб по линейке» и добавьте зоны вручную.";
   const n = d.items.filter(needsCheck).length, t = tiltOf(d);
-  return (t ? tiltText(t) + " " : "") + `Дисков: ${d.items.length}.` + (n ? ` Проверьте строки с «?»: ${n} (зона не найдена или найдена неуверенно).` : "") +
-    " Если граница не совпадает, нажмите на зону и поправьте линейку; для неровной зоны – «Гибкий контур».";
+  return (t ? tiltText(t) + " " : "") + `Дисков: ${d.items.length}.` + (n ? ` Проверьте зоны с «?»: ${n}.` : "");
 }
 
 // ----- история: отменить / вернуть -----
@@ -1437,7 +1443,7 @@ async function saveBrowser(auto) {
     await idbDo("readwrite", s => s.put({ v: 5, cur: P.cur, savedAt: Date.now(), dishes, breaks: P.breaks, general: P.general }, "project"));
     if (P.ver === v) P.dirty = false;
     P.saveFailed = false; P.savedAt = new Date(); renderSaveState();
-    if (!auto) setMsg(`Сохранено в этом браузере: чашек ${P.dishes.length}. Для другого компьютера нажмите «Скачать проект».`);
+    if (!auto) setMsg(`Сохранено: чашек ${P.dishes.length}.`);
     persistOnce();
   } catch {
     if (!auto || !P.saveFailed) setMsg("Браузер не дал сохранить (например, в режиме инкогнито). Нажмите «Скачать проект» – так разметка точно не пропадёт.", true);
@@ -1500,7 +1506,7 @@ async function saveProject() {
   for (const d of P.dishes) dishes.push({ ...pick(d), img: await blobToDataURL(d.img) });
   const json = JSON.stringify({ app: "zona-ingibirovaniya", v: 5, cur: P.cur, dishes, breaks: P.breaks, general: P.general });
   if (await saveFile(`Зоны ингибирования ${today()}.json`, new Blob([json], { type: "application/json" })))
-    setMsg(`Файл проекта готов: чашек ${dishes.length}. Откройте его кнопкой «Открыть проект» на любом компьютере.`);
+    setMsg(`Файл проекта готов: чашек ${dishes.length}.`);
 }
 async function openProject(f) {
   if (!f) return;
@@ -1519,7 +1525,7 @@ async function openProject(f) {
     saveBreaks(); renderBreaks(); renderGeneral();
     markDirty();
     await openDish(start);
-    setMsg(`Из файла добавлено чашек: ${o.dishes.length}. Они сохранятся в этом браузере сами.`);
+    setMsg(`Из файла добавлено чашек: ${o.dishes.length}.`);
   } catch {
     setMsg("Это не файл проекта. Нужен файл .json, скачанный кнопкой «Скачать проект».", true);
   }
@@ -1842,7 +1848,7 @@ function setMode(m) {
   cv.classList.toggle("adding", m === "add");
   $("hint").textContent =
     m === "add" ? "Нажмите в центр диска, вокруг которого нужна зона." :
-    m === "calib" ? "Поставьте концы жёлтой линейки на отрезок известной длины (диск или деления настоящей линейки), введите длину и нажмите «Готово»." :
+    m === "calib" ? "Поставьте жёлтую линейку на отрезок известной длины, введите длину и нажмите «Готово»." :
     "";
 }
 
@@ -2065,9 +2071,9 @@ function renderSide() {
   $("check").hidden = !(it && needsCheck(it));
   if (it && needsCheck(it)) {
     const none = it.src === "none";
-    $("checkText").textContent = none ? `Зона у диска ${P.sel + 1} не найдена. Посмотрите на фото: бактерии растут вплотную к диску?`
-      : it.colonies ? `Внутри зоны у диска ${P.sel + 1}, похоже, растут колонии – программа могла принять за зону область с ростом. По правилам такую зону меряют по внутреннему краю, до колоний; если колонии доходят до самого диска – зоны нет.`
-      : `Зона у диска ${P.sel + 1} найдена неуверенно: лучи от диска находят край на разном расстоянии – зона сливается с соседними или край размыт. Проверьте круг: если он неверный, поправьте линейку или включите гибкий контур – он ляжет по найденному краю.`;
+    $("checkText").textContent = none ? `Зона у диска ${P.sel + 1} не найдена. Рост вплотную к диску?`
+      : it.colonies ? `Внутри зоны у диска ${P.sel + 1}, похоже, колонии. Мерить по внутреннему краю; колонии до диска – зоны нет.`
+      : `Край зоны у диска ${P.sel + 1} найден неуверенно: зона сливается с соседней или размыта. Проверьте круг.`;
     $("checkYes").textContent = none ? "Да, зоны нет" : "Всё верно";
     $("checkMark").textContent = none ? "Разметить зону вручную" : it.colonies ? "Зоны нет" : "Гибкий контур";
   }
@@ -2076,8 +2082,8 @@ function renderSide() {
   setLabel("axisBtn", it && it.pts ? "Сделать кругом" : "Гибкий контур");
   $("roundBtn").disabled = !(it && it.pts);
   if (P.mode === "idle") $("hint").textContent = !it ? "" : it.pts
-    ? "Тяните точку или край – контур прогнётся, как резинка. Тяните внутри – зона сдвинется. Отмена – ↶ или Ctrl+Z."
-    : "Тяните за концы линейки, чтобы исправить диаметр. Для неровной зоны – «Гибкий контур». Отмена – ↶ или Ctrl+Z.";
+    ? "Тяните точку или край; изнутри – сдвинуть зону."
+    : "Тяните концы линейки к краям зоны.";
   $("undoBtn").disabled = !(d && d._undo.length) && !P.trash.length;
   $("redoBtn").disabled = !d || !d._redo.length;
   for (const id of ["addBtn", "calibBtn", "resetBtn", "copyBtn"]) $(id).disabled = !d;
@@ -2246,7 +2252,7 @@ async function loadSample() {
   c.getContext("2d").putImageData(new ImageData(s.data, s.w, s.h), 0, 0);
   await addDish(c, s.w, s.h, "Пример", true);
   await openDish(P.dishes.length - 1);
-  setMsg("Это искусственная чашка: зоны 24, 17 и 13 мм и диск без зоны. Загрузите свои фото – пример уберётся сам.");
+  setMsg("Пример: зоны 24, 17 и 13 мм и диск без зоны.");
 }
 const calibMm = () => { const v = parseFloat($("calibMm").value); return v > 0 ? v : diskMm(); };
 
@@ -2433,7 +2439,7 @@ $("editCopy").addEventListener("click", async () => {
     const png = new Promise((res, rej) => out.toBlob(b => b ? res(b) : rej(new Error("no blob")), "image/png"));
     await navigator.clipboard.write([new ClipboardItem({ "image/png": png })]);
     $("editBox").close();
-    setMsg(`Снимок скопирован (${size}). Вставьте его Ctrl+V в презентацию, документ или чат.`);
+    setMsg(`Снимок скопирован (${size}) – вставьте Ctrl+V.`);
   } catch {
     $("editBox").close();
     setMsg("Скопировать не получилось: этот браузер или страница не дают доступ к буферу обмена. Нажмите «Сохранить PNG» – снимок сохранится файлом.", true);
@@ -2485,7 +2491,7 @@ $("axisBtn").addEventListener("click", () => {
     setMsg("Зона снова круг с линейкой, диаметр тот же. Вернуть контур – стрелка ↶.");
   } else {
     it.pts = toContour(it); delete it.r;
-    setMsg("Гибкий контур: тяните точки или край – контур прогибается. Точки уже стоят по найденному краю, размер – как был у линейки.");
+    setMsg("Гибкий контур: тяните точки или край.");
   }
   if (it.src === "auto" || it.src === "none") it.src = "edited";
   render();
@@ -2497,7 +2503,7 @@ $("roundBtn").addEventListener("click", () => {     // контур остаёт
   const c = center(it);
   it.pts = circlePts(c.x, c.y, diamPx(it));
   if (it.src === "auto" || it.src === "none") it.src = "edited";
-  setMsg("Контур скруглён, диаметр тот же. Точки остались – можно снова гнуть. Вернуть форму – стрелка ↶.");
+  setMsg("Контур скруглён, диаметр тот же.");
   render();
 });
 // Зона удаляется сразу, без вопроса: вернуть можно стрелкой ↶ (Ctrl+Z)
@@ -2539,17 +2545,17 @@ $("checkMark").addEventListener("click", () => {
     const c = center(it);
     it.src = "none"; it.ok = true; it.r = rulerAt(c.x, c.y, d.scalePx || diamPx(it)); delete it.pts;
     renderDishes(); render();
-    return setMsg(`Отмечено: у диска ${P.sel + 1} зоны нет (колонии растут до диска). Вернуть – стрелка ↶.`);
+    return setMsg(`Диск ${P.sel + 1}: зоны нет.`);
   }
   if (it.src !== "none") {                       // неуверенная зона → гибкий контур по найденному краю
     it.pts = toContour(it); delete it.r; it.src = "edited";
     renderDishes(); render();
-    return setMsg("Гибкий контур лёг по найденному краю. Подтяните точки там, где край другой; зона, сливающаяся с соседней, меряется по свободной стороне.");
+    return setMsg("Контур лёг по найденному краю – подтяните точки, где край другой.");
   }
   const c = center(it), mpp = mmPerPx(), dd = mpp ? 12 / mpp : diamPx(it) * 2;
   it.src = "manual"; it.ok = false; it.r = rulerAt(c.x, c.y, dd); delete it.pts;
   renderDishes(); render();
-  setMsg("Поставьте концы линейки на края зоны. Если зона неровная, нажмите «Гибкий контур».");
+  setMsg("Поставьте концы линейки на края зоны.");
 });
 
 // Удаление чашки в два нажатия, без окошка: × → ✓ → удалено. Нажатие в другом месте или 3 с без нажатия – снова ×
