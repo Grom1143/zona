@@ -344,6 +344,8 @@ input.drug::placeholder { color: var(--muted); font-weight: 400; }
         <div class="tools-grid">
           <button class="btn save wide" id="saveBtn2" type="button" title="Сохранить все чашки в этом браузере (Ctrl+S)">
             <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 3h11l3 3v15H5z"/><path d="M8 3v5h7V3M8 21v-7h8v7"/></svg><span class="lbl">Сохранить</span></button>
+          <button class="btn wide" id="snapBtn" type="button" title="Снимок окна разметки в PNG — для презентаций и отчётов: как на экране, с видимостью разметки и приближением" disabled>
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5"/></svg><span class="lbl">Снимок для отчёта</span></button>
           <button class="btn" id="addBtn" type="button" title="Добавить зону">
             <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8"/><path d="M12 8v8M8 12h8"/></svg><span class="lbl">Добавить зону</span></button>
           <button class="btn" id="delBtn" type="button" disabled title="Удалить зону (Delete, правая кнопка мыши)">
@@ -413,7 +415,6 @@ input.drug::placeholder { color: var(--muted); font-weight: 400; }
     <input type="file" id="projFile" accept=".json,application/json">
     <label class="btn" for="projFile" id="projOpenBtn" tabindex="0">Открыть проект</label>
     <button class="btn" id="delPickBtn" type="button" title="Отметить галочками, какие чашки удалить" disabled>Выбрать и удалить…</button>
-    <button class="btn" id="delAllBtn" type="button" title="Удалить все чашки серии (вернуть — ↶ до перезагрузки страницы)" disabled>Удалить серию</button>
     <span class="projnote">Файл со всеми чашками, фото, разметкой и порогами — для другого компьютера или резервной копии.</span>
   </div>
 
@@ -1764,7 +1765,7 @@ function renderDishes() {
       `<span class="ct${n ? " warn" : ""}">${d.items.length} ${disksWord(d.items.length)}${n ? ` · ${n} ?` : ""}</span>` +
       `<button class="x" type="button" data-del="${i}" aria-label="Удалить чашку ${esc(d.name)}" title="Удалить чашку">×</button></div>`;
   }).join("") + `<label class="dish add" for="file" tabindex="0"><b>+</b>Добавить фото</label>`;
-  $("delAllBtn").disabled = $("delPickBtn").disabled = !P.dishes.length;
+  $("delPickBtn").disabled = $("snapBtn").disabled = !P.dishes.length;
 }
 
 function fillMeta() {
@@ -2025,6 +2026,33 @@ $("helpBox").addEventListener("click", e => {          // клик мимо ок
 $("undoBtn").addEventListener("click", undo);
 $("redoBtn").addEventListener("click", redo);
 $("saveBtn2").addEventListener("click", () => saveBrowser(false));
+// Снимок для отчёта: видимая часть окна разметки — как на экране (видимость разметки, приближение, выбранная зона),
+// в разрешении фото, снизу подпись: чашка, дата, культура, микроорганизм
+async function snapshot() {
+  const d = D();
+  if (!d || !d._base) return setMsg("Сначала откройте фото чашки.", true);
+  draw();
+  const cr = cv.getBoundingClientRect(), vr = $("view").getBoundingClientRect();
+  const sx = cv.width / cr.width, sy = cv.height / cr.height;
+  const x0 = Math.max(0, (vr.left - cr.left) * sx), y0 = Math.max(0, (vr.top - cr.top) * sy);
+  const x1 = Math.min(cv.width, (vr.right - cr.left) * sx), y1 = Math.min(cv.height, (vr.bottom - cr.top) * sy);
+  const w = Math.round(x1 - x0), h = Math.round(y1 - y0);
+  if (w < 2 || h < 2) return setMsg("Фото не видно в окне — нажмите «Вписать».", true);
+  const m = d.meta, date = m.date ? m.date.split("-").reverse().join(".") : "";
+  const text = [d.name, date, m.culture, m.org && BREAKPOINTS[m.org] ? BREAKPOINTS[m.org].name : ""].filter(Boolean).join(" · ");
+  const fs = Math.max(14, Math.round(Math.max(w, 500) / 45)), bar = Math.round(fs * 2);
+  const out = document.createElement("canvas"); out.width = Math.max(w, 1); out.height = h + bar;
+  const g = out.getContext("2d");
+  g.fillStyle = "#1b2329"; g.fillRect(0, 0, out.width, out.height);
+  g.drawImage(cv, x0, y0, w, h, 0, 0, w, h);
+  g.fillStyle = "#e3e9ee"; g.font = `500 ${fs}px "Onest", "Segoe UI", sans-serif`; g.textBaseline = "middle";
+  g.fillText(text, Math.round(fs * 0.7), h + bar / 2, w - fs * 1.4);
+  const blob = await new Promise(r => out.toBlob(r, "image/png"));
+  if (!blob) return setMsg("Снимок не получился.", true);
+  const name = `${(d.name || "чашка").replace(/[\\/:*?"<>|]+/g, "_").trim() || "чашка"}${date ? " " + date : ""}.png`;
+  if (await saveFile(name, blob)) setMsg(`Снимок сохранён: ${name} (${w}×${h} px).`);
+}
+$("snapBtn").addEventListener("click", snapshot);
 $("xlsxBtn").addEventListener("click", saveXlsx);
 $("projSaveBtn").addEventListener("click", saveProject);
 $("resetBtn").addEventListener("click", async () => {
@@ -2167,12 +2195,6 @@ async function deleteDishes(idx, what) {
   await openDish(gone ? Math.min(cur - idx.filter(i => i < cur).length, P.dishes.length - 1) : cur - idx.filter(i => i < cur).length);
   setMsg(text);
 }
-$("delAllBtn").addEventListener("click", () => {
-  const n = P.dishes.length;
-  if (!n) return;
-  ask(`Удалить всю серию: ${n} ${dishWord(n)} вместе с разметкой? Вернуть можно стрелкой ↶ до перезагрузки страницы.`, "Удалить серию", $("delAllBtn"),
-    () => deleteDishes(P.dishes.map((_, i) => i), "Серия удалена"));
-});
 // окно с галочками
 function pickCount() {
   const n = $("pickGrid").querySelectorAll("input:checked").length;
