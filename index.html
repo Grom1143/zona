@@ -2249,9 +2249,9 @@ function grabView() {
   const x1 = Math.min(cv.width, (vr.right - cr.left) * sx), y1 = Math.min(cv.height, (vr.bottom - cr.top) * sy);
   const w = Math.round(x1 - x0), h = Math.round(y1 - y0);
   if (w < 2 || h < 2) { setMsg("Фото не видно в окне – нажмите «Всё фото» (0).", true); return null; }
-  // в имени файла: дата учёта из паспорта (нет – сегодняшняя) и время сохранения; «:» в именах файлов Windows запрещено – ЧЧ-ММ
+  // в имени файла: дата учёта из паспорта (нет – сегодняшняя) и время сохранения; «:» в именах файлов Windows запрещено – ЧЧ-ММ-СС
   const now = new Date(), date = (d.meta.date || today()).split("-").reverse().join(".");
-  const time = `${String(now.getHours()).padStart(2, "0")}-${String(now.getMinutes()).padStart(2, "0")}`;
+  const time = [now.getHours(), now.getMinutes(), now.getSeconds()].map(v => String(v).padStart(2, "0")).join("-");
   // масштаб снимка – не меньше экранного: при приближении разметка на снимке тоже чёткая
   const sc = Math.max(1, (window.devicePixelRatio || 1) * cr.width / cv.width);
   const out = document.createElement("canvas"); out.width = Math.round(w * sc); out.height = Math.round(h * sc);
