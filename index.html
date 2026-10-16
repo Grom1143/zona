@@ -199,9 +199,10 @@ body.focus .navcount { top: calc(10px + 100vh - 24px - 20px - 48px - 34px); }
 .tools.folded .wide { grid-column: auto; }
 .tools.folded #calibField:not([hidden]) { flex-basis: 100%; }
 /* свёрнутые инструменты — сетка: крупный «Снимок» (место 4 кнопок), рядом маленькие кнопки зон и линейки,
-   «Сохранить» — под снимком, выделяется заливкой; рядом с ней — лупа */
+   «Сохранить» — над снимком, выделяется заливкой; лупа — справа от снимка */
 .tools.folded .tools-grid { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 6px;
-  grid-template-areas: "snap snap add del calib" "snap snap axis round ." "save save zoom zoom zoom" "cf cf cf cf cf"; }
+  grid-template-areas: "save save add del calib" "snap snap axis round ." "snap snap zoom zoom zoom" "cf cf cf cf cf"; }
+.tools.folded .tools-grid > * { min-width: 0; }   /* ни одна кнопка не вылезает за свою клетку */
 .tools.folded #snapEditBtn { grid-area: snap; }
 .tools.folded #snapEditBtn svg { width: 34px; height: 34px; stroke-width: 1.6; }
 .tools.folded #addBtn { grid-area: add; }
@@ -209,7 +210,7 @@ body.focus .navcount { top: calc(10px + 100vh - 24px - 20px - 48px - 34px); }
 .tools.folded #calibBtn { grid-area: calib; }
 .tools.folded #axisBtn { grid-area: axis; }
 .tools.folded #roundBtn { grid-area: round; }
-.tools.folded #saveBtn2 { grid-area: save; padding-inline: 0; }
+.tools.folded #saveBtn2 { grid-area: save; padding-inline: 0; overflow: hidden; }
 .tools.folded .zoombar { grid-area: zoom; justify-content: flex-end; }
 .tools.folded #calibField { grid-area: cf; }
 @media (min-width: 901px) {
