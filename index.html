@@ -181,7 +181,8 @@ body.focus .navcount { top: calc(10px + 100vh - 24px - 20px - 48px - 34px); }
 .tools .field { justify-content: space-between; }
 .lookhint { font-size: 12px; color: var(--muted); flex: 1; }
 /* ползунки инструментов — в одну колонку: подпись | ползунок | число */
-.tools .field:has(input[type="range"]) { display: grid; grid-template-columns: minmax(0, 1fr) 110px 7ch; gap: 8px; }
+.tools .field:has(input[type="range"]) { display: grid; grid-template-columns: 158px minmax(0, 1fr) 6ch; gap: 8px; white-space: nowrap; }
+.tools .field:has(input[type="range"]) input[type="range"] { width: 100%; }
 #lkReset { padding: 6px 10px; font-size: 13px; }
 .tools .btn svg { width: 18px; height: 18px; flex: none; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
 .tools .fold svg { transition: transform .15s; }
