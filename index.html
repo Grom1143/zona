@@ -356,7 +356,7 @@ input.drug::placeholder { color: var(--muted); font-weight: 400; }
               <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/></svg><span class="lbl">Вписать</span></button>
           </div>
         </div>
-        <label class="field tools-more" for="alpha">Прозрачность разметки <input type="range" id="alpha" dir="rtl" title="Влево — прозрачнее, вправо — ярче" min="0" max="85" step="5" value="0"><output id="alphaOut" for="alpha">0 %</output></label>
+        <label class="field tools-more" for="alpha">Видимость разметки <input type="range" id="alpha" title="Вправо — ярче, влево — бледнее; 0 % — разметка скрыта, видно только фото" min="0" max="100" step="5" value="100"><output id="alphaOut" for="alpha">100 %</output></label>
         <label class="field tools-more" for="diskMm">Диаметр диска, мм <input type="number" id="diskMm" value="6" min="1" max="20" step="0.1"></label>
       </section>
       <details class="meta" id="metaBox" open>
@@ -2153,8 +2153,8 @@ for (const id of ["mName", ...Object.keys(metaKeys)]) $(id).addEventListener("in
 });
 $("diskMm").addEventListener("input", () => { const d = D(), v = parseFloat($("diskMm").value); if (d && v > 0) { d.diskMm = v; markDirty(); } render(); });
 $("alpha").addEventListener("input", () => {
-  const v = +$("alpha").value; P.alpha = 1 - v / 100; $("alphaOut").textContent = `${v} %`;
-  try { localStorage.setItem("zona-alpha", String(v)); } catch {}
+  const v = +$("alpha").value; P.alpha = v / 100; $("alphaOut").textContent = `${v} %`;
+  try { localStorage.setItem("zona-vis", String(v)); } catch {}
   draw();
 });
 
@@ -2295,8 +2295,10 @@ $("zoomMinus").addEventListener("click", () => setZoom(P.zoom / 1.5));
 $("zoomFit").addEventListener("click", () => setZoom(1));
 
 try {
-  const v = parseInt(localStorage.getItem("zona-alpha"), 10);
-  if (v >= 0 && v <= 85) { $("alpha").value = v; $("alphaOut").textContent = `${v} %`; P.alpha = 1 - v / 100; }
+  // видимость разметки; старая настройка «прозрачность» (zona-alpha) переводится: видимость = 100 − прозрачность
+  const old = parseInt(localStorage.getItem("zona-alpha"), 10), saved = parseInt(localStorage.getItem("zona-vis"), 10);
+  const v = saved >= 0 && saved <= 100 ? saved : old >= 0 && old <= 85 ? 100 - old : NaN;
+  if (v >= 0) { $("alpha").value = v; $("alphaOut").textContent = `${v} %`; P.alpha = v / 100; }
 } catch {}
 try { const b = JSON.parse(localStorage.getItem("zona-breaks")); if (Array.isArray(b)) P.breaks = b; } catch {}
 try { const g = JSON.parse(localStorage.getItem("zona-general")); if (g && typeof g === "object") P.general = { ...P.general, ...g }; } catch {}
