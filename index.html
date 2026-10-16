@@ -198,20 +198,24 @@ body.focus .navcount { top: calc(10px + 100vh - 24px - 20px - 48px - 34px); }
 .tools.folded .zoombar output { min-width: 5ch; font-size: 12px; }
 .tools.folded .wide { grid-column: auto; }
 .tools.folded #calibField:not([hidden]) { flex-basis: 100%; }
-/* свёрнутые инструменты — сетка: крупный «Снимок» (место 4 кнопок), рядом маленькие кнопки зон и линейки,
-   «Сохранить» — над снимком, выделяется заливкой; лупа — справа от снимка */
+/* свёрнутые инструменты — сетка: слева «Сохранить» и «Снимок» с подписями, рядом маленькие кнопки зон и линейки,
+   «Сохранить» — над снимком, выделяется заливкой; лупа — строкой ниже */
 .tools.folded .tools-grid { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 6px;
-  grid-template-areas: "save save add del calib" "snap snap axis round ." "snap snap zoom zoom zoom" "cf cf cf cf cf"; }
+  grid-template-areas: "save save add del calib" "snap snap axis round ." "zoom zoom zoom zoom zoom" "cf cf cf cf cf"; }
 .tools.folded .tools-grid { align-items: stretch; }   /* кнопки занимают свою клетку целиком: снимок — ровно 2 строки */
 .tools.folded .tools-grid > * { min-width: 0; }   /* ни одна кнопка не вылезает за свою клетку */
 .tools.folded #snapEditBtn { grid-area: snap; }
-.tools.folded #snapEditBtn svg { width: 34px; height: 34px; stroke-width: 1.6; }
+/* у «Сохранить» и «Снимок» в свёрнутом виде остаются короткие подписи */
+.tools.folded #saveBtn2 .lbl, .tools.folded #snapEditBtn .lbl-short { display: inline; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.lbl-short { display: none; }
+.tools.folded #snapEditBtn .lbl { display: none; }
 .tools.folded #addBtn { grid-area: add; }
 .tools.folded #delBtn { grid-area: del; }
 .tools.folded #calibBtn { grid-area: calib; }
 .tools.folded #axisBtn { grid-area: axis; }
 .tools.folded #roundBtn { grid-area: round; }
-.tools.folded #saveBtn2 { grid-area: save; padding-inline: 0; overflow: hidden; }
+.tools.folded #saveBtn2 { grid-area: save; padding-inline: 8px; overflow: hidden; }
+.tools.folded #snapEditBtn { padding-inline: 8px; overflow: hidden; }
 .tools.folded .zoombar { grid-area: zoom; justify-content: flex-end; }
 .tools.folded #calibField { grid-area: cf; }
 @media (min-width: 901px) {
@@ -383,7 +387,7 @@ input.drug::placeholder { color: var(--muted); font-weight: 400; }
           <button class="btn save wide" id="saveBtn2" type="button" title="Сохранить все чашки в этом браузере (Ctrl+S)">
             <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 3h11l3 3v15H5z"/><path d="M8 3v5h7V3M8 21v-7h8v7"/></svg><span class="lbl">Сохранить</span></button>
           <button class="btn wide" id="snapEditBtn" type="button" title="Снимок окна разметки для презентаций и отчётов: обрезка, яркость, контраст; сохранить PNG или скопировать" disabled>
-            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5"/></svg><span class="lbl">Снимок для отчёта</span></button>
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5"/></svg><span class="lbl">Снимок для отчёта</span><span class="lbl-short">Снимок</span></button>
           <button class="btn" id="addBtn" type="button" title="Добавить зону">
             <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8"/><path d="M12 8v8M8 12h8"/></svg><span class="lbl">Добавить зону</span></button>
           <button class="btn" id="delBtn" type="button" disabled title="Удалить зону (Delete, правая кнопка мыши)">
