@@ -1022,8 +1022,8 @@ function cropImage(img, n, total) {
     g.fillStyle = "rgba(0,0,0,.6)";                   // всё вне рамки затемнено
     g.fillRect(0, 0, c.width, R.y); g.fillRect(0, R.y + R.h, c.width, c.height - R.y - R.h);
     g.fillRect(0, R.y, R.x, R.h); g.fillRect(R.x + R.w, R.y, c.width - R.x - R.w, R.h);
-    g.strokeStyle = "#fff"; g.lineWidth = 2 * s; g.strokeRect(R.x, R.y, R.w, R.h);
-    g.fillStyle = "#fff"; g.strokeStyle = "rgba(0,0,0,.6)"; g.lineWidth = 1.5 * s;
+    g.strokeStyle = "#ff8c1a"; g.lineWidth = 2 * s; g.strokeRect(R.x, R.y, R.w, R.h);   // оранжевая рамка
+    g.fillStyle = "#ff8c1a"; g.strokeStyle = "rgba(0,0,0,.6)"; g.lineWidth = 1.5 * s;
     for (const [x, y] of handles()) { g.fillRect(x - 6 * s, y - 6 * s, 12 * s, 12 * s); g.strokeRect(x - 6 * s, y - 6 * s, 12 * s, 12 * s); }
   };
   const at = e => { const b = c.getBoundingClientRect(); return { x: (e.clientX - b.left) * c.width / b.width, y: (e.clientY - b.top) * c.height / b.height }; };
