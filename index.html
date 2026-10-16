@@ -655,7 +655,7 @@ input.drug::placeholder { color: var(--muted); font-weight: 400; }
     <ol>
       <li><b>Масштаб по дискам.</b> Бумажный диск с антибиотиком стандартный, 6 мм. Программа ищет белые пятна без цветового оттенка, круглые и одного размера. Надписи на дисках закрашиваются «закрытием»: белая область сначала расширяется, потом сужается обратно. Диаметр дисков в пикселях даёт масштаб; дисков несколько, поэтому берётся медиана. Размер самой чашки не нужен: подойдёт чашка любого диаметра.</li>
       <li><b>Лучи от центра диска.</b> От каждого диска проводится 96 лучей. Вдоль луча записывается самый тёмный из каналов R, G, B: у жёлтого газона мало синего, у прозрачной зоны больше. Тень под диском пропускается. Край зоны – место, где значение переходит середину между уровнем зоны у диска и уровнем газона по всей чашке.</li>
-      <li><b>Отсев выбросов.</b> Луч может уйти в соседнюю зону или упереться в блик. Радиус берётся по самой плотной группе лучей с почти одинаковым краем (±7 %). Если зона почти не отличается от газона, она помечается «нет зоны?», и человек подтверждает это или размечает зону сам.</li>
+      <li><b>Отсев выбросов.</b> Луч может уйти в соседнюю зону или упереться в блик. Радиус берётся по самой плотной группе лучей с почти одинаковым краем (±7 %). Если зона почти не отличается от газона, она помечается «нет зоны?», и человек подтверждает это или размечает зону сам. Если внутри зоны пятнистый рост, как от отдельных колоний, зона тоже помечается «проверить?»: по правилам её меряют по внутреннему краю, а если колонии доходят до диска – зоны нет.</li>
       <li><b>Проверка человеком.</b> Обычная зона – круг: выберите её и тяните концы линейки к краям зоны; при этом в углу появляется лупа ×3. Деления на линейке – миллиметры. Для зоны неправильной формы нажмите «Гибкий контур»: появится линия через 12 точек, уже поставленных на найденный край. Тяните любую точку или сам край – контур прогибается, соседние точки немного идут следом; тяните внутри – зона сдвигается. Диаметр такой зоны – диаметр круга той же площади; в таблице мелко показан самый узкий и самый широкий размер. «Сделать кругом» возвращает линейку. Любое действие можно отменить стрелкой ↶ – в том числе правку текста и удаление чашки.</li>
       <li><b>Калибровка вручную.</b> Если диски не найдены или на фото лежит линейка, нажмите «Масштаб по линейке», поставьте концы жёлтой линейки на отрезок известной длины (диск или деления настоящей линейки), введите его длину в миллиметрах и нажмите «Готово».</li>
     </ol>
@@ -872,6 +872,39 @@ function measureZones(Z, w, h, disks) {
   });
 }
 
+// Колонии внутри зоны: настоящая зона подавления гладкая, а зона, где растут отдельные колонии, – пятнистая.
+// Зернистость – среднее |значение − среднее по маленькому кольцу вокруг| в кольце от тени диска до 0,85 радиуса зоны.
+// Подозрительно, если внутри зернистость заметная (≥ 7 из 255) и в 1,3 раза больше, чем у газона снаружи.
+// Подобрано на тестовых фото: у чистых зон ≤ 5, у зоны с колониями (OB 5 на кровяном агаре) – 10.
+// Зону не меняем, только спрашиваем человека (по правилам МАКМАХ п. 2.7 такую зону меряют по внутреннему краю)
+function grainIn(Z, w, h, x, y, a, b, s) {
+  let t = 0, n = 0;
+  for (let r = a; r <= b; r += Math.max(1, s / 2)) {
+    const m = Math.max(12, Math.round(2 * Math.PI * r / s));
+    for (let k = 0; k < m; k++) {
+      const u = 2 * Math.PI * k / m, px = x + Math.cos(u) * r, py = y + Math.sin(u) * r, c = sample(Z, w, h, px, py);
+      if (!isFinite(c)) continue;
+      let sum = 0, cnt = 0;
+      for (let j = 0; j < 8; j++) {
+        const q = sample(Z, w, h, px + Math.cos(j * Math.PI / 4) * s, py + Math.sin(j * Math.PI / 4) * s);
+        if (isFinite(q)) { sum += q; cnt++; }
+      }
+      if (cnt) { t += Math.abs(c - sum / cnt); n++; }
+    }
+  }
+  return n ? t / n : NaN;
+}
+function markColonies(Z, w, h, disks, diskPx) {
+  if (!diskPx) return;
+  const rd = diskPx / 2, s = Math.max(2, diskPx * 0.12);
+  for (const d of disks) {
+    const R = d.zonePx / 2;
+    if (d.none || R < rd * 1.9) continue;            // узкое кольцо – мерить нечего
+    const inside = grainIn(Z, w, h, d.x, d.y, rd * 1.6, R * 0.85, s), outside = grainIn(Z, w, h, d.x, d.y, R * 1.15, R * 1.15 + rd, s);
+    if (inside >= 7 && (!(outside > 0) || inside >= 1.3 * outside)) { d.colonies = true; d.doubt = true; }
+  }
+}
+
 function analyze(rgba, w, h) {
   const { W, Z, B } = features(rgba, w, h);
   const side = Math.min(w, h), minD = side * 0.025, maxD = side * 0.13;
@@ -940,6 +973,7 @@ function analyze(rgba, w, h) {
   const few = ok.length >= 1 && ok.length <= 2 && Math.hypot(ax, ay) / ok.length >= 0.7 && ok.every(d => d.stretch >= TILT_FEW);
   const stretch = aligned || few ? median(ok.map(d => d.stretch)) : null;
   measureZones(Z, w, h, disks);
+  markColonies(Z, w, h, disks, diskPx);
   return { disks, diskPx, stretch };
 }
 
@@ -1103,7 +1137,7 @@ const rgbaOf = d => d._rgba || (d._rgba = d._base.getContext("2d").getImageData(
 const itemsFrom = res => res.disks.map(d => ({
   x: d.x, y: d.y, src: d.none ? "none" : "auto", drug: "", ok: false, doubt: !d.none && !!d.doubt,
   r: rulerAt(d.x, d.y, res.diskPx ? (d.none ? res.diskPx : Math.max(d.zonePx, res.diskPx)) : d.zonePx),
-  shape: d.contour && !d.none ? d.contour : null,
+  shape: d.contour && !d.none ? d.contour : null, colonies: !d.none && !!d.colonies,
 }));
 
 async function addDish(src, w, h, name, sample) {
@@ -1357,7 +1391,7 @@ const pick = d => ({
 function hydrate(o) {
   const meta = { date: "", medium: "", group: "опыт", culture: "", person: "", org: "", dishMm: "", ...(o.meta || {}) };
   const items = (o.items || []).map(it => {
-    const z = { x: it.x, y: it.y, src: it.src || "manual", drug: it.drug || "", ok: !!it.ok, doubt: !!it.doubt, shape: Array.isArray(it.shape) ? it.shape : null };
+    const z = { x: it.x, y: it.y, src: it.src || "manual", drug: it.drug || "", ok: !!it.ok, doubt: !!it.doubt, colonies: !!it.colonies, shape: Array.isArray(it.shape) ? it.shape : null };
     if (Array.isArray(it.pts) && it.pts.length === N_PTS) z.pts = it.pts;
     else if (it.r2) z.pts = ptsFromRulers(it.r, it.r2);   // старая «вторая ось» – уже неровная зона
     else z.r = it.r;
@@ -1667,7 +1701,7 @@ function tableRows() {
       d.name, m.date, m.medium, m.group, m.culture, m.dishMm ? +m.dishMm : "", i + 1, it.drug, drugName(it.drug) || it.drug, drugNameEn(it.drug),
       mpp ? round1(diamPx(it) * mpp) : "",
       (c => c ? c.cat + (c.atu ? " (ЗТН)" : "") : "")(categoryOf(it, d)),
-      it.src === "none" ? (it.ok ? "нет зоны (подтверждено)" : "нет зоны (не проверено)") : needsCheck(it) ? "проверить (найдена неуверенно)" : STATUS(it),
+      it.src === "none" ? (it.ok ? "нет зоны (подтверждено)" : "нет зоны (не проверено)") : needsCheck(it) ? (it.colonies ? "проверить (колонии в зоне?)" : "проверить (найдена неуверенно)") : STATUS(it),
     ]));
   }
   return rows;
@@ -2024,9 +2058,10 @@ function renderSide() {
   if (it && needsCheck(it)) {
     const none = it.src === "none";
     $("checkText").textContent = none ? `Зона у диска ${P.sel + 1} не найдена. Посмотрите на фото: бактерии растут вплотную к диску?`
+      : it.colonies ? `Внутри зоны у диска ${P.sel + 1}, похоже, растут колонии – программа могла принять за зону область с ростом. По правилам такую зону меряют по внутреннему краю, до колоний; если колонии доходят до самого диска – зоны нет.`
       : `Зона у диска ${P.sel + 1} найдена неуверенно: лучи от диска находят край на разном расстоянии – зона сливается с соседними или край размыт. Проверьте круг: если он неверный, поправьте линейку или включите гибкий контур – он ляжет по найденному краю.`;
     $("checkYes").textContent = none ? "Да, зоны нет" : "Всё верно";
-    $("checkMark").textContent = none ? "Разметить зону вручную" : "Гибкий контур";
+    $("checkMark").textContent = none ? "Разметить зону вручную" : it.colonies ? "Зоны нет" : "Гибкий контур";
   }
   $("delBtn").disabled = !it;
   $("axisBtn").disabled = !it;
@@ -2490,6 +2525,12 @@ $("checkMark").addEventListener("click", () => {
   const d = D(), it = d && d.items[P.sel];
   if (!it) return;
   commit();
+  if (it.colonies && it.src !== "none") {        // колонии доходят до диска – зоны нет: круг размером с диск, сразу подтверждено
+    const c = center(it);
+    it.src = "none"; it.ok = true; it.r = rulerAt(c.x, c.y, d.scalePx || diamPx(it)); delete it.pts;
+    renderDishes(); render();
+    return setMsg(`Отмечено: у диска ${P.sel + 1} зоны нет (колонии растут до диска). Вернуть – стрелка ↶.`);
+  }
   if (it.src !== "none") {                       // неуверенная зона → гибкий контур по найденному краю
     it.pts = toContour(it); delete it.r; it.src = "edited";
     renderDishes(); render();
