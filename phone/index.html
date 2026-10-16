@@ -28,12 +28,12 @@
     <p class="disclaimer">Учебный инструмент, не для клинической диагностики: результат проверяет человек.</p>
   </header>
 
-  <!-- кнопки в порядке работы: открыть прошлую работу → загрузить фото → (разметить) → скачать проект -->
+  <!-- кнопки в порядке работы: загрузить фото (или открыть прошлую работу) → (разметить) → скачать проект -->
   <div class="toolbar">
-    <input type="file" id="projFile" accept=".json,application/json">
-    <label class="btn" for="projFile" id="projOpenBtn" tabindex="0" title="Продолжить работу из файла проекта (.json)">Открыть проект</label>
     <input type="file" id="file" accept="image/*" multiple>
     <label class="btn primary" for="file" id="uploadBtn" tabindex="0" title="Выбрать файлы. Можно и перетащить фото на окно или вставить из буфера обмена – Ctrl+V">Загрузить фото</label>
+    <input type="file" id="projFile" accept=".json,application/json">
+    <label class="btn" for="projFile" id="projOpenBtn" tabindex="0" title="Продолжить работу из файла проекта (.json)">Открыть проект</label>
     <button class="btn" id="sampleBtn" type="button">Пример</button>
     <button class="btn" id="projSaveBtn" type="button" title="Файл со всеми фото и разметкой, чтобы перенести на другой компьютер">Скачать проект</button>
     <span class="spacer"></span>
