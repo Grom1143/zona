@@ -181,6 +181,9 @@ body.focus .navcount { top: calc(10px + 100vh - 24px - 20px - 48px - 34px); }
 .help:hover .help-tip, .help:focus-within .help-tip { display: block; }   /* наведение мышью или нажатие (на телефоне) */
 .help-tip h4 { margin: 0 0 6px; font-size: 13px; }
 .help-tip ul { margin: 0; padding-left: 18px; display: grid; gap: 4px; }
+/* клавиша на кнопке: подсказка, чем нажать без мыши; в свёрнутых инструментах прячется (видна в подсказке при наведении) */
+.btn .key { font: 600 11px/1 var(--font-mono); padding: 2px 5px; border: 1px solid currentColor; border-radius: 4px; opacity: .6; }
+.tools.folded .key { display: none; }
 .help-tip kbd { font: 12px var(--font-mono); border: 1px solid var(--line); border-radius: 4px; padding: 0 4px; }
 .tools { display: grid; gap: 10px; padding-bottom: 14px; border-bottom: 1px solid var(--line); background: var(--panel); }
 .tools-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; position: relative; }   /* к ней привязано окно «?» */
@@ -414,49 +417,51 @@ input.drug::placeholder { color: var(--muted); font-weight: 400; }
               <span class="help-tip" id="helpTip" role="tooltip">
                 <h4>Управление</h4>
                 <ul>
-                  <li>Нажмите на зону, чтобы выбрать её.</li>
-                  <li><kbd>Shift</kbd> + колёсико – лупа; приближенное фото двигается за пустое место.</li>
-                  <li>Правая кнопка мыши по зоне или <kbd>Delete</kbd> – удалить.</li>
-                  <li><kbd>Ctrl</kbd>+<kbd>Z</kbd> / ↶ – отменить, <kbd>Ctrl</kbd>+<kbd>Y</kbd> / ↷ – вернуть.</li>
-                  <li><kbd>←</kbd> <kbd>→</kbd> – предыдущее / следующее фото.</li>
-                  <li><kbd>Ctrl</kbd>+<kbd>S</kbd> – сохранить, <kbd>Esc</kbd> – отменить режим или выйти из «Во весь экран».</li>
+                  <li>Нажмите на зону, чтобы выбрать её; приближенное фото двигается за пустое место.</li>
+                  <li><kbd>A</kbd> – добавить зону, <kbd>Del</kbd> или правая кнопка мыши – удалить.</li>
+                  <li><kbd>C</kbd> – гибкий контур / снова круг, <kbd>R</kbd> – скруглить.</li>
+                  <li><kbd>L</kbd> – масштаб по линейке, <kbd>P</kbd> – снимок для отчёта.</li>
+                  <li><kbd>+</kbd> <kbd>−</kbd> – лупа, <kbd>0</kbd> – вписать; <kbd>Shift</kbd> + колёсико – лупа к точке.</li>
+                  <li><kbd>Ctrl</kbd>+<kbd>Z</kbd> – отменить, <kbd>Ctrl</kbd>+<kbd>Y</kbd> – вернуть, <kbd>Ctrl</kbd>+<kbd>S</kbd> – сохранить.</li>
+                  <li><kbd>←</kbd> <kbd>→</kbd> – другое фото, <kbd>F</kbd> – во весь экран, <kbd>T</kbd> – свернуть инструменты, <kbd>Esc</kbd> – отменить режим.</li>
+                  <li>Буквы работают и в русской раскладке.</li>
                 </ul>
               </span>
             </span>
             <button class="btn icon" id="undoBtn" type="button" title="Отменить действие (Ctrl+Z)" aria-label="Отменить действие">↶</button>
             <button class="btn icon" id="redoBtn" type="button" title="Вернуть действие (Ctrl+Y)" aria-label="Вернуть действие">↷</button>
-            <button class="btn icon" id="focusBtn" type="button" title="Во весь экран (выход – Esc)" aria-label="Во весь экран" aria-pressed="false">
+            <button class="btn icon" id="focusBtn" type="button" aria-keyshortcuts="F" title="Во весь экран (F, выход – Esc)" aria-label="Во весь экран" aria-pressed="false">
               <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/></svg>
             </button>
-            <button class="btn icon fold" id="toolsToggle" type="button" title="Свернуть инструменты в иконки" aria-expanded="true" aria-label="Свернуть инструменты">
+            <button class="btn icon fold" id="toolsToggle" type="button" aria-keyshortcuts="T" title="Свернуть инструменты в иконки (T)" aria-expanded="true" aria-label="Свернуть инструменты">
               <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 15l6-6 6 6"/></svg>
             </button>
           </div>
         </div>
         <!-- у каждой кнопки иконка и подпись; в свёрнутом виде остаются только иконки -->
         <div class="tools-grid">
-          <button class="btn save wide" id="saveBtn2" type="button" title="Сохранить все чашки в этом браузере (Ctrl+S)">
-            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 3h11l3 3v15H5z"/><path d="M8 3v5h7V3M8 21v-7h8v7"/></svg><span class="lbl">Сохранить</span></button>
-          <button class="btn wide" id="snapEditBtn" type="button" title="Снимок окна разметки для презентаций и отчётов: обрезка, яркость, контраст; сохранить PNG или скопировать" disabled>
-            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5"/></svg><span class="lbl">Снимок для отчёта</span><span class="lbl-short">Снимок</span></button>
-          <button class="btn" id="addBtn" type="button" title="Добавить зону">
-            <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8"/><path d="M12 8v8M8 12h8"/></svg><span class="lbl">Добавить зону</span></button>
-          <button class="btn" id="delBtn" type="button" disabled title="Удалить зону (Delete, правая кнопка мыши)">
-            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M10 7V4h4v3M6 7l1 13h10l1-13"/></svg><span class="lbl">Удалить зону</span></button>
-          <button class="btn" id="axisBtn" type="button" disabled title="Гибкий контур: для зоны неправильной формы. Нажмите ещё раз – снова круг">
-            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4c5 0 8.5 3 7.5 8s-4 8-8.5 7.5S4 16 4 12s3-8 8-8z"/><circle cx="12" cy="4" r="1.6"/><circle cx="19.5" cy="12" r="1.6"/><circle cx="4" cy="12" r="1.6"/></svg><span class="lbl">Гибкий контур</span></button>
-          <button class="btn" id="roundBtn" type="button" disabled title="Скруглить: гибкий контур – ровным кругом того же диаметра, точки остаются">
-            <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8"/></svg><span class="lbl">Скруглить</span></button>
-          <button class="btn wide" id="calibBtn" type="button" title="Масштаб по линейке">
-            <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="8" width="18" height="8" rx="1"/><path d="M7 8v3M11 8v4M15 8v3M19 8v2"/></svg><span class="lbl">Масштаб по линейке</span></button>
+          <button class="btn save wide" id="saveBtn2" type="button" data-hk="Ctrl+S" aria-keyshortcuts="Control+S" title="Сохранить все чашки в этом браузере (Ctrl+S)">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 3h11l3 3v15H5z"/><path d="M8 3v5h7V3M8 21v-7h8v7"/></svg><span class="lbl">Сохранить</span><kbd class="key">Ctrl+S</kbd></button>
+          <button class="btn wide" id="snapEditBtn" type="button" data-hk="P" aria-keyshortcuts="P" title="Снимок окна разметки для презентаций и отчётов: обрезка, яркость, контраст; сохранить PNG или скопировать (P)" disabled>
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5"/></svg><span class="lbl">Снимок для отчёта</span><span class="lbl-short">Снимок</span><kbd class="key">P</kbd></button>
+          <button class="btn" id="addBtn" type="button" data-hk="A" aria-keyshortcuts="A" title="Добавить зону (A)">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8"/><path d="M12 8v8M8 12h8"/></svg><span class="lbl">Добавить зону</span><kbd class="key">A</kbd></button>
+          <button class="btn" id="delBtn" type="button" disabled data-hk="Del" aria-keyshortcuts="Delete" title="Удалить зону (Delete, правая кнопка мыши)">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M10 7V4h4v3M6 7l1 13h10l1-13"/></svg><span class="lbl">Удалить зону</span><kbd class="key">Del</kbd></button>
+          <button class="btn" id="axisBtn" type="button" disabled data-hk="C" aria-keyshortcuts="C" title="Гибкий контур: для зоны неправильной формы. Нажмите ещё раз – снова круг (C)">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4c5 0 8.5 3 7.5 8s-4 8-8.5 7.5S4 16 4 12s3-8 8-8z"/><circle cx="12" cy="4" r="1.6"/><circle cx="19.5" cy="12" r="1.6"/><circle cx="4" cy="12" r="1.6"/></svg><span class="lbl">Гибкий контур</span><kbd class="key">C</kbd></button>
+          <button class="btn" id="roundBtn" type="button" disabled data-hk="R" aria-keyshortcuts="R" title="Скруглить: гибкий контур – ровным кругом того же диаметра, точки остаются (R)">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8"/></svg><span class="lbl">Скруглить</span><kbd class="key">R</kbd></button>
+          <button class="btn wide" id="calibBtn" type="button" data-hk="L" aria-keyshortcuts="L" title="Масштаб по линейке (L)">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="8" width="18" height="8" rx="1"/><path d="M7 8v3M11 8v4M15 8v3M19 8v2"/></svg><span class="lbl">Масштаб по линейке</span><kbd class="key">L</kbd></button>
           <label class="field wide" for="calibMm" id="calibField" hidden>Длина отрезка, мм <input type="number" id="calibMm" value="6" min="0.5" max="200" step="0.1"></label>
           <div class="zoombar wide" title="Shift + колёсико мыши над фото тоже приближает">
             <span class="lbl">Лупа</span>
-            <button class="btn icon" id="zoomMinus" type="button" aria-label="Отдалить" title="Отдалить" disabled>−</button>
+            <button class="btn icon" id="zoomMinus" type="button" aria-label="Отдалить" aria-keyshortcuts="-" title="Отдалить (−)" disabled>−</button>
             <output id="zoomOut" aria-live="polite">100 %</output>
-            <button class="btn icon" id="zoomPlus" type="button" aria-label="Приблизить" title="Приблизить">+</button>
-            <button class="btn" id="zoomFit" type="button" title="Вписать фото в окно" disabled>
-              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/></svg><span class="lbl">Вписать</span></button>
+            <button class="btn icon" id="zoomPlus" type="button" aria-label="Приблизить" aria-keyshortcuts="+" title="Приблизить (+)">+</button>
+            <button class="btn" id="zoomFit" type="button" aria-keyshortcuts="0" title="Вписать фото в окно (0)" disabled>
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/></svg><span class="lbl">Вписать</span><kbd class="key">0</kbd></button>
           </div>
         </div>
         <!-- видимость разметки и цвета фото: прячутся треугольником слева -->
@@ -1694,14 +1699,14 @@ async function saveXlsx() {
 function setLabel(id, text) {
   const b = $(id);
   b.querySelector(".lbl").textContent = text;
-  b.setAttribute("aria-label", text); b.title = text;
+  b.setAttribute("aria-label", text); b.title = b.dataset.hk ? `${text} (${b.dataset.hk})` : text;
 }
 // Свернуть / развернуть инструменты; выбор запоминается в этом браузере
 function foldTools(on, restoring) {
   document.querySelector(".tools").classList.toggle("folded", on);
   // при сворачивании кнопкой «Видимость и цвета» тоже сворачивается (но не прячется); при загрузке страницы – как было
   if (on && !restoring && typeof foldLook === "function") foldLook(true);
-  const t = $("toolsToggle"), text = on ? "Развернуть инструменты" : "Свернуть инструменты в иконки";
+  const t = $("toolsToggle"), text = on ? "Развернуть инструменты (T)" : "Свернуть инструменты в иконки (T)";
   t.setAttribute("aria-expanded", String(!on)); t.setAttribute("aria-label", text); t.title = text;
   try { localStorage.setItem("zona-tools-folded", on ? "1" : "0"); } catch {}
 }
@@ -1710,7 +1715,7 @@ function setFocus(on) {
   document.body.classList.toggle("focus", on);
   const strip = $("dishes");
   if (on) document.querySelector(".tools").after(strip); else document.querySelector(".left").append(strip);
-  const b = $("focusBtn"), t = on ? "Обычный вид (Esc)" : "Во весь экран (выход – Esc)";
+  const b = $("focusBtn"), t = on ? "Обычный вид (F или Esc)" : "Во весь экран (F, выход – Esc)";
   b.setAttribute("aria-pressed", String(on)); b.title = t; b.setAttribute("aria-label", t);
   b.classList.toggle("on", on);
   if (on && !document.fullscreenElement && document.documentElement.requestFullscreen)
@@ -2687,6 +2692,9 @@ $("copyBtn").addEventListener("click", async () => {
   setMsg("Браузер не дал скопировать. Откройте сайт файлом index.html на своём компьютере – там работают и копирование, и скачивание.", true);
 });
 
+// Клавиши кнопок инструментов. e.code – физическая клавиша: работает и в русской раскладке (A = Ф, C = С …)
+const HOTKEYS = { KeyA: "addBtn", KeyC: "axisBtn", KeyR: "roundBtn", KeyL: "calibBtn", KeyP: "snapEditBtn", KeyF: "focusBtn", KeyT: "toolsToggle",
+  Equal: "zoomPlus", NumpadAdd: "zoomPlus", Minus: "zoomMinus", NumpadSubtract: "zoomMinus", Digit0: "zoomFit", Numpad0: "zoomFit" };
 document.addEventListener("keydown", e => {
   const typing = /^(INPUT|SELECT|TEXTAREA)$/.test(document.activeElement.tagName);
   if (document.querySelector("dialog[open]")) return;   // открыта обрезка или справка
@@ -2696,6 +2704,10 @@ document.addEventListener("keydown", e => {
   if (ctrl && (key === "z" || key === "я") && !e.shiftKey) { e.preventDefault(); undo(); }
   else if (ctrl && (key === "y" || key === "н" || ((key === "z" || key === "я") && e.shiftKey))) { e.preventDefault(); redo(); }
   else if ((e.key === "Delete" || e.key === "Backspace") && P.sel >= 0) { e.preventDefault(); $("delBtn").click(); }
+  else if (!ctrl && !e.altKey && HOTKEYS[e.code]) {
+    const b = $(HOTKEYS[e.code]);
+    if (!b.disabled) { e.preventDefault(); b.click(); }
+  }
   else if ((e.key === "ArrowLeft" || e.key === "ArrowRight") && !ctrl && !e.altKey && P.mode === "idle") {
     e.preventDefault(); stepDish(e.key === "ArrowLeft" ? -1 : 1);       // ← → – предыдущее / следующее фото
   }
