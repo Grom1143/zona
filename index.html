@@ -164,6 +164,16 @@ body.focus .navcount { top: calc(10px + 100vh - 24px - 20px - 48px - 34px); }
 .tools-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
 .tools-grid .btn { justify-content: center; }
 .tools-grid .wide { grid-column: 1 / -1; }
+/* «Снимок для отчёта» и справа узкая кнопка редактора (~1 см) */
+.snaprow { display: flex; gap: 6px; }
+.snaprow #snapBtn { flex: 1 1 auto; min-width: 0; }
+.snaprow #snapEditBtn { flex: none; width: 40px; padding-inline: 0; }
+.tools.folded .snaprow { gap: 6px; }
+/* редактор снимка */
+.edit-ctl { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 6px 16px; }
+.edit-ctl label { display: grid; grid-template-columns: 13ch minmax(0, 1fr) 5ch; align-items: center; gap: 8px; font-size: 14px; color: var(--muted); }
+.edit-ctl input[type="range"] { width: 100%; accent-color: var(--accent); }
+.edit-ctl output { font: 600 13px var(--font-mono); color: var(--ink); text-align: right; }
 .tools .field { justify-content: space-between; }
 .tools .btn svg { width: 18px; height: 18px; flex: none; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
 .tools .fold svg { transition: transform .15s; }
@@ -343,8 +353,12 @@ input.drug::placeholder { color: var(--muted); font-weight: 400; }
         <div class="tools-grid">
           <button class="btn save wide" id="saveBtn2" type="button" title="Сохранить все чашки в этом браузере (Ctrl+S)">
             <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 3h11l3 3v15H5z"/><path d="M8 3v5h7V3M8 21v-7h8v7"/></svg><span class="lbl">Сохранить</span></button>
-          <button class="btn wide" id="snapBtn" type="button" title="Снимок окна разметки в PNG — для презентаций и отчётов: как на экране, с видимостью разметки и приближением" disabled>
+          <div class="snaprow wide">
+            <button class="btn" id="snapBtn" type="button" title="Снимок окна разметки в PNG — для презентаций и отчётов: как на экране, с видимостью разметки и приближением" disabled>
             <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5"/></svg><span class="lbl">Снимок для отчёта</span></button>
+            <button class="btn" id="snapEditBtn" type="button" title="Снимок с редактором: обрезка, яркость, контраст, насыщенность" aria-label="Снимок с редактором" disabled>
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h10M18 7h2M4 17h4M12 17h8"/><circle cx="16" cy="7" r="2"/><circle cx="10" cy="17" r="2"/></svg></button>
+          </div>
           <button class="btn" id="addBtn" type="button" title="Добавить зону">
             <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8"/><path d="M12 8v8M8 12h8"/></svg><span class="lbl">Добавить зону</span></button>
           <button class="btn" id="delBtn" type="button" disabled title="Удалить зону (Delete, правая кнопка мыши)">
@@ -493,6 +507,26 @@ input.drug::placeholder { color: var(--muted); font-weight: 400; }
       <button class="btn" id="cropFull" type="button">Без обрезки</button>
       <button class="btn" id="cropAll" type="button">Без обрезки для всех</button>
       <button class="btn" id="cropSkip" type="button">Не добавлять это фото</button>
+    </div>
+  </dialog>
+
+  <!-- редактор снимка: обрезка, яркость, контраст, насыщенность -->
+  <dialog class="how crop" id="editBox" aria-labelledby="editTitle">
+    <div class="how-head">
+      <h2 id="editTitle">Редактор снимка</h2>
+      <span class="crop-info" id="editInfo"></span>
+    </div>
+    <div class="crop-stage"><canvas id="editCv" aria-label="Снимок с рамкой обрезки"></canvas></div>
+    <div class="edit-ctl">
+      <label for="edBright">Яркость <input type="range" id="edBright" min="-100" max="100" step="1" value="0"><output id="edBrightOut">0</output></label>
+      <label for="edContrast">Контраст <input type="range" id="edContrast" min="-100" max="100" step="1" value="0"><output id="edContrastOut">0</output></label>
+      <label for="edSat">Насыщенность <input type="range" id="edSat" min="-100" max="100" step="1" value="0"><output id="edSatOut">0</output></label>
+    </div>
+    <p class="crop-hint">Обрезка: потяните по снимку новую рамку, углы и стороны — изменить, внутри — сдвинуть. Двойной клик по ползунку — вернуть 0.</p>
+    <div class="row">
+      <button class="btn primary" id="editSave" type="button">Сохранить PNG</button>
+      <button class="btn" id="editReset" type="button">Сбросить всё</button>
+      <button class="btn" id="editCancel" type="button">Отмена</button>
     </div>
   </dialog>
 
@@ -1766,7 +1800,7 @@ function renderDishes() {
       `<span class="ct${n ? " warn" : ""}">${d.items.length} ${disksWord(d.items.length)}${n ? ` · ${n} ?` : ""}</span>` +
       `<button class="x" type="button" data-del="${i}" aria-label="Удалить чашку ${esc(d.name)}" title="Удалить чашку">×</button></div>`;
   }).join("") + `<label class="dish add" for="file" tabindex="0"><b>+</b>Добавить фото</label>`;
-  $("delPickBtn").disabled = $("snapBtn").disabled = !P.dishes.length;
+  $("delPickBtn").disabled = $("snapBtn").disabled = $("snapEditBtn").disabled = !P.dishes.length;
 }
 
 function fillMeta() {
@@ -2029,25 +2063,137 @@ $("redoBtn").addEventListener("click", redo);
 $("saveBtn2").addEventListener("click", () => saveBrowser(false));
 // Снимок для отчёта: видимая часть окна разметки — как на экране (видимость разметки, приближение, выбранная зона),
 // в разрешении фото, без надписей поверх: чашка и дата — только в имени файла
-async function snapshot() {
+function grabView() {
   const d = D();
-  if (!d || !d._base) return setMsg("Сначала откройте фото чашки.", true);
+  if (!d || !d._base) { setMsg("Сначала откройте фото чашки.", true); return null; }
   draw();
   const cr = cv.getBoundingClientRect(), vr = $("view").getBoundingClientRect();
   const sx = cv.width / cr.width, sy = cv.height / cr.height;
   const x0 = Math.max(0, (vr.left - cr.left) * sx), y0 = Math.max(0, (vr.top - cr.top) * sy);
   const x1 = Math.min(cv.width, (vr.right - cr.left) * sx), y1 = Math.min(cv.height, (vr.bottom - cr.top) * sy);
   const w = Math.round(x1 - x0), h = Math.round(y1 - y0);
-  if (w < 2 || h < 2) return setMsg("Фото не видно в окне — нажмите «Вписать».", true);
+  if (w < 2 || h < 2) { setMsg("Фото не видно в окне — нажмите «Вписать».", true); return null; }
   const date = d.meta.date ? d.meta.date.split("-").reverse().join(".") : "";
   const out = document.createElement("canvas"); out.width = w; out.height = h;
   out.getContext("2d").drawImage(cv, x0, y0, w, h, 0, 0, w, h);
-  const blob = await new Promise(r => out.toBlob(r, "image/png"));
-  if (!blob) return setMsg("Снимок не получился.", true);
   const name = `${(d.name || "чашка").replace(/[\\/:*?"<>|]+/g, "_").trim() || "чашка"}${date ? " " + date : ""}.png`;
-  if (await saveFile(name, blob)) setMsg(`Снимок сохранён: ${name} (${w}×${h} px).`);
+  return { canvas: out, name };
+}
+async function savePng(c, name) {
+  const blob = await new Promise(r => c.toBlob(r, "image/png"));
+  if (!blob) return setMsg("Снимок не получился.", true);
+  if (await saveFile(name, blob)) setMsg(`Снимок сохранён: ${name} (${c.width}×${c.height} px).`);
+}
+async function snapshot() {
+  const g = grabView();
+  if (g) await savePng(g.canvas, g.name);
 }
 $("snapBtn").addEventListener("click", snapshot);
+
+// ----- редактор снимка -----
+// E.src — исходный снимок, E.adj — он же после яркости / контраста / насыщенности, E.R — рамка обрезки (в px снимка)
+const E = { src: null, adj: null, R: null, name: "", drag: null };
+const EDIT_IDS = ["edBright", "edContrast", "edSat"];
+function editAdjust() {
+  const b = +$("edBright").value * 2.55, c = +$("edContrast").value * 2.55, sat = 1 + $("edSat").value / 100;
+  const f = 259 * (c + 255) / (255 * (259 - c));                 // стандартная формула контраста
+  const lut = new Uint8ClampedArray(256);
+  for (let v = 0; v < 256; v++) lut[v] = f * (v - 128) + 128 + b;
+  const g = E.adj.getContext("2d"), img = E.src.getContext("2d").getImageData(0, 0, E.src.width, E.src.height), p = img.data;
+  for (let i = 0; i < p.length; i += 4) {
+    let r = lut[p[i]], gg = lut[p[i + 1]], bb = lut[p[i + 2]];
+    if (sat !== 1) { const y = 0.299 * r + 0.587 * gg + 0.114 * bb; r = y + (r - y) * sat; gg = y + (gg - y) * sat; bb = y + (bb - y) * sat; }
+    p[i] = r; p[i + 1] = gg; p[i + 2] = bb;                       // Uint8ClampedArray сам обрежет до 0…255
+  }
+  g.putImageData(img, 0, 0);
+  for (const id of EDIT_IDS) $(id + "Out").textContent = $(id).value;
+  editDraw();
+}
+function editDraw() {
+  const c = $("editCv"), g = c.getContext("2d"), R = E.R, s = c.width / (c.getBoundingClientRect().width || c.width);
+  g.drawImage(E.adj, 0, 0);
+  g.fillStyle = "rgba(0,0,0,.6)";                                 // вне рамки — затемнено
+  g.fillRect(0, 0, c.width, R.y); g.fillRect(0, R.y + R.h, c.width, c.height - R.y - R.h);
+  g.fillRect(0, R.y, R.x, R.h); g.fillRect(R.x + R.w, R.y, c.width - R.x - R.w, R.h);
+  g.strokeStyle = "#ff8c1a"; g.lineWidth = 2 * s; g.strokeRect(R.x, R.y, R.w, R.h);
+  $("editInfo").textContent = `${Math.round(R.w)}×${Math.round(R.h)} px`;
+}
+function openEditor() {
+  const got = grabView();
+  if (!got) return;
+  hideAsk();
+  E.src = got.canvas; E.name = got.name;
+  E.adj = document.createElement("canvas"); E.adj.width = E.src.width; E.adj.height = E.src.height;
+  const c = $("editCv"); c.width = E.src.width; c.height = E.src.height;
+  E.R = { x: 0, y: 0, w: c.width, h: c.height };
+  for (const id of EDIT_IDS) $(id).value = 0;
+  $("editBox").showModal();
+  editAdjust();
+}
+{
+  const c = $("editCv"), MIN = 10;
+  const at = e => { const b = c.getBoundingClientRect(); return { x: (e.clientX - b.left) * c.width / b.width, y: (e.clientY - b.top) * c.height / b.height }; };
+  const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
+  // что под курсором: стороны рамки (l r t b), внутри — сдвиг, снаружи — новая рамка
+  const grabOf = p => {
+    const R = E.R, hit = 14 * c.width / (c.getBoundingClientRect().width || c.width);
+    const inY = p.y > R.y - hit && p.y < R.y + R.h + hit, inX = p.x > R.x - hit && p.x < R.x + R.w + hit;
+    const s = { l: inY && Math.abs(p.x - R.x) < hit, r: inY && Math.abs(p.x - R.x - R.w) < hit, t: inX && Math.abs(p.y - R.y) < hit, b: inX && Math.abs(p.y - R.y - R.h) < hit };
+    if (s.l || s.r || s.t || s.b) return s;
+    const full = R.w >= c.width - 1 && R.h >= c.height - 1;
+    return !full && p.x > R.x && p.x < R.x + R.w && p.y > R.y && p.y < R.y + R.h ? { move: true } : { draw: true };
+  };
+  const cursorOf = s => s.draw ? "crosshair" : s.move ? "move" : (s.l && s.t) || (s.r && s.b) ? "nwse-resize" : (s.r && s.t) || (s.l && s.b) ? "nesw-resize" : s.l || s.r ? "ew-resize" : "ns-resize";
+  c.onpointerdown = e => {
+    if (!E.src) return;
+    const p = at(e);
+    E.drag = { s: grabOf(p), p, R0: { ...E.R } };
+    c.setPointerCapture(e.pointerId); e.preventDefault();
+  };
+  c.onpointermove = e => {
+    if (!E.src) return;
+    const p = at(e);
+    if (!E.drag) { c.style.cursor = cursorOf(grabOf(p)); return; }
+    const { s, R0 } = E.drag, dx = p.x - E.drag.p.x, dy = p.y - E.drag.p.y;
+    if (s.draw) {
+      const x0 = clamp(Math.min(E.drag.p.x, p.x), 0, c.width), y0 = clamp(Math.min(E.drag.p.y, p.y), 0, c.height);
+      const x1 = clamp(Math.max(E.drag.p.x, p.x), 0, c.width), y1 = clamp(Math.max(E.drag.p.y, p.y), 0, c.height);
+      if (x1 - x0 >= MIN && y1 - y0 >= MIN) E.R = { x: x0, y: y0, w: x1 - x0, h: y1 - y0 };
+    } else if (s.move) {
+      E.R.x = clamp(R0.x + dx, 0, c.width - R0.w); E.R.y = clamp(R0.y + dy, 0, c.height - R0.h);
+    } else {
+      let x0 = R0.x, y0 = R0.y, x1 = R0.x + R0.w, y1 = R0.y + R0.h;
+      if (s.l) x0 = clamp(x0 + dx, 0, x1 - MIN);
+      if (s.r) x1 = clamp(x1 + dx, x0 + MIN, c.width);
+      if (s.t) y0 = clamp(y0 + dy, 0, y1 - MIN);
+      if (s.b) y1 = clamp(y1 + dy, y0 + MIN, c.height);
+      E.R = { x: x0, y: y0, w: x1 - x0, h: y1 - y0 };
+    }
+    editDraw();
+  };
+  c.onpointerup = c.onpointercancel = () => { E.drag = null; };
+}
+for (const id of EDIT_IDS) {
+  $(id).addEventListener("input", editAdjust);
+  $(id).addEventListener("dblclick", () => { $(id).value = 0; editAdjust(); });
+}
+$("snapEditBtn").addEventListener("click", openEditor);
+$("editReset").addEventListener("click", () => {
+  for (const id of EDIT_IDS) $(id).value = 0;
+  E.R = { x: 0, y: 0, w: E.src.width, h: E.src.height };
+  editAdjust();
+});
+$("editCancel").addEventListener("click", () => $("editBox").close());
+$("editBox").addEventListener("close", () => { E.src = E.adj = null; E.drag = null; });   // память под снимок отпускаем
+$("editSave").addEventListener("click", async () => {
+  const R = E.R, x = Math.round(R.x), y = Math.round(R.y), w = Math.max(1, Math.round(R.w)), h = Math.max(1, Math.round(R.h));
+  const out = document.createElement("canvas"); out.width = w; out.height = h;
+  out.getContext("2d").drawImage(E.adj, x, y, w, h, 0, 0, w, h);
+  const name = E.name;
+  $("editBox").close();
+  await savePng(out, name);
+});
+addEventListener("resize", () => { if (E.src) editDraw(); });
 $("xlsxBtn").addEventListener("click", saveXlsx);
 $("projSaveBtn").addEventListener("click", saveProject);
 $("resetBtn").addEventListener("click", async () => {
