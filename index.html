@@ -1,0 +1,2167 @@
+<title>Зона ингибирования</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Onest:wght@400;500;700&family=JetBrains+Mono:wght@400;600&display=swap">
+<script async src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<style>
+/* Лабораторный прибор: сверху серия чашек, слева поле с чашкой Петри, справа паспорт чашки и журнал измерений */
+:root {
+  --bg: #eef1f3;
+  --panel: #ffffff;
+  --ink: #18232d;
+  --muted: #5a6975;
+  --line: #d3dae0;
+  --accent: #0f7a6c;
+  --accent-ink: #ffffff;
+  --accent-soft: #dcefeb;
+  --ruler: #b9780a;
+  --warn: #b4521f;
+  --warn-ink: #ffffff;
+  --stage: #1b2329;
+  --font-display: "Onest", "Segoe UI", system-ui, sans-serif;
+  --font-body: "Onest", "Segoe UI", system-ui, sans-serif;
+  --font-mono: "JetBrains Mono", Consolas, ui-monospace, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #11171c; --panel: #18212a; --ink: #e3e9ee; --muted: #93a3b0; --line: #2a3743;
+    --accent: #3cc1ad; --accent-ink: #0b1f1c; --accent-soft: #173a35; --ruler: #f2b33d;
+    --warn: #f08a55; --warn-ink: #1d0f07; --stage: #0a0e11; color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #11171c; --panel: #18212a; --ink: #e3e9ee; --muted: #93a3b0; --line: #2a3743;
+  --accent: #3cc1ad; --accent-ink: #0b1f1c; --accent-soft: #173a35; --ruler: #f2b33d;
+  --warn: #f08a55; --warn-ink: #1d0f07; --stage: #0a0e11; color-scheme: dark;
+}
+body {
+  background: var(--bg); color: var(--ink); font-family: var(--font-body); font-size: 15px; line-height: 1.5;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+  padding-block: 20px 40px;
+}
+[hidden] { display: none !important; }
+html { scrollbar-gutter: stable; }   /* полоса прокрутки не сдвигает страницу, когда появляется */
+.wrap { max-width: 1280px; margin: 0 auto; display: grid; gap: 14px; }
+header { display: grid; gap: 6px; }
+h1 { font-family: var(--font-display); font-weight: 700; font-size: 28px; line-height: 1.15; margin: 0; letter-spacing: -0.01em; text-wrap: balance; }
+h1 small { font-family: var(--font-mono); font-weight: 400; font-size: 13px; color: var(--muted); letter-spacing: 0.04em; margin-left: 8px; }
+header p { margin: 0; color: var(--muted); max-width: 72ch; }
+h2 { font-family: var(--font-display); font-size: 18px; margin: 0; text-wrap: balance; }
+h3 { font-family: var(--font-display); font-size: 15px; margin: 0; }
+
+.toolbar { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.sep { width: 1px; align-self: stretch; background: var(--line); margin: 2px 2px; }
+.spacer { flex: 1 1 0; }
+.btn {
+  font: 500 14px/1 var(--font-body); color: var(--ink); background: var(--panel);
+  border: 1px solid var(--line); border-radius: 8px; padding: 10px 14px; cursor: pointer;
+  display: inline-flex; align-items: center; gap: 6px; white-space: nowrap;
+}
+.btn:hover { border-color: var(--accent); }
+.btn:focus-visible, input:focus-visible, select:focus-visible, tr:focus-visible, .dish:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.btn.primary { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); }
+.btn.save { background: var(--ink); color: var(--bg); border-color: var(--ink); font-weight: 700; padding-inline: 18px; }
+.btn.save.dirty::before { content: ""; width: 8px; height: 8px; border-radius: 50%; background: var(--warn); box-shadow: 0 0 0 2px var(--bg); }
+.btn.danger { background: var(--warn); color: var(--warn-ink); border-color: var(--warn); }
+.btn.icon { font-size: 18px; padding: 7px 12px; }
+.btn.on { background: var(--accent-soft); border-color: var(--accent); }
+.btn:disabled { opacity: 0.45; cursor: default; border-color: var(--line); }
+.savestate { font-size: 13px; color: var(--muted); }
+.savestate.warn { color: var(--warn); }
+.field { display: inline-flex; align-items: center; gap: 6px; color: var(--muted); font-size: 14px; }
+.field.push { margin-left: auto; }
+.field input[type="number"] { width: 64px; font: 600 14px var(--font-mono); padding: 8px; border: 1px solid var(--line); border-radius: 8px; background: var(--panel); color: var(--ink); }
+.field input[type="range"] { width: 110px; accent-color: var(--accent); }
+.field output { font: 600 13px var(--font-mono); color: var(--ink); min-width: 5ch; text-align: right; }   /* «100 %» не сдвигает ползунок */
+#file, #projFile { position: absolute; width: 1px; height: 1px; opacity: 0; pointer-events: none; }
+
+/* серия чашек */
+.dishes { display: flex; gap: 8px; overflow-x: auto; padding: 2px 2px 6px; }
+.dish {
+  flex: 0 0 auto; width: 118px; border: 1px solid var(--line); border-radius: 8px; background: var(--panel);
+  padding: 6px; display: grid; gap: 3px; cursor: pointer; position: relative; align-content: start;
+}
+.dish:hover { border-color: var(--accent); }
+.dish.cur { border-color: var(--accent); box-shadow: inset 0 0 0 1px var(--accent); }
+.dish img { width: 100%; aspect-ratio: 1; object-fit: cover; border-radius: 5px; display: block; background: var(--stage); }
+.dish .nm { font-size: 13px; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.dish .ct { font-size: 12px; color: var(--muted); }
+.dish .ct.warn { color: var(--warn); }
+.dish .x {
+  position: absolute; top: 10px; right: 10px; width: 26px; height: 26px; border-radius: 50%; border: 0;
+  background: rgba(10, 14, 17, .7); color: #fff; cursor: pointer; font: 600 16px/1 var(--font-body);
+}
+.dish .x:hover { background: var(--warn); }
+.dish.add { border-style: dashed; place-items: center; align-content: center; min-height: 152px; color: var(--muted); text-align: center; font-size: 13px; }
+.dish.add b { font-size: 26px; font-weight: 400; color: var(--accent); }
+
+/* окно разметки постоянного размера: вся левая колонка, высота 600 px; фото вписано внутрь по центру */
+.main { display: grid; grid-template-columns: minmax(0, 1fr) 390px; gap: 18px; align-items: start; }
+@media (max-width: 900px) { .main { grid-template-columns: minmax(0, 1fr); } .spacer { display: none; } }
+.left { display: grid; gap: 12px; min-width: 0; }
+/* режим «Во весь экран»: окно разметки и инструменты занимают всё окно; ряд чашек спрятан */
+body.focus { overflow: hidden; }
+body.focus .main { position: fixed; inset: 0; z-index: 30; background: var(--bg); padding: 12px; gap: 12px;
+  grid-template-columns: minmax(0, 1fr) 380px; }
+/* ряд чашек в этом режиме переезжает в правую колонку, под инструменты (см. setFocus), а окно разметки — на всю высоту */
+body.focus .view { height: calc(100vh - 24px - 20px - 48px); }
+body.focus .dishes { padding-bottom: 4px; border-bottom: 1px solid var(--line); }
+body.focus .dish { width: 76px; padding: 4px; gap: 1px; }
+body.focus .dish img { width: 52px; margin: 0 auto; }
+body.focus .dish .nm { font-size: 11px; }
+body.focus .dish .ct { font-size: 11px; }
+body.focus .dish .x { top: 6px; right: 6px; width: 20px; height: 20px; font-size: 13px; }
+body.focus .dish.add { min-height: 0; height: 96px; font-size: 11px; box-sizing: border-box; }
+body.focus .dish.add b { font-size: 20px; }
+body.focus .main > aside { max-height: calc(100vh - 24px); overflow-y: auto; box-sizing: border-box; }
+@media (max-width: 900px) {
+  body.focus .main { grid-template-columns: minmax(0, 1fr); grid-template-rows: auto minmax(0, 1fr); overflow: hidden; }
+  body.focus .view { height: 55vh; }
+  body.focus .main > aside { max-height: none; min-height: 0; }
+}
+.ask.pop { z-index: 40; }
+.stage { background: var(--stage); border-radius: 10px; padding: 10px; position: relative; min-width: 0; }
+/* при приближении фото больше окна: лишнее скрыто, фото двигается перетаскиванием (без полос прокрутки) */
+.view { height: 600px; display: flex; overflow: hidden; }
+.view #cv { margin: auto; }
+.navbtn { position: absolute; top: calc(10px + 300px); transform: translateY(-50%); z-index: 3; width: 44px; height: 72px;
+  border: 0; border-radius: 10px; background: rgba(10, 14, 17, .55); color: #fff; font: 400 40px/1 var(--font-body); cursor: pointer; }
+.navbtn:hover { background: rgba(10, 14, 17, .8); }
+.navbtn:disabled { opacity: .25; cursor: default; }
+.navbtn:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.navbtn.prev { left: 18px; }
+.navbtn.next { right: 18px; }
+.navcount { position: absolute; left: 50%; transform: translateX(-50%); top: calc(10px + 600px - 34px); z-index: 3;
+  padding: 3px 10px; border-radius: 99px; background: rgba(10, 14, 17, .6); color: #fff; font: 600 13px var(--font-mono); pointer-events: none; }
+body.focus .navbtn { top: calc(10px + (100vh - 24px - 20px - 48px) / 2); }
+body.focus .navcount { top: calc(10px + 100vh - 24px - 20px - 48px - 34px); }
+@media (max-width: 900px) { .navbtn { top: calc(10px + min(600px, 100vw) / 2); } .navcount { top: calc(10px + min(600px, 100vw) - 34px); } }
+.loupe { position: absolute; top: 20px; right: 20px; width: 180px; height: 180px; box-sizing: border-box; z-index: 4; pointer-events: none;
+  border: 2px solid #fff; border-radius: 8px; box-shadow: 0 4px 16px rgba(0, 0, 0, .5); background: #000; }
+.loupe.left { right: auto; left: 20px; }
+.zoombar { display: flex; align-items: center; gap: 6px; }
+.zoombar span { color: var(--muted); font-size: 14px; flex: 1; }
+.zoombar output { font: 600 13px var(--font-mono); min-width: 6ch; text-align: center; }
+@media (max-width: 900px) { .view { height: min(600px, 100vw); } }
+.stage.drop { outline: 3px dashed var(--accent); outline-offset: -6px; }
+#cv { display: block; flex: none; touch-action: none; border-radius: 6px; cursor: default; }
+#cv.adding { cursor: crosshair; }
+.hint { color: #c9d3da; font-size: 13px; margin: 8px 2px 0; width: 0; min-width: calc(100% - 4px); }   /* переносится по ширине фото, а не раздвигает окно */
+.tools { display: grid; gap: 10px; padding-bottom: 14px; border-bottom: 1px solid var(--line); background: var(--panel); }
+.tools-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.tools-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.tools-grid .btn { justify-content: center; }
+.tools-grid .wide { grid-column: 1 / -1; }
+.tools .field { justify-content: space-between; }
+.tools .btn svg { width: 18px; height: 18px; flex: none; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+.tools .fold svg { transition: transform .15s; }
+/* свёрнуто: одна полоска маленьких иконок, подписи и ползунки спрятаны (подсказка — при наведении) */
+.tools.folded .lbl, .tools.folded .tools-more { display: none; }
+.tools.folded .fold svg { transform: rotate(180deg); }
+.tools.folded .tools-grid { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+.tools.folded .tools-grid .btn { padding: 8px; }
+.tools.folded .zoombar { gap: 4px; margin-left: auto; }
+.tools.folded .zoombar output { min-width: 5ch; font-size: 12px; }
+.tools.folded .wide { grid-column: auto; }
+.tools.folded #calibField:not([hidden]) { flex-basis: 100%; }
+@media (min-width: 901px) {
+  /* блок инструментов остаётся на экране, пока прокручиваешь фото */
+  .tools { position: sticky; top: 0; z-index: 5; margin: -16px -16px 0; padding: 16px; border-radius: 10px 10px 0 0; }
+}
+
+aside { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 16px; display: grid; gap: 14px; min-width: 0;
+  grid-template-columns: minmax(0, 1fr);   /* колонка не растягивается под длинное содержимое */
+  overflow-wrap: anywhere; }               /* длинные имена файлов без пробелов переносятся, а не распирают колонку */
+details.meta { border-bottom: 1px solid var(--line); padding-bottom: 14px; }
+details.meta summary { cursor: pointer; font-family: var(--font-display); font-weight: 700; font-size: 15px; }
+details.meta summary span { font-weight: 400; color: var(--muted); }
+.meta-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 10px; }
+.f { display: grid; gap: 3px; font-size: 12px; color: var(--muted); min-width: 0; }
+.f.full { grid-column: 1 / -1; }
+.f input, .f select {
+  font: 14px var(--font-body); padding: 7px 8px; border: 1px solid var(--line); border-radius: 7px;
+  background: var(--panel); color: var(--ink); min-width: 0; width: 100%; box-sizing: border-box;
+}
+.scale { font-family: var(--font-mono); font-size: 13px; color: var(--muted); display: grid; gap: 2px; }
+.scale b { color: var(--ink); font-weight: 600; }
+.msg { font-size: 14px; padding: 10px 12px; border-radius: 8px; background: var(--accent-soft); }
+.msg.warn { background: transparent; border: 1px solid var(--warn); color: var(--warn); }
+.ask { border: 1px solid var(--warn); border-radius: 8px; padding: 10px 12px; display: grid; gap: 10px; font-size: 14px; }
+.ask p { margin: 0; }
+.ask.pop { position: absolute; z-index: 20; width: min(300px, calc(100vw - 32px)); box-sizing: border-box; overflow-wrap: anywhere;
+  background: var(--panel); color: var(--ink); box-shadow: 0 8px 24px rgba(0, 0, 0, .35); }
+.ask.pop::before {                                /* хвостик к кнопке */
+  content: ""; position: absolute; top: -7px; left: var(--tail, 20px); width: 12px; height: 12px;
+  background: var(--panel); border-left: 1px solid var(--warn); border-top: 1px solid var(--warn); transform: rotate(45deg);
+}
+.zoom { display: grid; grid-template-columns: 132px minmax(0, 1fr); gap: 12px; align-items: center; }
+.zoom canvas { width: 132px; height: 132px; border-radius: 8px; background: var(--stage); display: block; }
+.zoom p { margin: 0 0 6px; font-size: 13px; color: var(--muted); }
+.tablewrap { overflow-x: auto; }
+table { width: 100%; border-collapse: collapse; font-variant-numeric: tabular-nums; }
+th { text-align: left; font-size: 11px; text-transform: uppercase; letter-spacing: 0.06em; color: var(--muted); font-weight: 500; padding: 0 6px 6px; border-bottom: 1px solid var(--line); }
+td { padding: 6px; border-bottom: 1px solid var(--line); vertical-align: middle; }
+td.num { font-family: var(--font-mono); font-weight: 600; font-size: 15px; text-align: right; white-space: nowrap; }
+td.num .sub { display: block; font-size: 11px; font-weight: 400; color: var(--muted); }
+th.num { text-align: right; }
+tbody tr { cursor: pointer; }
+tbody tr.sel { background: var(--accent-soft); }
+input.drug {
+  width: 100%; min-width: 64px; box-sizing: border-box; font: 500 14px var(--font-body); padding: 5px 6px;
+  border: 1px solid transparent; border-radius: 6px; background: transparent; color: var(--ink);
+}
+input.drug:hover, input.drug:focus { border-color: var(--line); background: var(--panel); }
+input.drug::placeholder { color: var(--muted); font-weight: 400; }
+.chip { font-size: 12px; padding: 2px 8px; border-radius: 99px; border: 1px solid var(--line); color: var(--muted); white-space: nowrap; }
+.chip.edited { border-color: var(--ruler); color: var(--ruler); }
+.chip.none { border-color: var(--warn); color: var(--warn); }
+.chip.check { border: 1px dashed var(--warn); color: var(--warn); font-weight: 600; }
+.empty { color: var(--muted); font-size: 14px; }
+.row { display: flex; gap: 8px; flex-wrap: wrap; }
+
+.title-row { display: flex; align-items: center; gap: 12px; }
+.help-btn {
+  flex: none; width: 34px; height: 34px; border-radius: 50%; border: 1px solid var(--line); background: var(--panel);
+  color: var(--accent); font: 700 18px/1 var(--font-display); cursor: pointer;
+}
+.help-btn:hover { border-color: var(--accent); background: var(--accent-soft); }
+.help-btn:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.results { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 16px; display: grid; gap: 12px; min-width: 0; }
+.projnote { font-size: 13px; color: var(--muted); }
+.general { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 16px; padding: 10px 12px; border: 1px solid var(--line); border-radius: 8px; background: var(--accent-soft); font-size: 14px; }
+.general .gchk { font-weight: 700; display: inline-flex; align-items: center; gap: 6px; }
+.general input[type="number"] { width: 58px; font: 600 14px var(--font-mono); padding: 6px 8px; border: 1px solid var(--line); border-radius: 6px; background: var(--panel); color: var(--ink); }
+.general input[type="checkbox"] { width: 18px; height: 18px; accent-color: var(--accent); }
+.general .gnote { color: var(--muted); font-size: 13px; }
+.general.off label:not(.gchk), .general.off .gnote { opacity: .45; }
+.dname { display: block; font-size: 12px; color: var(--muted); padding-left: 7px; }
+.dname:empty { display: none; }
+.chip.cat { font-weight: 700; }
+.chip.cat-S { border-color: #2e9e5b; color: #2e9e5b; }
+.chip.cat-I { border-color: #c48a12; color: #c48a12; }
+.chip.cat-R { border-color: var(--warn); color: var(--warn); }
+.nobreak { font-size: 12px; color: var(--muted); }
+.breaks { border-top: 1px solid var(--line); padding-top: 12px; display: grid; gap: 10px; }
+.breaks[open] { display: grid; }
+.breaks summary { cursor: pointer; font-family: var(--font-display); font-weight: 700; }
+.breaks summary span { font-weight: 400; color: var(--muted); }
+.breaks .note { margin: 8px 0; font-size: 13px; color: var(--muted); max-width: 90ch; }
+.breaks table { max-width: 560px; }
+.breaks input { width: 100%; box-sizing: border-box; font: 500 14px var(--font-body); padding: 6px 8px; border: 1px solid var(--line); border-radius: 6px; background: var(--panel); color: var(--ink); }
+.breaks input[type="number"] { font-family: var(--font-mono); max-width: 90px; }
+.results-head { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 10px; }
+/* справка — окно поверх страницы по кнопке «?» */
+.how { color: var(--ink); background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 18px; gap: 12px;
+  width: min(820px, calc(100vw - 32px)); max-height: calc(100vh - 48px); overflow-y: auto; box-sizing: border-box; }
+.how[open] { display: grid; }
+.how::backdrop { background: rgba(10, 14, 17, .55); }
+.how-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+.crop { width: min(900px, calc(100vw - 32px)); }
+.crop canvas { display: block; max-width: 100%; max-height: calc(100vh - 230px); margin: 0 auto; touch-action: none; border-radius: 6px; background: var(--stage); }
+.crop-info { font: 13px var(--font-mono); color: var(--muted); }
+.crop-hint { margin: 0; font-size: 13px; color: var(--muted); }
+.how ol { margin: 0; padding-left: 22px; display: grid; gap: 10px; max-width: 80ch; }
+.how li b { font-family: var(--font-display); }
+.how .note { color: var(--muted); font-size: 14px; max-width: 80ch; margin: 0; }
+@media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+</style>
+
+<div class="wrap">
+  <header>
+    <div class="title-row">
+      <h1>Зона ингибирования <small>диско-диффузионный метод</small></h1>
+      <button class="help-btn" id="helpBtn" type="button" title="Как это работает" aria-label="Справка: как это работает" aria-haspopup="dialog">?</button>
+    </div>
+    <p>Загрузите одно или несколько фото чашек Петри. Программа найдёт диски с антибиотиком и измерит диаметр прозрачной зоны вокруг каждого. Если граница найдена неверно, выберите зону и передвиньте концы линейки; для неровной зоны есть гибкий контур. Разметка каждой чашки хранится отдельно.</p>
+  </header>
+
+  <div class="toolbar">
+    <input type="file" id="file" accept="image/*" multiple>
+    <label class="btn primary" for="file" id="uploadBtn" tabindex="0">Загрузить фото</label>
+    <button class="btn" id="sampleBtn" type="button">Пример</button>
+    <span class="spacer"></span>
+    <span class="savestate" id="saveState" aria-live="polite"></span>
+  </div>
+
+  <div class="main">
+    <div class="left">
+      <div class="stage" id="stage">
+        <div class="view" id="view"><canvas id="cv" width="900" height="900"></canvas></div>
+        <!-- переключение между фото: стрелки по краям окна и клавиши ← → -->
+        <button class="navbtn prev" id="prevDish" type="button" aria-label="Предыдущее фото (←)" title="Предыдущее фото (←)" hidden>‹</button>
+        <button class="navbtn next" id="nextDish" type="button" aria-label="Следующее фото (→)" title="Следующее фото (→)" hidden>›</button>
+        <span class="navcount" id="navCount" hidden></span>
+        <!-- лупа ×3, пока тянешь край: всегда в правом верхнем углу окна (уходит влево, только если точка под ней) -->
+        <canvas class="loupe" id="loupe" width="360" height="360" hidden aria-hidden="true"></canvas>
+        <p class="hint" id="hint">Нажмите на зону, чтобы выбрать её. Shift + колёсико — лупа; приближенное фото двигается за пустое место. Правая кнопка мыши по зоне — удалить (вернуть — ↶).</p>
+      </div>
+      <!-- фото чашек — под окном разметки -->
+      <div class="dishes" id="dishes" aria-label="Чашки"></div>
+    </div>
+    <aside>
+      <!-- инструменты быстрого доступа: справа от фото, на компьютере не уезжают при прокрутке -->
+      <section class="tools" aria-label="Инструменты">
+        <div class="tools-head">
+          <h3>Инструменты</h3>
+          <div class="row">
+            <button class="btn icon" id="undoBtn" type="button" title="Отменить действие (Ctrl+Z)" aria-label="Отменить действие">↶</button>
+            <button class="btn icon" id="redoBtn" type="button" title="Вернуть действие (Ctrl+Y)" aria-label="Вернуть действие">↷</button>
+            <button class="btn icon" id="focusBtn" type="button" title="Во весь экран (выход — Esc)" aria-label="Во весь экран" aria-pressed="false">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/></svg>
+            </button>
+            <button class="btn icon fold" id="toolsToggle" type="button" title="Свернуть инструменты в иконки" aria-expanded="true" aria-label="Свернуть инструменты">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 15l6-6 6 6"/></svg>
+            </button>
+          </div>
+        </div>
+        <!-- у каждой кнопки иконка и подпись; в свёрнутом виде остаются только иконки -->
+        <div class="tools-grid">
+          <button class="btn save wide" id="saveBtn2" type="button" title="Сохранить все чашки в этом браузере (Ctrl+S)">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 3h11l3 3v15H5z"/><path d="M8 3v5h7V3M8 21v-7h8v7"/></svg><span class="lbl">Сохранить</span></button>
+          <button class="btn" id="addBtn" type="button" title="Добавить зону">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8"/><path d="M12 8v8M8 12h8"/></svg><span class="lbl">Добавить зону</span></button>
+          <button class="btn" id="delBtn" type="button" disabled title="Удалить зону (Delete, правая кнопка мыши)">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M10 7V4h4v3M6 7l1 13h10l1-13"/></svg><span class="lbl">Удалить зону</span></button>
+          <button class="btn" id="axisBtn" type="button" disabled title="Гибкий контур: для зоны неправильной формы. Нажмите ещё раз — снова круг">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4c5 0 8.5 3 7.5 8s-4 8-8.5 7.5S4 16 4 12s3-8 8-8z"/><circle cx="12" cy="4" r="1.6"/><circle cx="19.5" cy="12" r="1.6"/><circle cx="4" cy="12" r="1.6"/></svg><span class="lbl">Гибкий контур</span></button>
+          <button class="btn" id="roundBtn" type="button" disabled title="Скруглить: гибкий контур — ровным кругом того же диаметра, точки остаются">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8"/></svg><span class="lbl">Скруглить</span></button>
+          <button class="btn wide" id="calibBtn" type="button" title="Масштаб по линейке">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="8" width="18" height="8" rx="1"/><path d="M7 8v3M11 8v4M15 8v3M19 8v2"/></svg><span class="lbl">Масштаб по линейке</span></button>
+          <label class="field wide" for="calibMm" id="calibField" hidden>Длина отрезка, мм <input type="number" id="calibMm" value="6" min="0.5" max="200" step="0.1"></label>
+          <div class="zoombar wide" title="Shift + колёсико мыши над фото тоже приближает">
+            <span class="lbl">Лупа</span>
+            <button class="btn icon" id="zoomMinus" type="button" aria-label="Отдалить" title="Отдалить" disabled>−</button>
+            <output id="zoomOut" aria-live="polite">100 %</output>
+            <button class="btn icon" id="zoomPlus" type="button" aria-label="Приблизить" title="Приблизить">+</button>
+            <button class="btn" id="zoomFit" type="button" title="Вписать фото в окно" disabled>
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/></svg><span class="lbl">Вписать</span></button>
+          </div>
+        </div>
+        <label class="field tools-more" for="alpha">Прозрачность разметки <input type="range" id="alpha" min="0" max="85" step="5" value="0"><output id="alphaOut" for="alpha">0 %</output></label>
+        <label class="field tools-more" for="diskMm">Диаметр диска, мм <input type="number" id="diskMm" value="6" min="1" max="20" step="0.1"></label>
+      </section>
+      <details class="meta" id="metaBox" open>
+        <summary>Чашка <span id="metaTitle"></span></summary>
+        <div class="meta-grid">
+          <label class="f full" for="mName">Название / № чашки <input id="mName" type="text" autocomplete="off"></label>
+          <label class="f" for="mDate">Дата учёта <input id="mDate" type="date"></label>
+          <label class="f" for="mGroup">Группа
+            <select id="mGroup"><option value="опыт">Опыт</option><option value="контроль">Контроль</option></select>
+          </label>
+          <label class="f" for="mMedium">Питательная среда <input id="mMedium" type="text" list="mediaList" placeholder="Мюллер-Хинтон" autocomplete="off"></label>
+          <label class="f" for="mDishMm">Диаметр чашки, мм <input id="mDishMm" type="number" list="dishList" min="30" max="200" step="1" placeholder="90" autocomplete="off"></label>
+          <label class="f" for="mCulture">Культура <input id="mCulture" type="text" placeholder="S. aureus ATCC 25923" autocomplete="off"></label>
+          <label class="f full" for="mOrg">Микроорганизм — для категорий S / I / R
+            <select id="mOrg">
+              <option value="">— не выбран (только свои пороги) —</option>
+              <option value="entero">Enterobacterales (E. coli, Klebsiella, Proteus…)</option>
+              <option value="saureus">Staphylococcus aureus</option>
+              <option value="cons">Коагулазонегативные стафилококки</option>
+              <option value="paer">Pseudomonas aeruginosa</option>
+              <option value="entc">Enterococcus spp.</option>
+            </select>
+          </label>
+          <label class="f full" for="mPerson">Ответственный (кто проводил учёт) <input id="mPerson" type="text" autocomplete="name"></label>
+        </div>
+      </details>
+      <div class="scale" id="scale"></div>
+      <div class="zoom" id="zoomBox" hidden>
+        <canvas id="zoomCv" width="264" height="264" aria-label="Выбранный диск крупно"></canvas>
+        <div>
+          <p id="zoomTitle"></p>
+          <label class="f" for="zoomDrug">Препарат (надпись на диске) <input id="zoomDrug" type="text" list="drugList" placeholder="например, CIP" autocomplete="off"></label>
+        </div>
+      </div>
+      <div class="msg" id="msg">Загружаю…</div>
+      <div class="ask" id="check" hidden>
+        <p id="checkText"></p>
+        <div class="row"><button class="btn primary" id="checkYes" type="button">Да, зоны нет</button><button class="btn" id="checkMark" type="button">Разметить зону вручную</button></div>
+      </div>
+    </aside>
+  </div>
+
+  <!-- файл проекта: между чашками и таблицей -->
+  <div class="toolbar projbar">
+    <button class="btn" id="projSaveBtn" type="button" title="Файл со всеми фото и разметкой, чтобы перенести на другой компьютер">Скачать проект</button>
+    <input type="file" id="projFile" accept=".json,application/json">
+    <label class="btn" for="projFile" id="projOpenBtn" tabindex="0">Открыть проект</label>
+    <span class="projnote">Файл со всеми чашками, фото, разметкой и порогами — для другого компьютера или резервной копии.</span>
+  </div>
+
+  <section class="results">
+    <div class="results-head">
+      <h2>Измерения</h2>
+      <div class="row">
+        <button class="btn primary" id="xlsxBtn" type="button">Скачать Excel</button>
+        <button class="btn" id="copyBtn" type="button">Копировать таблицу</button>
+        <button class="btn" id="resetBtn" type="button">Найти заново</button>
+      </div>
+    </div>
+    <div class="tablewrap" id="tableBox"></div>
+    <!-- главное правило категорий: по размеру зоны, для всех зон -->
+    <div class="general" id="generalBar">
+      <label class="gchk"><input type="checkbox" id="gOn" checked> Категория по размеру зоны:</label>
+      <label>S, если зона ≥ <input type="number" id="gS" value="22" min="1" max="60" step="1" aria-label="S, если зона не меньше, мм"> мм</label>
+      <label>R, если зона &lt; <input type="number" id="gR" value="19" min="1" max="60" step="1" aria-label="R, если зона меньше, мм"> мм</label>
+      <span class="gnote">между — I. Зона округляется до целого мм.</span>
+    </div>
+    <!-- пороги S / I / R: свои для каждого препарата (и культуры), берутся из актуальной таблицы EUCAST -->
+    <details class="breaks" id="breaksBox">
+      <summary>Свои пороги S / I / R <span id="breaksCount"></span></summary>
+      <p class="note">Обычно пороги подставляются сами: выберите микроорганизм в паспорте чашки (таблицы «Российских рекомендаций», МАКМАХ 2024-02, по EUCAST; зона округляется до 1 мм). Здесь — свои пороги для препаратов, которых нет в таблице, или если нужно другое значение; свои пороги важнее табличных. Зона ≥ «S, если» — <b>S</b>, чувствительный (стандартная доза); между порогами — <b>I</b>, чувствительный при повышенной экспозиции; зона &lt; «R, если» — <b>R</b>, резистентный. Если пороги равны, категории I нет. Название препарата — как в колонке «Препарат».</p>
+      <div class="tablewrap" id="breaksTable"></div>
+      <div class="row">
+        <button class="btn" id="breakAdd" type="button">Добавить препарат</button>
+        <button class="btn" id="breakFromDishes" type="button">Добавить препараты из чашек</button>
+      </div>
+    </details>
+  </section>
+
+  <datalist id="dishList"><option value="35"></option><option value="60"></option><option value="90"></option><option value="100"></option><option value="120"></option><option value="150"></option></datalist>
+  <datalist id="mediaList">
+    <option value="Мюллер-Хинтон"></option><option value="Мюллер-Хинтон с кровью"></option>
+    <option value="МПА"></option><option value="Кровяной агар"></option><option value="Сабуро"></option>
+  </datalist>
+  <datalist id="drugList">
+    <option value="AMP">ампициллин</option><option value="AMC">амоксициллин/клавуланат</option>
+    <option value="AZM">азитромицин</option><option value="CAZ">цефтазидим</option>
+    <option value="CIP">ципрофлоксацин</option><option value="CN">гентамицин</option>
+    <option value="CRO">цефтриаксон</option><option value="CTX">цефотаксим</option>
+    <option value="C">хлорамфеникол</option><option value="E">эритромицин</option>
+    <option value="FOX">цефокситин</option><option value="IPM">имипенем</option>
+    <option value="LEV">левофлоксацин</option><option value="LZD">линезолид</option>
+    <option value="MEM">меропенем</option><option value="OX">оксациллин</option>
+    <option value="P">пенициллин</option><option value="SXT">ко-тримоксазол</option>
+    <option value="TE">тетрациклин</option><option value="VA">ванкомицин</option>
+    <option value="AK">амикацин</option><option value="TOB">тобрамицин</option>
+    <option value="TZP">пиперациллин-тазобактам</option><option value="FEP">цефепим</option>
+    <option value="ETP">эртапенем</option><option value="ATM">азтреонам</option>
+    <option value="MXF">моксифлоксацин</option><option value="OFX">офлоксацин</option>
+    <option value="DA">клиндамицин</option><option value="TEC">тейкопланин</option>
+    <option value="RD">рифампицин</option><option value="FD">фузидовая кислота</option>
+    <option value="TGC">тигециклин</option>
+    <option value="АМП">ампициллин</option><option value="ПЕН">бензилпенициллин</option>
+    <option value="ОКС">оксациллин</option><option value="ЦИП">ципрофлоксацин</option>
+    <option value="ГЕН">гентамицин</option><option value="ВАН">ванкомицин</option>
+    <option value="ЭРИ">эритромицин</option><option value="ТЕТ">тетрациклин</option>
+  </datalist>
+
+  <!-- подтверждение удаления: всплывает прямо под нажатой кнопкой -->
+  <div class="ask pop" id="ask" role="alertdialog" aria-labelledby="askText" hidden>
+    <p id="askText"></p>
+    <div class="row"><button class="btn danger" id="askOk" type="button">Удалить</button><button class="btn" id="askNo" type="button">Отмена</button></div>
+  </div>
+
+  <!-- обрезка фото сразу после выбора файла -->
+  <dialog class="how crop" id="cropBox" aria-labelledby="cropTitle">
+    <div class="how-head">
+      <h2 id="cropTitle">Обрезка фото</h2>
+      <span class="crop-info" id="cropInfo"></span>
+    </div>
+    <canvas id="cropCv" aria-label="Фото с рамкой обрезки"></canvas>
+    <p class="crop-hint">Тяните углы или стороны рамки, чтобы оставить только чашку. Внутри рамки — сдвиг. Лишнее затемнено.</p>
+    <div class="row">
+      <button class="btn primary" id="cropOk" type="button">Обрезать</button>
+      <button class="btn" id="cropFull" type="button">Без обрезки</button>
+      <button class="btn" id="cropAll" type="button">Без обрезки для всех</button>
+      <button class="btn" id="cropSkip" type="button">Не добавлять это фото</button>
+    </div>
+  </dialog>
+
+  <dialog class="how" id="helpBox" aria-labelledby="helpTitle">
+    <div class="how-head">
+      <h2 id="helpTitle">Как это работает</h2>
+      <button class="btn icon" id="helpClose" type="button" aria-label="Закрыть справку">×</button>
+    </div>
+    <ol>
+      <li><b>Масштаб по дискам.</b> Бумажный диск с антибиотиком стандартный, 6 мм. Программа ищет белые пятна без цветового оттенка, круглые и одного размера. Надписи на дисках закрашиваются «закрытием»: белая область сначала расширяется, потом сужается обратно. Диаметр дисков в пикселях даёт масштаб; дисков несколько, поэтому берётся медиана. Размер самой чашки не нужен: подойдёт чашка любого диаметра.</li>
+      <li><b>Лучи от центра диска.</b> От каждого диска проводится 96 лучей. Вдоль луча записывается самый тёмный из каналов R, G, B: у жёлтого газона мало синего, у прозрачной зоны больше. Тень под диском пропускается. Край зоны — место, где значение переходит середину между уровнем зоны у диска и уровнем газона по всей чашке.</li>
+      <li><b>Отсев выбросов.</b> Луч может уйти в соседнюю зону или упереться в блик. Радиус берётся по самой плотной группе лучей с почти одинаковым краем (±7 %). Если зона почти не отличается от газона, она помечается «нет зоны?», и человек подтверждает это или размечает зону сам.</li>
+      <li><b>Проверка человеком.</b> Обычная зона — круг: выберите её и тяните концы линейки к краям зоны; при этом в углу появляется лупа ×3. Деления на линейке — миллиметры. Для зоны неправильной формы нажмите «Гибкий контур»: появится линия через 12 точек, уже поставленных на найденный край. Тяните любую точку или сам край — контур прогибается, соседние точки немного идут следом; тяните внутри — зона сдвигается. Диаметр такой зоны — диаметр круга той же площади; в таблице мелко показан самый узкий и самый широкий размер. «Сделать кругом» возвращает линейку. Любое действие можно отменить стрелкой ↶.</li>
+      <li><b>Калибровка вручную.</b> Если диски не найдены или на фото лежит линейка, нажмите «Масштаб по линейке», поставьте концы жёлтой линейки на отрезок известной длины (диск или деления настоящей линейки), введите его длину в миллиметрах и нажмите «Готово».</li>
+    </ol>
+    <p class="note">Почему диск может показать 5,9 мм вместо 6,0: масштаб — это медиана по всем дискам, а каждый диск ещё раз измеряется отдельно. Если на фото он вышел на 1–2 пикселя меньше остальных (наклон, тень, размытый край), получается 5,9. Это погрешность около 0,1 мм; зоны принято записывать с точностью до 1 мм.</p>
+    <p class="note">Сохранение: кнопка «Сохранить» хранит все чашки в этом браузере на этом компьютере. Чтобы перенести работу или сделать резервную копию, нажмите «Скачать проект», а на другом компьютере — «Открыть проект». Фото никуда не отправляются. Ограничения: фото сверху, без сильных бликов. Категория S / I / R (Ч / У / Р) ставится по таблицам «Российских рекомендаций. Определение чувствительности микроорганизмов к антимикробным препаратам», версия 2024-02 (МАКМАХ, по EUCAST), для микроорганизма из паспорта чашки; зона сравнивается с порогом с точностью до 1 мм; попадание в ЗТН (зону технической неопределённости) отмечается. Таблицы пересматриваются ежегодно — сверяйте с актуальной версией. Нейросеть не используется, только обработка изображения.</p>
+  </dialog>
+</div>
+
+<script id="core">
+// ===== Анализ изображения: без DOM, чтобы можно было проверить отдельно =====
+// Признаки цвета для каждого пикселя:
+// W — «белизна»: светлый и без оттенка (так выглядят бумажные диски);
+// Z — самый тёмный из каналов R, G, B: у жёлтого газона мало синего, у прозрачной зоны больше
+// B — «яркость без самого тёмного канала»: запасной признак для цветных (кремовых, жёлтых) дисков,
+// у которых «белизна» W низкая
+function features(d, w, h) {
+  const n = w * h, W = new Float32Array(n), Z = new Float32Array(n), B = new Float32Array(n);
+  for (let i = 0, j = 0; i < n; i++, j += 4) {
+    const mn = Math.min(d[j], d[j + 1], d[j + 2]), mx = Math.max(d[j], d[j + 1], d[j + 2]);
+    Z[i] = mn; W[i] = mn - (mx - mn); B[i] = (d[j] + d[j + 1] + d[j + 2] - mn) / 2;
+  }
+  return { W, Z, B };
+}
+function median(a) {
+  if (!a.length) return NaN;
+  const s = Float64Array.from(a).sort(), m = s.length >> 1;
+  return s.length % 2 ? s[m] : (s[m - 1] + s[m]) / 2;
+}
+function sample(g, w, h, x, y) {
+  const x0 = Math.floor(x), y0 = Math.floor(y);
+  if (x0 < 0 || y0 < 0 || x0 >= w - 1 || y0 >= h - 1) return NaN;
+  const fx = x - x0, fy = y - y0, i = y0 * w + x0;
+  return g[i] * (1 - fx) * (1 - fy) + g[i + 1] * fx * (1 - fy) + g[i + w] * (1 - fx) * fy + g[i + w + 1] * fx * fy;
+}
+
+// Расширение (grow) или сужение маски квадратом 2r+1: сначала по строкам, потом по столбцам.
+// Расширить и сузить обратно = «закрытие»: чёрные буквы на диске закрашиваются белым
+function morph(m, w, h, r, grow) {
+  const a = new Uint8Array(m.length), b = new Uint8Array(m.length);
+  for (let y = 0; y < h; y++) {
+    const o = y * w;
+    let s = 0;
+    for (let x = 0; x < Math.min(r, w); x++) s += m[o + x];
+    for (let x = 0; x < w; x++) {
+      if (x + r < w) s += m[o + x + r];
+      if (x - r - 1 >= 0) s -= m[o + x - r - 1];
+      const cnt = Math.min(w - 1, x + r) - Math.max(0, x - r) + 1;
+      a[o + x] = grow ? +(s > 0) : +(s === cnt);
+    }
+  }
+  for (let x = 0; x < w; x++) {
+    let s = 0;
+    for (let y = 0; y < Math.min(r, h); y++) s += a[y * w + x];
+    for (let y = 0; y < h; y++) {
+      if (y + r < h) s += a[(y + r) * w + x];
+      if (y - r - 1 >= 0) s -= a[(y - r - 1) * w + x];
+      const cnt = Math.min(h - 1, y + r) - Math.max(0, y - r) + 1;
+      b[y * w + x] = grow ? +(s > 0) : +(s === cnt);
+    }
+  }
+  return b;
+}
+
+// Круглые пятна в маске: связные области нужного размера и формы
+function blobs(mask, w, h, minD, maxD, seen, stack) {
+  seen.fill(0);
+  const out = [], n = w * h;
+  for (let i = 0; i < n; i++) {
+    if (seen[i] || !mask[i]) continue;
+    let sp = 0, area = 0, sx = 0, sy = 0, x0 = w, x1 = 0, y0 = h, y1 = 0;
+    stack[sp++] = i; seen[i] = 1;
+    while (sp) {
+      const p = stack[--sp], x = p % w, y = (p - x) / w;
+      area++; sx += x; sy += y;
+      if (x < x0) x0 = x; if (x > x1) x1 = x; if (y < y0) y0 = y; if (y > y1) y1 = y;
+      if (x > 0 && !seen[p - 1] && mask[p - 1]) { seen[p - 1] = 1; stack[sp++] = p - 1; }
+      if (x < w - 1 && !seen[p + 1] && mask[p + 1]) { seen[p + 1] = 1; stack[sp++] = p + 1; }
+      if (y > 0 && !seen[p - w] && mask[p - w]) { seen[p - w] = 1; stack[sp++] = p - w; }
+      if (y < h - 1 && !seen[p + w] && mask[p + w]) { seen[p + w] = 1; stack[sp++] = p + w; }
+    }
+    const bw = x1 - x0 + 1, bh = y1 - y0 + 1;
+    if (bw < minD || bh < minD || bw > maxD || bh > maxD) continue;
+    if (x0 === 0 || y0 === 0 || x1 === w - 1 || y1 === h - 1) continue;
+    const asp = bw / bh;
+    if (asp < 0.75 || asp > 1.33) continue;
+    if (area / (bw * bh) < 0.6) continue;          // у круга 0,785
+    out.push({ x: sx / area, y: sy / area, d: (bw + bh) / 2 });
+  }
+  if (!out.length) return out;
+  const md = median(out.map(b => b.d));            // все диски одного размера
+  return out.filter(b => b.d > 0.7 * md && b.d < 1.4 * md);
+}
+
+// Уточняем диаметр диска: от края внутрь по 36 лучам до первой белой точки (надписи внутри не мешают)
+function refineDisk(F, w, h, b) {
+  const r0 = b.d / 2, inner = [], ring = [], radii = [];
+  for (let k = 0; k < 36; k++) {
+    const a = k * Math.PI / 18, c = Math.cos(a), s = Math.sin(a);
+    for (const f of [0.2, 0.4, 0.6]) inner.push(sample(F, w, h, b.x + c * r0 * f, b.y + s * r0 * f));
+    ring.push(sample(F, w, h, b.x + c * r0 * 1.7, b.y + s * r0 * 1.7));
+  }
+  const inn = inner.filter(isFinite).sort((p, q) => p - q);
+  const mid = (inn[Math.floor(inn.length * 0.75)] + median(ring.filter(isFinite))) / 2;
+  for (let k = 0; k < 36; k++) {
+    const a = k * Math.PI / 18, c = Math.cos(a), s = Math.sin(a);
+    for (let r = r0 * 1.6; r > 0; r -= 0.25) {
+      if (sample(F, w, h, b.x + c * r, b.y + s * r) > mid) { radii.push(r); break; }
+    }
+  }
+  return { x: b.x, y: b.y, d: radii.length > 10 ? 2 * median(radii) : b.d };
+}
+
+// 96 лучей от диска; вдоль каждого — значение Z, сглаженное окном 5
+function rayProfiles(Z, w, h, disk, disks) {
+  const rd = disk.d / 2, r0 = rd * 1.5;            // 1,5 радиуса: пропускаем тень от диска
+  let rMax = rd * 8;
+  for (const o of disks) if (o !== disk) rMax = Math.min(rMax, Math.hypot(o.x - disk.x, o.y - disk.y) - o.d / 2 * 1.6);
+  const rays = [];
+  for (let k = 0; k < 96; k++) {
+    const a = k * Math.PI / 48, c = Math.cos(a), s = Math.sin(a), prof = [];
+    for (let r = r0; r <= rMax; r += 1) {
+      const v = sample(Z, w, h, disk.x + c * r, disk.y + s * r);
+      if (!isFinite(v)) break;
+      prof.push(v);
+    }
+    rays.push(prof.map((_, i) => {
+      let t = 0, n = 0;
+      for (let j = Math.max(0, i - 2); j <= Math.min(prof.length - 1, i + 2); j++) { t += prof[j]; n++; }
+      return t / n;
+    }));
+  }
+  return { r0, rays };
+}
+
+// Край зоны: первое место на луче, где значение перешло середину между «зоной у диска» и «газоном»
+function measureZones(Z, w, h, disks) {
+  const P = disks.map(d => rayProfiles(Z, w, h, d, disks));
+  // процентили, а не min/max: тени дисков — маленькие тёмные пятна, они не должны сбивать уровни
+  const q = (r, f) => { const t = Float64Array.from(r).sort(); return t[Math.floor((t.length - 1) * f)]; };
+  const pool = [];
+  const st = P.map(p => {
+    const ok = p.rays.filter(r => r.length >= 12);
+    if (ok.length < 20) return null;
+    for (const r of ok) for (let j = 0; j < r.length; j += 3) pool.push(r[j]);
+    return {
+      start: median(ok.map(r => median(r.slice(0, 15)))),
+      lo: median(ok.map(r => q(r, 0.1))),
+      hi: median(ok.map(r => q(r, 0.9))),
+    };
+  });
+  if (!pool.length) { for (const d of disks) { d.zonePx = d.d; d.none = true; } return; }
+  // Зона светлее газона или темнее? Решаем по всей чашке сразу
+  let score = 0;
+  for (const s of st) if (s) score += (s.start - s.lo) - (s.hi - s.start);
+  const down = score > 0;
+  const lawn = q(pool, down ? 0.12 : 0.88);       // уровень газона — один на всю чашку
+  const contrast = st.map(s => s ? Math.abs(s.start - lawn) : 0);
+  // эталон контраста — медиана заметных зон, а не самая контрастная: одна необычная (например, жёлтая)
+  // зона не должна отсеивать обычные
+  const visible = contrast.filter(c => c > 15), ref = visible.length ? median(visible) : 0;
+  disks.forEach((d, i) => {
+    const s = st[i], none = () => { d.zonePx = d.d; d.none = true; };
+    if (!s || contrast[i] < Math.max(15, 0.4 * ref)) return none();
+    const thr = (s.start + lawn) / 2;
+    const beyond = v => down ? v < thr : v > thr;
+    const edges = [], byRay = new Array(96).fill(NaN);
+    P[i].rays.forEach((r, k) => {
+      let j0 = 0;                                  // сначала выходим из тени диска в зону
+      while (j0 < r.length && beyond(r[j0])) j0++;
+      for (let j = Math.max(j0, 1); j + 2 < r.length; j++) {
+        if (!(beyond(r[j]) && beyond(r[j + 1]) && beyond(r[j + 2]))) continue;
+        byRay[k] = P[i].r0 + j - 1 + (r[j - 1] - thr) / ((r[j - 1] - r[j]) || 1);
+        edges.push(byRay[k]);
+        break;
+      }
+    });
+    // Радиус — самая плотная группа лучей (±7 %). Лучи, ушедшие в соседнюю зону, дают
+    // слишком большой радиус и в группу не попадают. При равенстве берём меньший радиус
+    edges.sort((a, b) => a - b);
+    let best = 0, cnt = 0;
+    for (const R of edges) {
+      let c = 0;
+      for (const e of edges) if (Math.abs(e - R) <= 0.07 * R) c++;
+      if (c > cnt) { cnt = c; best = R; }
+    }
+    const keep = edges.filter(e => Math.abs(e - best) <= 0.07 * best);
+    if (keep.length < Math.max(12, edges.length * 0.15) || best < P[i].r0 + 2) return none();
+    d.zonePx = 2 * keep.reduce((t, e) => t + e, 0) / keep.length;
+    d.none = false;
+    // Неуверенно, если с выбранным краем согласны меньше 40 % лучей: зоны сливаются с соседними
+    // или край размыт — лучи находят «край» на разном расстоянии. Такую зону должен проверить человек
+    d.doubt = keep.length < 0.4 * P[i].rays.length;
+    // Форма края: 12 секторов по 8 лучей, в каждом медиана. Допуск шире (±25 %), чтобы
+    // неровная зона осталась неровной; луч, ушедший в соседнюю зону, всё равно отбрасывается
+    const R = d.zonePx / 2;
+    d.contour = Array.from({ length: 12 }, (_, s) => {
+      const v = [];
+      for (let k = s * 8 - 4; k < s * 8 + 4; k++) {
+        const e = byRay[(k + 96) % 96];
+        if (isFinite(e) && Math.abs(e - R) <= 0.25 * R) v.push(e);
+      }
+      return v.length >= 3 ? median(v) : R;
+    });
+  });
+}
+
+function analyze(rgba, w, h) {
+  const { W, Z, B } = features(rgba, w, h);
+  const side = Math.min(w, h), minD = side * 0.025, maxD = side * 0.13;
+  const rc = Math.max(2, Math.round(side * 0.008));
+  const n = w * h, seen = new Uint8Array(n), stack = new Int32Array(n), mask = new Uint8Array(n);
+  // Порог перебираем сверху вниз и берём тот, при котором круглых пятен одного размера больше всего
+  const find = (F, lo) => {
+    let best = [];
+    for (let T = 250; T >= lo; T -= 5) {
+      for (let i = 0; i < n; i++) mask[i] = F[i] > T ? 1 : 0;
+      const closed = morph(morph(mask, w, h, rc, true), w, h, rc, false);
+      const b = blobs(closed, w, h, minD, maxD, seen, stack);
+      if (b.length > best.length) best = b;
+    }
+    return best;
+  };
+  // Местный контраст: на сколько точка ярче средней яркости вокруг себя (окно ~2 диаметра диска).
+  // Ловит диски, которые по общему порогу не отделить от светлого агара или видны только в своей зоне
+  const local = () => {
+    const R = Math.max(4, Math.round(side * 0.06)), S = new Float64Array((w + 1) * (h + 1)), L = new Float32Array(n);
+    for (let y = 0; y < h; y++) for (let x = 0, row = 0; x < w; x++) {
+      row += B[y * w + x]; S[(y + 1) * (w + 1) + x + 1] = S[y * (w + 1) + x + 1] + row;
+    }
+    for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) {
+      const x0 = Math.max(0, x - R), x1 = Math.min(w, x + R + 1), y0 = Math.max(0, y - R), y1 = Math.min(h, y + R + 1);
+      const sum = S[y1 * (w + 1) + x1] - S[y0 * (w + 1) + x1] - S[y1 * (w + 1) + x0] + S[y0 * (w + 1) + x0];
+      L[y * w + x] = 128 + B[y * w + x] - sum / ((x1 - x0) * (y1 - y0));
+    }
+    // пятно — кандидат, если нашлось хотя бы при двух порогах (случайный блик обычно при одном)
+    const cand = [];
+    for (let T = 190; T >= 140; T -= 4) {
+      for (let i = 0; i < n; i++) mask[i] = L[i] > T ? 1 : 0;
+      const closed = morph(morph(mask, w, h, rc, true), w, h, rc, false);
+      for (const b of blobs(closed, w, h, minD, maxD, seen, stack)) {
+        const c = cand.find(c => Math.hypot(c.x - b.x, c.y - b.y) < Math.max(c.d, b.d) / 2);
+        if (c) { c.hits++; if (b.d > c.d) { c.x = b.x; c.y = b.y; c.d = b.d; } } else cand.push({ ...b, hits: 1 });
+      }
+    }
+    return { L, cand: cand.filter(c => c.hits >= 2) };
+  };
+  // До 120, а не до 150: на тёмных фото бумажные диски серые (яркость ~150–170)
+  let best = find(W, 120), F = W;
+  // Белых дисков почти нет — возможно, диски кремовые или жёлтые: ищем по яркости без требования «без оттенка»
+  if (best.length < 3) {
+    const alt = find(B, 100);
+    if (alt.length > best.length) { best = alt; F = B; }
+  }
+  let disks = best.map(b => refineDisk(F, w, h, b));
+  // Добираем пропущенные диски по местному контрасту: того же размера, что найденные, и не поверх них
+  const { L, cand } = local();
+  const md0 = disks.length ? median(disks.map(d => d.d)) : cand.length ? median(cand.map(c => c.d)) : 0;
+  for (const c of cand) {
+    if (!(c.d > 0.7 * md0 && c.d < 1.4 * md0)) continue;
+    if (disks.some(d => Math.hypot(d.x - c.x, d.y - c.y) < (d.d + c.d) / 2)) continue;
+    const r = refineDisk(L, w, h, c);
+    if (r.d > 0.7 * md0 && r.d < 1.4 * md0) disks.push(r);
+  }
+  const diskPx = disks.length ? median(disks.map(d => d.d)) : null;
+  measureZones(Z, w, h, disks);
+  return { disks, diskPx };
+}
+
+// Искусственная чашка Петри для примера: 4 диска, зоны 24, 17, 13 мм и одна без зоны
+function makeSample() {
+  const W = 900, H = 900, pm = 9.5, cx = 450, cy = 450, dishR = 44 * pm;
+  let seed = 7;
+  const rnd = () => (seed = (seed * 1664525 + 1013904223) >>> 0) / 4294967296;
+  const gauss = () => Math.sqrt(-2 * Math.log(rnd() + 1e-12)) * Math.cos(2 * Math.PI * rnd());
+  const ss = (a, b, x) => { const t = Math.min(1, Math.max(0, (x - a) / (b - a))); return t * t * (3 - 2 * t); };
+  const disks = [[285, 320, 24], [625, 300, 17], [320, 640, 13], [640, 625, 6]];
+  const lawn = [218, 206, 184], clear = [128, 122, 114], paper = [246, 246, 242], table = [40, 44, 50], rim = [176, 179, 182];
+  const data = new Uint8ClampedArray(W * H * 4);
+  for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) {
+    const r = Math.hypot(x - cx, y - cy);
+    let c;
+    if (r > dishR + 4) c = table;
+    else if (r > dishR - 5) c = rim;
+    else {
+      const light = 1 - 0.1 * (r / dishR) ** 2 + 0.05 * (x - cx) / dishR;
+      let t = 1, p = 0;
+      for (const [dx, dy, z] of disks) {
+        const dd = Math.hypot(x - dx, y - dy), zr = z * pm / 2;
+        t = Math.min(t, ss(zr - 4, zr + 4, dd));
+        p = Math.max(p, 1 - ss(3 * pm - 1.2, 3 * pm + 1.2, dd));
+      }
+      c = clear.map((v, i) => (v + (lawn[i] - v) * t) * light);
+      c = c.map((v, i) => v + (paper[i] - v) * p);
+    }
+    const n = gauss() * 6, i = (y * W + x) * 4;
+    data[i] = c[0] + n; data[i + 1] = c[1] + n; data[i + 2] = c[2] + n; data[i + 3] = 255;
+  }
+  return { data, w: W, h: H };
+}
+</script>
+
+<script>
+// ===== Интерфейс =====
+const $ = id => document.getElementById(id);
+const cv = $("cv"), ctx = cv.getContext("2d");
+const MAX_SIDE = 1100;   // большие фото уменьшаем: точность не страдает, анализ быстрее
+// P — всё приложение; чашки лежат в P.dishes, открыта P.dishes[P.cur]
+const P = { dishes: [], cur: -1, sel: -1, mode: "idle", calib: null, drag: null, hover: -1, zoom: 1, breaks: [], general: { on: true, s: 22, r: 19 }, dirty: false, savedAt: null, alpha: 1, ask: null };
+const D = () => P.dishes[P.cur] || null;
+
+const len = r => Math.hypot(r.bx - r.ax, r.by - r.ay);
+const mid = r => ({ x: (r.ax + r.bx) / 2, y: (r.ay + r.by) / 2 });
+const rulerAt = (x, y, d) => ({ ax: x - d / 2, ay: y, bx: x + d / 2, by: y });
+const fmt = v => v.toFixed(1).replace(".", ",");
+const round1 = v => Math.round(v * 10) / 10;
+const esc = s => String(s).replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]);
+const today = () => new Date().toLocaleDateString("sv-SE");
+const tick = () => new Promise(r => setTimeout(r, 20));
+let uid = 0;
+const newId = () => Date.now().toString(36) + (uid++).toString(36);
+
+const diskMm = () => { const d = D(); return d && d.diskMm > 0 ? d.diskMm : 6; };
+const mmPerPx = (d = D()) => d && d.scalePx ? (d.diskMm > 0 ? d.diskMm : 6) / d.scalePx : null;
+// Зона бывает двух видов: круг — линейка-диаметр it.r (классика, для ровных зон),
+// или гибкий контур из 12 точек по краю it.pts (для сложных); точка i смотрит под углом i·30° от центра
+const N_PTS = 12;
+const ringPts = (x, y, radii) => radii.map((r, i) => {
+  const a = i * 2 * Math.PI / N_PTS;
+  return { x: x + Math.cos(a) * r, y: y + Math.sin(a) * r };
+});
+const circlePts = (x, y, d) => ringPts(x, y, new Array(N_PTS).fill(d / 2));
+// Гладкая замкнутая линия через точки (сплайн Катмулла — Рома), по 8 отрезков между соседями
+function outline(pts) {
+  const out = [], n = pts.length;
+  for (let i = 0; i < n; i++) {
+    const p0 = pts[(i - 1 + n) % n], p1 = pts[i], p2 = pts[(i + 1) % n], p3 = pts[(i + 2) % n];
+    for (let s = 0; s < 8; s++) {
+      const t = s / 8, t2 = t * t, t3 = t2 * t;
+      const f = k => 0.5 * (2 * p1[k] + (p2[k] - p0[k]) * t + (2 * p0[k] - 5 * p1[k] + 4 * p2[k] - p3[k]) * t2 + (3 * p1[k] - p0[k] - 3 * p2[k] + p3[k]) * t3);
+      out.push({ x: f("x"), y: f("y") });
+    }
+  }
+  return out;
+}
+function areaOf(poly) {
+  let s = 0;
+  for (let i = 0, j = poly.length - 1; i < poly.length; j = i++) s += (poly[j].x + poly[i].x) * (poly[j].y - poly[i].y);
+  return Math.abs(s) / 2;
+}
+function inside(poly, p) {
+  let c = false;
+  for (let i = 0, j = poly.length - 1; i < poly.length; j = i++) {
+    const a = poly[i], b = poly[j];
+    if ((a.y > p.y) !== (b.y > p.y) && p.x < (b.x - a.x) * (p.y - a.y) / (b.y - a.y) + a.x) c = !c;
+  }
+  return c;
+}
+// Диаметр неровной зоны — диаметр круга той же площади. Линия через 12 точек круга чуть
+// меньше самого круга (~0,5 %), делим на эту поправку, чтобы круг давал ровно свой диаметр
+const ROUND_K = Math.sqrt(areaOf(outline(circlePts(0, 0, 2))) / Math.PI);
+const diamPx = it => it.pts ? 2 * Math.sqrt(areaOf(outline(it.pts)) / Math.PI) / ROUND_K : len(it.r);
+const center = it => it.pts
+  ? { x: it.pts.reduce((t, p) => t + p.x, 0) / it.pts.length, y: it.pts.reduce((t, p) => t + p.y, 0) / it.pts.length }
+  : mid(it.r);
+// Контур из круга: форма — найденный программой край (it.shape), размер — как сейчас у линейки
+function toContour(it) {
+  const c = center(it), d = diamPx(it);
+  if (!it.shape) return circlePts(c.x, c.y, d);
+  const pts = ringPts(c.x, c.y, it.shape), k = d / diamPx({ pts });
+  return ringPts(c.x, c.y, it.shape.map(r => r * k));
+}
+// Самый узкий и самый широкий размер — между противоположными точками
+function spanPx(it) {
+  const h = it.pts.length / 2, v = [];
+  for (let i = 0; i < h; i++) v.push(Math.hypot(it.pts[i].x - it.pts[i + h].x, it.pts[i].y - it.pts[i + h].y));
+  return { min: Math.min(...v), max: Math.max(...v) };
+}
+// Старые проекты хранили линейки r и r2 — превращаем их в контур (круг или овал)
+function ptsFromRulers(r, r2) {
+  const m1 = mid(r), m2 = r2 ? mid(r2) : m1, c = { x: (m1.x + m2.x) / 2, y: (m1.y + m2.y) / 2 };
+  const A = len(r) / 2, B = r2 ? len(r2) / 2 : A, t = Math.atan2(r.by - r.ay, r.bx - r.ax), ct = Math.cos(t), st = Math.sin(t);
+  return Array.from({ length: N_PTS }, (_, i) => {
+    const a = i * 2 * Math.PI / N_PTS, u = A * Math.cos(a), v = B * Math.sin(a);
+    return { x: c.x + u * ct - v * st, y: c.y + u * st + v * ct };
+  });
+}
+const disksWord = n => n % 10 === 1 && n % 100 !== 11 ? "диск" : [2, 3, 4].includes(n % 10) && ![12, 13, 14].includes(n % 100) ? "диска" : "дисков";
+// проверить: «нет зоны?» или зона, найденная неуверенно (пока её не поправили и не подтвердили)
+const needsCheck = it => !it.ok && (it.src === "none" || (it.doubt && it.src === "auto"));
+const STATUS = it => it.src === "none" ? (it.ok ? "нет зоны ✓" : "нет зоны?") :
+  it.doubt && it.src === "auto" ? (it.ok ? "авто ✓" : "проверить?") : { auto: "авто", edited: "исправлено", manual: "вручную" }[it.src];
+
+// ----- картинки -----
+function fileToImage(blob) {
+  return new Promise((res, rej) => {
+    const url = URL.createObjectURL(blob), img = new Image();
+    img.onload = () => { URL.revokeObjectURL(url); res(img); };
+    img.onerror = () => { URL.revokeObjectURL(url); rej(new Error("bad image")); };
+    img.src = url;
+  });
+}
+function toBase(src, w, h) {
+  const k = Math.min(1, MAX_SIDE / Math.max(w, h)), c = document.createElement("canvas");
+  c.width = Math.round(w * k); c.height = Math.round(h * k);
+  c.getContext("2d").drawImage(src, 0, 0, c.width, c.height);
+  return c;
+}
+const canvasBlob = c => new Promise(res => c.toBlob(res, "image/jpeg", 0.92));
+function thumbOf(c) {
+  const t = document.createElement("canvas"), k = 128 / Math.max(c.width, c.height);
+  t.width = Math.round(c.width * k); t.height = Math.round(c.height * k);
+  t.getContext("2d").drawImage(c, 0, 0, t.width, t.height);
+  return t.toDataURL("image/jpeg", 0.8);
+}
+const rgbaOf = d => d._rgba || (d._rgba = d._base.getContext("2d").getImageData(0, 0, d.w, d.h).data);
+// Все диски стандартные, 6 мм: «нет зоны» — ровно диаметр диска (по медиане всех дисков, а не по одному,
+// который на фото мог выйти 5,7 или 6,3), и зона не бывает меньше диска
+const itemsFrom = res => res.disks.map(d => ({
+  x: d.x, y: d.y, src: d.none ? "none" : "auto", drug: "", ok: false, doubt: !d.none && !!d.doubt,
+  r: rulerAt(d.x, d.y, res.diskPx ? (d.none ? res.diskPx : Math.max(d.zonePx, res.diskPx)) : d.zonePx),
+  shape: d.contour && !d.none ? d.contour : null,
+}));
+
+async function addDish(src, w, h, name, sample) {
+  const base = toBase(src, w, h), prev = P.dishes[P.dishes.length - 1];
+  const d = {
+    id: newId(), name, sample: !!sample,
+    meta: prev ? { ...prev.meta } : { date: today(), medium: "", group: "опыт", culture: "", person: "", org: "", dishMm: "" },
+    diskMm: prev ? prev.diskMm : 6, w: base.width, h: base.height,
+    img: await canvasBlob(base), thumb: thumbOf(base),
+    items: [], scalePx: null, scaleSrc: "auto", nDisks: 0, _base: base, _rgba: null, _undo: [], _redo: [],
+  };
+  const res = analyze(rgbaOf(d), d.w, d.h);
+  d.items = itemsFrom(res); d.scalePx = res.diskPx; d.nDisks = res.disks.length;
+  P.dishes.push(d);
+  return d;
+}
+// Пример, который никто не трогал, убираем, когда появились настоящие фото
+const dropSample = () => { P.dishes = P.dishes.filter(d => !(d.sample && !d._undo.length)); };
+
+async function addFiles(files) {
+  files = [...files];
+  if (!files.length) return;
+  const keep = D();
+  let first = -1, bad = 0, skipped = 0, noCrop = false;
+  // 1) сначала обрезаем все фото подряд, не закрывая окно обрезки
+  const picked = [];
+  for (let i = 0; i < files.length; i++) {
+    let img;
+    try { img = await fileToImage(files[i]); } catch { bad++; continue; }
+    let src = img, w = img.naturalWidth, h = img.naturalHeight;
+    if (!noCrop) {
+      const r = await cropImage(img, i + 1, files.length);
+      if (r === "skip") { skipped++; continue; }
+      if (r === "all") { noCrop = true; $("cropBox").close(); }
+      else if (r !== "full") {
+        const cc = document.createElement("canvas");
+        cc.width = r.w; cc.height = r.h;
+        cc.getContext("2d").drawImage(img, r.x, r.y, r.w, r.h, 0, 0, r.w, r.h);
+        src = cc; w = r.w; h = r.h;
+      }
+    }
+    picked.push({ src, w, h, name: files[i].name.replace(/\.[^.]+$/, "") });
+  }
+  if ($("cropBox").open) $("cropBox").close();
+  // 2) потом ищем диски и зоны на всех сразу
+  for (let k = 0; k < picked.length; k++) {
+    const p = picked[k];
+    setMsg(picked.length > 1 ? `Обрабатываю фото ${k + 1} из ${picked.length}…` : "Ищу диски и зоны…");
+    await tick();
+    if (first < 0) dropSample();                     // пример убираем, только когда есть что добавить
+    await addDish(p.src, p.w, p.h, p.name || `Чашка ${P.dishes.length + 1}`);
+    if (first < 0) first = P.dishes.length - 1;
+  }
+  if (first < 0) {
+    P.cur = keep ? P.dishes.indexOf(keep) : -1;
+    renderDishes(); render();
+    if (bad) return setMsg("Не удалось открыть файл. Подойдут фото JPG или PNG (HEIC с iPhone сначала сохраните как JPG).", true);
+    return setMsg("Фото не добавлены.");
+  }
+  markDirty();
+  await openDish(first);
+  const added = files.length - bad - skipped;
+  if (added > 1 || bad || skipped) setMsg(`Добавлено чашек: ${added}${skipped ? `, пропущено: ${skipped}` : ""}${bad ? `, не открылось файлов: ${bad}` : ""}. Открыта первая; остальные — в ряду сверху. ` + summary(D()), !!bad);
+}
+
+// ----- обрезка при загрузке -----
+// Окно с фото и рамкой. Ответ: { x, y, w, h } в пикселях фото, "full" (без обрезки),
+// "all" (без обрезки для этого и остальных фото) или "skip" (не добавлять)
+function cropImage(img, n, total) {
+  const box = $("cropBox"), c = $("cropCv"), g = c.getContext("2d");
+  const W = img.naturalWidth, H = img.naturalHeight, k = Math.min(1, 900 / Math.max(W, H));
+  c.width = Math.round(W * k); c.height = Math.round(H * k);
+  const R = { x: 0, y: 0, w: c.width, h: c.height }, MIN = 40;
+  $("cropInfo").textContent = total > 1 ? `фото ${n} из ${total}` : "";
+  $("cropAll").hidden = n >= total;
+  const sc = () => c.width / (c.getBoundingClientRect().width || c.width);   // экранный пиксель в пикселях холста
+  const handles = () => {
+    const xs = [R.x, R.x + R.w / 2, R.x + R.w], ys = [R.y, R.y + R.h / 2, R.y + R.h], out = [];
+    for (const x of xs) for (const y of ys) if (x !== xs[1] || y !== ys[1]) out.push([x, y]);
+    return out;
+  };
+  const draw = () => {
+    const s = sc();
+    g.drawImage(img, 0, 0, c.width, c.height);
+    g.fillStyle = "rgba(0,0,0,.6)";                   // всё вне рамки затемнено
+    g.fillRect(0, 0, c.width, R.y); g.fillRect(0, R.y + R.h, c.width, c.height - R.y - R.h);
+    g.fillRect(0, R.y, R.x, R.h); g.fillRect(R.x + R.w, R.y, c.width - R.x - R.w, R.h);
+    g.strokeStyle = "#fff"; g.lineWidth = 2 * s; g.strokeRect(R.x, R.y, R.w, R.h);
+    g.fillStyle = "#fff"; g.strokeStyle = "rgba(0,0,0,.6)"; g.lineWidth = 1.5 * s;
+    for (const [x, y] of handles()) { g.fillRect(x - 6 * s, y - 6 * s, 12 * s, 12 * s); g.strokeRect(x - 6 * s, y - 6 * s, 12 * s, 12 * s); }
+  };
+  const at = e => { const b = c.getBoundingClientRect(); return { x: (e.clientX - b.left) * c.width / b.width, y: (e.clientY - b.top) * c.height / b.height }; };
+  // какие стороны рамки под курсором: l, r, t, b; внутри без сторон — сдвиг
+  const grabOf = p => {
+    const hit = 16 * sc(), inY = p.y > R.y - hit && p.y < R.y + R.h + hit, inX = p.x > R.x - hit && p.x < R.x + R.w + hit;
+    const s = { l: inY && Math.abs(p.x - R.x) < hit, r: inY && Math.abs(p.x - R.x - R.w) < hit, t: inX && Math.abs(p.y - R.y) < hit, b: inX && Math.abs(p.y - R.y - R.h) < hit };
+    if (s.l || s.r || s.t || s.b) return s;
+    return p.x > R.x && p.x < R.x + R.w && p.y > R.y && p.y < R.y + R.h ? { move: true } : null;
+  };
+  const cursorOf = s => !s ? "" : s.move ? "move" : (s.l && s.t) || (s.r && s.b) ? "nwse-resize" : (s.r && s.t) || (s.l && s.b) ? "nesw-resize" : s.l || s.r ? "ew-resize" : "ns-resize";
+  let drag = null;
+  c.onpointerdown = e => {
+    const p = at(e), s = grabOf(p);
+    if (!s) return;
+    drag = { s, p, R0: { ...R } };
+    c.setPointerCapture(e.pointerId); e.preventDefault();
+  };
+  c.onpointermove = e => {
+    const p = at(e);
+    if (!drag) { c.style.cursor = cursorOf(grabOf(p)); return; }
+    const { s, R0 } = drag, dx = p.x - drag.p.x, dy = p.y - drag.p.y;
+    if (s.move) {
+      R.x = Math.max(0, Math.min(c.width - R0.w, R0.x + dx)); R.y = Math.max(0, Math.min(c.height - R0.h, R0.y + dy));
+    } else {
+      let x0 = R0.x, y0 = R0.y, x1 = R0.x + R0.w, y1 = R0.y + R0.h;
+      if (s.l) x0 = Math.max(0, Math.min(x1 - MIN, x0 + dx));
+      if (s.r) x1 = Math.min(c.width, Math.max(x0 + MIN, x1 + dx));
+      if (s.t) y0 = Math.max(0, Math.min(y1 - MIN, y0 + dy));
+      if (s.b) y1 = Math.min(c.height, Math.max(y0 + MIN, y1 + dy));
+      Object.assign(R, { x: x0, y: y0, w: x1 - x0, h: y1 - y0 });
+    }
+    draw();
+  };
+  c.onpointerup = c.onpointercancel = () => { drag = null; };
+  return new Promise(res => {
+    // окно не закрываем: для серии фото в нём сразу появится следующее (закрывает addFiles)
+    const done = v => { window.removeEventListener("resize", draw); res(v); };
+    $("cropOk").onclick = () => {
+      if (R.w >= c.width - 1 && R.h >= c.height - 1) return done("full");
+      done({ x: Math.round(R.x / k), y: Math.round(R.y / k), w: Math.round(R.w / k), h: Math.round(R.h / k) });
+    };
+    $("cropFull").onclick = () => done("full");
+    $("cropAll").onclick = () => done("all");
+    $("cropSkip").onclick = () => done("skip");
+    box.oncancel = e => { e.preventDefault(); done("full"); };   // Esc — оставить фото целиком
+    window.addEventListener("resize", draw);
+    if (!box.open) box.showModal();
+    draw();
+  });
+}
+
+async function openDish(i) {
+  P.cur = i; P.sel = -1; P.calib = null; P.drag = null; hideAsk(); setMode("idle");
+  const d = D();
+  if (d && !d._base) {
+    setMsg("Открываю фото…");
+    try { d._base = toBase(await fileToImage(d.img), d.w, d.h); }
+    catch { setMsg("Фото этой чашки повреждено и не открывается.", true); }
+  }
+  if (d) { cv.width = d.w; cv.height = d.h; $("diskMm").value = d.diskMm; P.zoom = 1; fitCanvas(); setZoom(1); }
+  fillMeta(); renderDishes(); render();
+  if (d) setMsg(summary(d), !d.items.length);
+}
+
+function summary(d) {
+  if (!d.items.length) return "Диски не найдены. Нажмите «Масштаб по линейке», поставьте линейку на диск, затем добавьте зоны вручную.";
+  const n = d.items.filter(needsCheck).length;
+  return `Дисков: ${d.items.length}.` + (n ? ` Проверьте строки с «?»: ${n} (зона не найдена или найдена неуверенно).` : "") +
+    " Если граница не совпадает, нажмите на зону и поправьте линейку; для неровной зоны — «Гибкий контур».";
+}
+
+// ----- история: отменить / вернуть -----
+const snap = d => JSON.stringify({ items: d.items, scalePx: d.scalePx, scaleSrc: d.scaleSrc });
+function commit(prev) {
+  const d = D();
+  if (!d) return;
+  d._undo.push(prev ?? snap(d));
+  if (d._undo.length > 200) d._undo.shift();
+  d._redo = [];
+  markDirty();
+}
+function restore(d, s) { const o = JSON.parse(s); d.items = o.items; d.scalePx = o.scalePx; d.scaleSrc = o.scaleSrc; }
+function undo() {
+  const d = D();
+  if (!d || !d._undo.length) return;
+  d._redo.push(snap(d)); restore(d, d._undo.pop());
+  P.sel = -1; hideAsk(); markDirty(); renderDishes(); render(); setMsg("Действие отменено.");
+}
+function redo() {
+  const d = D();
+  if (!d || !d._redo.length) return;
+  d._undo.push(snap(d)); restore(d, d._redo.pop());
+  P.sel = -1; hideAsk(); markDirty(); renderDishes(); render(); setMsg("Действие возвращено.");
+}
+
+// ----- сохранение -----
+function markDirty() { P.dirty = true; renderSaveState(); }
+function renderSaveState() {
+  const el = $("saveState");
+  el.className = "savestate" + (P.dirty ? " warn" : "");
+  el.textContent = P.dirty ? "Есть несохранённые изменения" :
+    P.savedAt ? `Сохранено в ${P.savedAt.toLocaleTimeString("ru-RU", { hour: "2-digit", minute: "2-digit" })}` : "";
+  $("saveBtn2").classList.toggle("dirty", P.dirty);
+  setLabel("saveBtn2", P.dirty ? "Сохранить" : P.savedAt ? `Сохранено в ${P.savedAt.toLocaleTimeString("ru-RU", { hour: "2-digit", minute: "2-digit" })}` : "Сохранить");
+}
+const pick = d => ({
+  id: d.id, name: d.name, sample: d.sample && !d._undo.length, meta: { ...d.meta }, diskMm: d.diskMm, w: d.w, h: d.h, img: d.img, thumb: d.thumb,
+  items: JSON.parse(JSON.stringify(d.items)), scalePx: d.scalePx, scaleSrc: d.scaleSrc, nDisks: d.nDisks,
+});
+function hydrate(o) {
+  const meta = { date: "", medium: "", group: "опыт", culture: "", person: "", org: "", dishMm: "", ...(o.meta || {}) };
+  const items = (o.items || []).map(it => {
+    const z = { x: it.x, y: it.y, src: it.src || "manual", drug: it.drug || "", ok: !!it.ok, doubt: !!it.doubt, shape: Array.isArray(it.shape) ? it.shape : null };
+    if (Array.isArray(it.pts) && it.pts.length === N_PTS) z.pts = it.pts;
+    else if (it.r2) z.pts = ptsFromRulers(it.r, it.r2);   // старая «вторая ось» — уже неровная зона
+    else z.r = it.r;
+    return z;
+  });
+  const img = o.img instanceof ArrayBuffer ? new Blob([o.img], { type: o.imgType || "image/jpeg" }) : o.img;
+  return { id: o.id || newId(), name: o.name || "Чашка", sample: !!o.sample, meta, diskMm: o.diskMm || 6, w: o.w, h: o.h, img, thumb: o.thumb || "",
+    items, scalePx: o.scalePx || null, scaleSrc: o.scaleSrc || "auto", nDisks: o.nDisks || 0, _base: null, _rgba: null, _undo: [], _redo: [] };
+}
+function idb() {
+  return new Promise((res, rej) => {
+    const q = indexedDB.open("zona-ingibirovaniya", 1);
+    q.onupgradeneeded = () => q.result.createObjectStore("kv");
+    q.onsuccess = () => res(q.result);
+    q.onerror = () => rej(q.error);
+  });
+}
+async function idbDo(mode, fn) {
+  const db = await idb();
+  return new Promise((res, rej) => {
+    const t = db.transaction("kv", mode), q = fn(t.objectStore("kv"));
+    t.oncomplete = () => res(q.result); t.onerror = () => rej(t.error); t.onabort = () => rej(t.error);
+  });
+}
+async function saveBrowser() {
+  try {
+    // фото храним байтами, а не Blob: в Safari Blob из IndexedDB после перезагрузки иногда не читается
+    const dishes = [];
+    for (const d of P.dishes) dishes.push({ ...pick(d), img: await d.img.arrayBuffer(), imgType: d.img.type || "image/jpeg" });
+    await idbDo("readwrite", s => s.put({ v: 5, cur: P.cur, savedAt: Date.now(), dishes, breaks: P.breaks, general: P.general }, "project"));
+    P.dirty = false; P.savedAt = new Date(); renderSaveState();
+    setMsg(`Сохранено в этом браузере: чашек ${P.dishes.length}. Для другого компьютера нажмите «Скачать проект».`);
+  } catch {
+    setMsg("Браузер не дал сохранить (например, в режиме инкогнито). Нажмите «Скачать проект» — так разметка точно не пропадёт.", true);
+  }
+}
+async function loadBrowser() {
+  try {
+    const o = await idbDo("readonly", s => s.get("project"));
+    if (!o || !Array.isArray(o.dishes) || !o.dishes.length) return false;
+    P.dishes = o.dishes.map(hydrate);
+    if (Array.isArray(o.breaks) && o.breaks.length) P.breaks = o.breaks;
+    if (o.general) P.general = { ...P.general, ...o.general };
+    saveBreaks(); renderBreaks(); renderGeneral();
+    P.savedAt = o.savedAt ? new Date(o.savedAt) : null; P.dirty = false; renderSaveState();
+    await openDish(Math.min(Math.max(0, o.cur | 0), P.dishes.length - 1));
+    setMsg(`Открыта сохранённая работа: чашек ${P.dishes.length}. ` + summary(D()), !D().items.length);
+    return true;
+  } catch { return false; }
+}
+
+// Скачивание файла: в окне Claude — через разрешение «downloads», в обычном браузере — ссылкой
+const dlP = window.claude && window.claude.use ? window.claude.use("downloads").catch(() => null) : Promise.resolve(null);
+// Если сайт открыт по ссылке не участником организации, платформа скачивание запрещает —
+// тогда пробуем обычную ссылку браузера и подсказываем, что делать, если файл так и не появился
+const NO_DL = "Если файл не скачался: скачивание с этой страницы разрешено только участникам организации. " +
+  "Таблицу можно перенести кнопкой «Копировать таблицу» и вставить в Excel (Ctrl+V), а для полной работы — открыть сайт файлом index.html на своём компьютере.";
+async function saveFile(name, blob) {
+  const dl = await dlP;
+  if (dl) {
+    try { await dl.save({ filename: name, data: blob }); return true; }
+    catch (e) {
+      if (e && e.code === "declined") { setMsg("Скачивание отменено."); return false; }
+      linkDownload(name, blob);
+      setMsg(NO_DL, true);
+      return false;
+    }
+  }
+  linkDownload(name, blob);
+  return true;
+}
+function linkDownload(name, blob) {
+  try {
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(blob); a.download = name;
+    document.body.append(a); a.click(); a.remove();
+    setTimeout(() => URL.revokeObjectURL(a.href), 5000);
+  } catch {}
+}
+const blobToDataURL = b => new Promise((res, rej) => { const r = new FileReader(); r.onload = () => res(r.result); r.onerror = rej; r.readAsDataURL(b); });
+function dataURLToBlob(u) {
+  const [head, b64] = u.split(","), bin = atob(b64), a = new Uint8Array(bin.length);
+  for (let i = 0; i < bin.length; i++) a[i] = bin.charCodeAt(i);
+  return new Blob([a], { type: (head.match(/data:([^;]+)/) || [])[1] || "image/jpeg" });
+}
+async function saveProject() {
+  if (!P.dishes.length) return setMsg("Нет чашек для сохранения.", true);
+  setMsg("Собираю файл проекта…");
+  const dishes = [];
+  for (const d of P.dishes) dishes.push({ ...pick(d), img: await blobToDataURL(d.img) });
+  const json = JSON.stringify({ app: "zona-ingibirovaniya", v: 5, cur: P.cur, dishes, breaks: P.breaks, general: P.general });
+  if (await saveFile(`Зоны ингибирования ${today()}.json`, new Blob([json], { type: "application/json" })))
+    setMsg(`Файл проекта готов: чашек ${dishes.length}. Откройте его кнопкой «Открыть проект» на любом компьютере.`);
+}
+async function openProject(f) {
+  if (!f) return;
+  try {
+    const o = JSON.parse(await f.text());
+    if (!o || o.app !== "zona-ingibirovaniya" || !Array.isArray(o.dishes)) throw 0;
+    dropSample();
+    const start = P.dishes.length;
+    for (const x of o.dishes) P.dishes.push(hydrate({ ...x, img: dataURLToBlob(x.img) }));
+    // пороги из файла добавляются к своим; при совпадении препарата берутся из файла
+    for (const b of Array.isArray(o.breaks) ? o.breaks : []) {
+      const own = P.breaks.find(x => normDrug(x.drug) === normDrug(b.drug));
+      if (own) Object.assign(own, b); else P.breaks.push({ ...b });
+    }
+    if (o.general) P.general = { ...P.general, ...o.general };
+    saveBreaks(); renderBreaks(); renderGeneral();
+    markDirty();
+    await openDish(start);
+    setMsg(`Из файла добавлено чашек: ${o.dishes.length}. Нажмите «Сохранить», чтобы они остались в этом браузере.`);
+  } catch {
+    setMsg("Это не файл проекта. Нужен файл .json, скачанный кнопкой «Скачать проект».", true);
+  }
+}
+
+// ----- категории S / I / R -----
+// Пороги диско-диффузионного метода из «Российских рекомендаций. Определение чувствительности микроорганизмов
+// к антимикробным препаратам. Версия 2024-02» (МАКМАХ, по EUCAST). s — «Ч ≥», r — «Р <», atu — ЗТН [от, до],
+// disk — содержание в диске; br — значения в таблице в скобках (применяются ограниченно, см. примечания таблицы).
+// s = 50 в таблицах — «условное значение»: дикий тип такого микроорганизма относится к категории I, а не S.
+const BP_SRC = "МАКМАХ 2024-02";
+const BREAKPOINTS = {
+  entero: { name: "Enterobacterales", table: "табл. 2.2", drugs: {
+    AMP: { disk: "10", s: 14, r: 14, note: "ампициллин в/в" },
+    AMC: { disk: "20–10", s: 19, r: 19, atu: [19, 20], note: "амоксициллин-клавуланат в/в" },
+    TZP: { disk: "30–6", s: 20, r: 20, atu: [19, 19] },
+    FEP: { disk: "30", s: 27, r: 24 },
+    CTX: { disk: "5", s: 20, r: 17, note: "при всех инфекциях, кроме менингита" },
+    CRO: { disk: "30", s: 25, r: 22, note: "при всех инфекциях, кроме менингита" },
+    CAZ: { disk: "10", s: 22, r: 19 },
+    IPM: { disk: "10", s: 22, r: 19, note: "кроме Morganellaceae" },
+    MEM: { disk: "10", s: 22, r: 16, note: "при всех инфекциях, кроме менингита" },
+    ETP: { disk: "10", s: 23, r: 23 },
+    ATM: { disk: "30", s: 26, r: 21 },
+    CIP: { disk: "5", s: 25, r: 22, atu: [22, 24], note: "при всех инфекциях, кроме менингита" },
+    LEV: { disk: "5", s: 23, r: 19 },
+    OFX: { disk: "5", s: 24, r: 22 },
+    AK: { disk: "30", s: 18, r: 18, br: true, note: "системные инфекции" },
+    CN: { disk: "10", s: 17, r: 17, br: true, note: "системные инфекции" },
+    TOB: { disk: "10", s: 16, r: 16, br: true, note: "системные инфекции" },
+    SXT: { disk: "1,25–23,75", s: 14, r: 11 },
+  } },
+  saureus: { name: "Staphylococcus aureus", table: "табл. 2.6", drugs: {
+    P: { disk: "1 ЕД", s: 26, r: 26, note: "бензилпенициллин" },
+    FOX: { disk: "30", s: 22, r: 22, note: "скрининг резистентности к оксациллину (MRSA)" },
+    LEV: { disk: "5", s: 50, r: 22 },
+    MXF: { disk: "5", s: 25, r: 25 },
+    AK: { disk: "30", s: 15, r: 15, br: true },
+    CN: { disk: "10", s: 18, r: 18, br: true },
+    TOB: { disk: "10", s: 18, r: 18, br: true },
+    E: { disk: "15", s: 21, r: 21 },
+    DA: { disk: "2", s: 22, r: 22, note: "клиндамицин" },
+    TE: { disk: "30", s: 22, r: 22 },
+    TGC: { disk: "15", s: 19, r: 19 },
+    LZD: { disk: "10", s: 21, r: 21 },
+    C: { disk: "30", s: 18, r: 18 },
+    FD: { disk: "10", s: 24, r: 24, note: "фузидовая кислота" },
+    RD: { disk: "5", s: 26, r: 26, note: "рифампицин" },
+    SXT: { disk: "1,25–23,75", s: 17, r: 14 },
+  } },
+  cons: { name: "Коагулазонегативные стафилококки", table: "табл. 2.6", drugs: {
+    FOX: { disk: "30", s: 22, r: 22, note: "скрининг; у S. epidermidis и S. lugdunensis порог другой: 27 / 27, ЗТН 27" },
+    LEV: { disk: "5", s: 50, r: 24 },
+    MXF: { disk: "5", s: 28, r: 28 },
+    AK: { disk: "30", s: 15, r: 15, br: true },
+    CN: { disk: "10", s: 22, r: 22, br: true },
+    TOB: { disk: "10", s: 20, r: 20, br: true },
+    E: { disk: "15", s: 21, r: 21 },
+    DA: { disk: "2", s: 22, r: 22, note: "клиндамицин" },
+    TE: { disk: "30", s: 22, r: 22 },
+    TGC: { disk: "15", s: 19, r: 19 },
+    LZD: { disk: "10", s: 21, r: 21 },
+    C: { disk: "30", s: 18, r: 18 },
+    FD: { disk: "10", s: 24, r: 24, note: "фузидовая кислота" },
+    RD: { disk: "5", s: 30, r: 30, note: "рифампицин" },
+    SXT: { disk: "1,25–23,75", s: 17, r: 14 },
+  } },
+  paer: { name: "Pseudomonas aeruginosa", table: "табл. 2.3", drugs: {
+    TZP: { disk: "30–6", s: 50, r: 18, atu: [18, 19] },
+    FEP: { disk: "30", s: 50, r: 21 },
+    CAZ: { disk: "10", s: 50, r: 17 },
+    IPM: { disk: "10", s: 50, r: 20 },
+    MEM: { disk: "10", s: 20, r: 14, note: "при всех инфекциях, кроме менингита" },
+    ATM: { disk: "30", s: 50, r: 18 },
+    CIP: { disk: "5", s: 50, r: 26 },
+    LEV: { disk: "5", s: 50, r: 18 },
+    AK: { disk: "30", s: 15, r: 15, br: true, note: "системные инфекции" },
+    TOB: { disk: "10", s: 18, r: 18, br: true, note: "системные инфекции" },
+  } },
+  entc: { name: "Enterococcus spp.", table: "табл. 2.7", drugs: {
+    AMP: { disk: "2", s: 10, r: 8 },
+    IPM: { disk: "10", s: 50, r: 21 },
+    LZD: { disk: "10", s: 20, r: 20 },
+    VA: { disk: "5", s: 12, r: 12, note: "смотрите и на край зоны: нечёткий край — признак резистентности" },
+    TEC: { disk: "30", s: 16, r: 16 },
+  } },
+};
+// P.breaks — свои пороги: [{ drug: "CIP", s: 25, r: 22 }]; важнее табличных
+const normDrug = s => String(s || "").trim().toUpperCase();
+const breakOf = drug => P.breaks.find(b => b.drug && normDrug(b.drug) === normDrug(drug) && b.s > 0 && b.r > 0);
+const CAT_TEXT = {
+  S: "S (Ч) — чувствительный (стандартная доза): рост надёжно подавлен",
+  I: "I (У) — чувствительный при повышенной экспозиции: рост подавлен частично",
+  R: "R (Р) — резистентный: рост практически не подавлен",
+};
+// Правило для зоны: свои пороги препарата → строка таблицы для выбранного микроорганизма →
+// общие пороги по размеру зоны для всех зон (по умолчанию S ≥ 22, R < 19 — как считала тётя)
+function ruleOf(drug, d) {
+  const own = drug && breakOf(drug);
+  if (own) return { s: own.s, r: own.r, src: "свои пороги" };
+  const g = BREAKPOINTS[d.meta.org], b = drug && g && g.drugs[normDrug(drug)];
+  if (b) return { ...b, src: `${BP_SRC}, ${g.name}, ${g.table}` };
+  const G = P.general;
+  return G.on && G.s > 0 && G.r > 0 ? { s: G.s, r: G.r, src: "общие пороги по размеру зоны" } : null;
+}
+// Зона сравнивается с порогом с точностью до 1 мм (рекомендации, п. 2.7.1)
+function categoryOf(it, d = D()) {
+  const mpp = mmPerPx(d), rule = ruleOf(it.drug, d);
+  if (!mpp || !rule) return null;
+  const mm = Math.round(diamPx(it) * mpp);
+  const cat = mm >= rule.s ? "S" : mm < rule.r ? "R" : "I";
+  const atu = !!rule.atu && mm >= rule.atu[0] && mm <= rule.atu[1];
+  return { cat, atu, mm, rule };
+}
+function saveBreaks() {
+  try { localStorage.setItem("zona-breaks", JSON.stringify(P.breaks)); localStorage.setItem("zona-general", JSON.stringify(P.general)); } catch {}
+}
+function renderGeneral() {
+  const G = P.general;
+  $("gOn").checked = G.on; $("gS").value = G.s || ""; $("gR").value = G.r || "";
+  $("generalBar").classList.toggle("off", !G.on);
+}
+function renderBreaks() {
+  const n = P.breaks.filter(b => b.drug && b.s > 0 && b.r > 0).length;
+  $("breaksCount").textContent = n ? `· заданы для ${n}` : "· не заданы";
+  $("breaksTable").innerHTML = !P.breaks.length ? `<p class="empty">Порогов пока нет.</p>` :
+    `<table><thead><tr><th>Препарат</th><th class="num">S, если зона ≥, мм</th><th class="num">R, если зона &lt;, мм</th><th></th></tr></thead><tbody>` +
+    P.breaks.map((b, i) => `<tr><td><input data-b="${i}" data-k="drug" list="drugList" value="${esc(b.drug)}" placeholder="CIP" aria-label="Препарат" autocomplete="off"></td>` +
+      `<td class="num"><input type="number" data-b="${i}" data-k="s" value="${b.s || ""}" min="0" max="60" step="1" aria-label="S, если зона не меньше, мм"></td>` +
+      `<td class="num"><input type="number" data-b="${i}" data-k="r" value="${b.r || ""}" min="0" max="60" step="1" aria-label="R, если зона меньше, мм"></td>` +
+      `<td><button class="btn icon" type="button" data-bdel="${i}" aria-label="Удалить порог" title="Удалить порог">×</button></td></tr>`).join("") +
+    `</tbody></table>`;
+}
+
+// ----- названия антибиотиков по коду с диска -----
+// Международные коды (EUCAST) и русские коды, в которых нет сомнений; неизвестный код остаётся как есть
+const DRUG_NAMES = {
+  AMP: "ампициллин", AMC: "амоксициллин/клавуланат", AZM: "азитромицин", CAZ: "цефтазидим", CIP: "ципрофлоксацин",
+  CN: "гентамицин", CRO: "цефтриаксон", CTX: "цефотаксим", C: "хлорамфеникол", E: "эритромицин", FOX: "цефокситин",
+  IPM: "имипенем", LEV: "левофлоксацин", LZD: "линезолид", MEM: "меропенем", OX: "оксациллин", P: "бензилпенициллин",
+  SXT: "ко-тримоксазол", TE: "тетрациклин", VA: "ванкомицин", AK: "амикацин", TOB: "тобрамицин",
+  TZP: "пиперациллин/тазобактам", FEP: "цефепим", ETP: "эртапенем", ATM: "азтреонам", MXF: "моксифлоксацин",
+  OFX: "офлоксацин", DA: "клиндамицин", TEC: "тейкопланин", RD: "рифампицин", FD: "фузидовая кислота", TGC: "тигециклин",
+  "АМП": "ампициллин", "ПЕН": "бензилпенициллин", "ОКС": "оксациллин", "ЦИП": "ципрофлоксацин", "ГЕН": "гентамицин",
+  "ВАН": "ванкомицин", "ЭРИ": "эритромицин", "ТЕТ": "тетрациклин", "АЗМ": "азитромицин", "ЛИН": "линезолид",
+};
+// английские названия (международные непатентованные)
+const EN_NAMES = {
+  "ампициллин": "ampicillin", "амоксициллин/клавуланат": "amoxicillin/clavulanate", "азитромицин": "azithromycin",
+  "цефтазидим": "ceftazidime", "ципрофлоксацин": "ciprofloxacin", "гентамицин": "gentamicin", "цефтриаксон": "ceftriaxone",
+  "цефотаксим": "cefotaxime", "хлорамфеникол": "chloramphenicol", "эритромицин": "erythromycin", "цефокситин": "cefoxitin",
+  "имипенем": "imipenem", "левофлоксацин": "levofloxacin", "линезолид": "linezolid", "меропенем": "meropenem",
+  "оксациллин": "oxacillin", "бензилпенициллин": "benzylpenicillin", "ко-тримоксазол": "trimethoprim/sulfamethoxazole",
+  "тетрациклин": "tetracycline", "ванкомицин": "vancomycin", "амикацин": "amikacin", "тобрамицин": "tobramycin",
+  "пиперациллин/тазобактам": "piperacillin/tazobactam", "цефепим": "cefepime", "эртапенем": "ertapenem",
+  "азтреонам": "aztreonam", "моксифлоксацин": "moxifloxacin", "офлоксацин": "ofloxacin", "клиндамицин": "clindamycin",
+  "тейкопланин": "teicoplanin", "рифампицин": "rifampicin", "фузидовая кислота": "fusidic acid", "тигециклин": "tigecycline",
+};
+// ТЕСТОВО: русские коды, которые расшифрованы только предположительно (по буквам) — пометка «(?)»,
+// пока тётя не скажет точно. Исправить или убрать здесь
+const GUESS_NAMES = {
+  "АКЦ": ["амоксициллин/клавуланат", "amoxicillin/clavulanate"],
+  "ПФЦ": ["пефлоксацин", "pefloxacin"],
+  "ПТК": ["пиперациллин/тазобактам", "piperacillin/tazobactam"],
+  "АН": ["амикацин", "amikacin"],
+};
+// полное название тоже понимаем — на русском или на английском: «ампициллин», «Ampicillin»
+const BY_NAME = {};
+for (const [ru, en] of Object.entries(EN_NAMES)) { BY_NAME[ru.toUpperCase()] = ru; BY_NAME[en.toUpperCase()] = ru; }
+// код с диска часто с дозой: «AZM 15», «P 10», «ОКС1» — для поиска названия дозу отбрасываем
+const drugKey = s => normDrug(s).replace(/[\s\d.,]+$/, "").trim();
+const guessOf = s => GUESS_NAMES[drugKey(s)];
+const drugName = s => DRUG_NAMES[drugKey(s)] || BY_NAME[drugKey(s)] || (guessOf(s) ? guessOf(s)[0] + " (?)" : "");   // по-русски
+const drugNameEn = s => EN_NAMES[drugName(s)] || (guessOf(s) ? guessOf(s)[1] + " (?)" : "");                         // по-английски
+
+// подпись под полем «Препарат»: полное название на русском и английском
+const dnameText = it => [drugName(it.drug), drugNameEn(it.drug)].filter(Boolean).join(" / ");
+
+// ----- таблица Excel -----
+function tableRows() {
+  const head = ["Чашка", "Дата", "Питательная среда", "Группа", "Культура", "Диаметр чашки, мм", "№ диска", "Препарат (код с диска)", "Антибиотик", "Antibiotic (EN)",
+    "Диаметр зоны, мм", "Категория", "Отметка"];
+  const rows = [head];
+  for (const d of P.dishes) {
+    const mpp = mmPerPx(d), m = d.meta;
+    d.items.forEach((it, i) => rows.push([
+      d.name, m.date, m.medium, m.group, m.culture, m.dishMm ? +m.dishMm : "", i + 1, it.drug, drugName(it.drug) || it.drug, drugNameEn(it.drug),
+      mpp ? round1(diamPx(it) * mpp) : "",
+      (c => c ? c.cat + (c.atu ? " (ЗТН)" : "") : "")(categoryOf(it, d)),
+      it.src === "none" ? (it.ok ? "нет зоны (подтверждено)" : "нет зоны (не проверено)") : needsCheck(it) ? "проверить (найдена неуверенно)" : STATUS(it),
+    ]));
+  }
+  return rows;
+}
+async function saveXlsx() {
+  if (!P.dishes.length) return setMsg("Нет чашек для таблицы.", true);
+  if (!window.XLSX) return setMsg("Не загрузилась библиотека для Excel: нужен интернет. Пока можно нажать «Копировать таблицу» и вставить в Excel.", true);
+  const wb = XLSX.utils.book_new();
+  const z = XLSX.utils.aoa_to_sheet(tableRows());
+  z["!cols"] = [18, 11, 18, 10, 20, 12, 8, 14, 26, 28, 15, 12, 30].map(w => ({ wch: w }));
+  XLSX.utils.book_append_sheet(wb, z, "Зоны");
+  const dishes = [["Чашка", "Дата", "Питательная среда", "Группа", "Культура", "Диаметр чашки, мм", "Ответственный", "Дисков", "Не проверено", "Масштаб, px на 1 мм", "Как задан масштаб"]];
+  for (const d of P.dishes) {
+    const mpp = mmPerPx(d), m = d.meta;
+    dishes.push([d.name, m.date, m.medium, m.group, m.culture, m.dishMm ? +m.dishMm : "", m.person, d.items.length, d.items.filter(needsCheck).length,
+      mpp ? round1(1 / mpp) : "", d.scaleSrc === "manual" ? "линейкой вручную" : "по дискам"]);
+  }
+  const s2 = XLSX.utils.aoa_to_sheet(dishes);
+  s2["!cols"] = [18, 11, 18, 10, 20, 12, 18, 8, 13, 18, 18].map(w => ({ wch: w }));
+  XLSX.utils.book_append_sheet(wb, s2, "Чашки");
+  const buf = XLSX.write(wb, { bookType: "xlsx", type: "array" });
+  const blob = new Blob([buf], { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" });
+  const unchecked = P.dishes.reduce((t, d) => t + d.items.filter(needsCheck).length, 0);
+  if (await saveFile(`Зоны ингибирования ${today()}.xlsx`, blob))
+    setMsg(`Таблица Excel готова: чашек ${P.dishes.length}.` + (unchecked ? ` Не проверено зон: ${unchecked} — они помечены в таблице.` : ""), !!unchecked);
+}
+
+// Подпись кнопки с иконкой: меняем только текст, иконка остаётся; в свёрнутом виде он виден как подсказка
+function setLabel(id, text) {
+  const b = $(id);
+  b.querySelector(".lbl").textContent = text;
+  b.setAttribute("aria-label", text); b.title = text;
+}
+// Свернуть / развернуть инструменты; выбор запоминается в этом браузере
+function foldTools(on) {
+  document.querySelector(".tools").classList.toggle("folded", on);
+  const t = $("toolsToggle"), text = on ? "Развернуть инструменты" : "Свернуть инструменты в иконки";
+  t.setAttribute("aria-expanded", String(!on)); t.setAttribute("aria-label", text); t.title = text;
+  try { localStorage.setItem("zona-tools-folded", on ? "1" : "0"); } catch {}
+}
+// Во весь экран: настоящий полноэкранный режим, если браузер разрешит; иначе рабочая часть на всё окно
+function setFocus(on) {
+  document.body.classList.toggle("focus", on);
+  const strip = $("dishes");
+  if (on) document.querySelector(".tools").after(strip); else document.querySelector(".left").append(strip);
+  const b = $("focusBtn"), t = on ? "Обычный вид (Esc)" : "Во весь экран (выход — Esc)";
+  b.setAttribute("aria-pressed", String(on)); b.title = t; b.setAttribute("aria-label", t);
+  b.classList.toggle("on", on);
+  if (on && !document.fullscreenElement && document.documentElement.requestFullscreen)
+    document.documentElement.requestFullscreen().then(() => { P.fs = true; }).catch(() => {});
+  if (!on && document.fullscreenElement) document.exitFullscreen().catch(() => {});
+  if (!on) P.fs = false;
+  requestAnimationFrame(() => { fitCanvas(); draw(); placeAsk(); });
+}
+$("focusBtn").addEventListener("click", () => setFocus(!document.body.classList.contains("focus")));
+$("prevDish").addEventListener("click", () => stepDish(-1));
+$("nextDish").addEventListener("click", () => stepDish(1));
+// браузер сам вышел из полноэкранного (Esc) — выходим и из нашего режима
+document.addEventListener("fullscreenchange", () => {
+  if (!document.fullscreenElement && P.fs) setFocus(false);
+  else requestAnimationFrame(() => { fitCanvas(); draw(); });
+});
+$("toolsToggle").addEventListener("click", () => foldTools(!document.querySelector(".tools").classList.contains("folded")));
+try { if (localStorage.getItem("zona-tools-folded") === "1") foldTools(true); } catch {}
+
+// ----- сообщения и подтверждения -----
+function setMsg(t, warn) { $("msg").textContent = t; $("msg").className = "msg" + (warn ? " warn" : ""); }
+// Окошко «Удалить? Да / Отмена» под кнопкой anchor, не вылезая за край экрана
+function ask(text, okLabel, anchor, onOk) {
+  P.ask = onOk; P.askAt = anchor;
+  $("askText").textContent = text; $("askOk").textContent = okLabel;
+  $("ask").hidden = false;
+  placeAsk();
+  $("askOk").focus({ preventScroll: true });
+}
+function placeAsk() {
+  const box = $("ask"), anchor = P.askAt;
+  if (box.hidden || !anchor || !anchor.isConnected) return;
+  const a = anchor.getBoundingClientRect(), w = box.offsetWidth;
+  const left = Math.max(16, Math.min(a.left, innerWidth - w - 16));
+  box.style.left = left + scrollX + "px";
+  box.style.top = a.bottom + scrollY + 10 + "px";
+  box.style.setProperty("--tail", Math.max(10, Math.min(w - 22, a.left + a.width / 2 - left - 6)) + "px");
+}
+function hideAsk() { P.ask = null; $("ask").hidden = true; }
+
+function setMode(m) {
+  P.mode = m;
+  $("addBtn").classList.toggle("on", m === "add");
+  $("calibBtn").classList.toggle("on", m === "calib");
+  setLabel("calibBtn", m === "calib" ? "Готово" : "Масштаб по линейке");
+  $("calibField").hidden = m !== "calib";
+  cv.classList.toggle("adding", m === "add");
+  $("hint").textContent =
+    m === "add" ? "Нажмите в центр диска, вокруг которого нужна зона." :
+    m === "calib" ? "Поставьте концы жёлтой линейки на отрезок известной длины (диск или деления настоящей линейки), введите длину и нажмите «Готово»." :
+    "Нажмите на зону, чтобы выбрать её. Shift + колёсико — лупа; приближенное фото двигается за пустое место. Правая кнопка мыши по зоне — удалить (вернуть — ↶).";
+}
+
+// ----- рисование -----
+function drawRuler(r, color, k) {
+  const L = len(r), ux = (r.bx - r.ax) / (L || 1), uy = (r.by - r.ay) / (L || 1), nx = -uy, ny = ux;
+  ctx.lineCap = "round";
+  ctx.strokeStyle = "rgba(0,0,0,.6)"; ctx.lineWidth = 4 * k;
+  ctx.beginPath(); ctx.moveTo(r.ax, r.ay); ctx.lineTo(r.bx, r.by); ctx.stroke();
+  ctx.strokeStyle = color; ctx.lineWidth = 1.5 * k;
+  ctx.beginPath(); ctx.moveTo(r.ax, r.ay); ctx.lineTo(r.bx, r.by); ctx.stroke();
+  const mpp = mmPerPx();
+  if (mpp) {                                     // деления: 1 мм, длинные через 5 мм
+    const step = 1 / mpp;
+    ctx.lineWidth = Math.max(1, k);
+    for (let i = 0, t = 0; t <= L + 0.01; i++, t = i * step) {
+      if (step < 3 * k && i % 5) continue;
+      const tl = (i % 5 ? 4 : 9) * k, px = r.ax + ux * t, py = r.ay + uy * t;
+      ctx.beginPath(); ctx.moveTo(px, py); ctx.lineTo(px + nx * tl, py + ny * tl); ctx.stroke();
+    }
+  }
+  for (const [x, y] of [[r.ax, r.ay], [r.bx, r.by]]) drawHandle(x, y, color, k, 9);
+}
+
+// Ручка — пустое кольцо с точкой: край зоны под ней остаётся виден
+function drawHandle(x, y, color, k, rad) {
+  ctx.strokeStyle = "rgba(0,0,0,.7)"; ctx.lineWidth = 4.5 * k;
+  ctx.beginPath(); ctx.arc(x, y, rad * k, 0, 7); ctx.stroke();
+  ctx.strokeStyle = color; ctx.lineWidth = 2.5 * k;
+  ctx.beginPath(); ctx.arc(x, y, rad * k, 0, 7); ctx.stroke();
+  ctx.fillStyle = color;
+  ctx.beginPath(); ctx.arc(x, y, 1.6 * k, 0, 7); ctx.fill();
+}
+
+function label(text, x, y, k, color) {
+  ctx.font = `600 ${Math.round(14 * k)}px "JetBrains Mono", Consolas, monospace`;
+  ctx.textAlign = "center"; ctx.textBaseline = "bottom"; ctx.lineJoin = "round";
+  // подпись не уходит за край фото: у зоны с краю сдвигаем её внутрь
+  const half = ctx.measureText(text).width / 2 + 4 * k, pad = 4 * k;
+  x = Math.min(Math.max(x, half + pad), cv.width - half - pad);
+  y = Math.min(Math.max(y, 18 * k), cv.height - pad);
+  ctx.lineWidth = 4 * k; ctx.strokeStyle = "rgba(0,0,0,.75)"; ctx.strokeText(text, x, y);
+  ctx.fillStyle = color; ctx.fillText(text, x, y);
+}
+
+// Лупа ×3, пока тянем край или конец линейки: отдельное окошко постоянного размера в правом верхнем
+// углу окна разметки. В левый угол уходит, только если тянем точку прямо под ней
+function drawLoupe(p, k) {
+  const L = $("loupe"), g = L.getContext("2d"), s = 60 * k;      // 180 экранных px лупы = 60 экранных px фото
+  L.hidden = false;
+  const st = $("stage").getBoundingClientRect(), b = cv.getBoundingClientRect();
+  const px = b.left + p.x / k - st.left, py = b.top + p.y / k - st.top;   // точка в координатах окна
+  const right = !L.classList.contains("left");
+  const nearRight = px > st.width - 20 - 180 - 30 && py < 20 + 180 + 30, nearLeft = px < 20 + 180 + 30 && py < 20 + 180 + 30;
+  if (right && nearRight) L.classList.add("left");
+  else if (!right && nearLeft && !nearRight) L.classList.remove("left");
+  g.imageSmoothingEnabled = false;
+  g.fillStyle = "#000"; g.fillRect(0, 0, L.width, L.height);
+  g.drawImage(cv, p.x - s / 2, p.y - s / 2, s, s, 0, 0, L.width, L.height);
+  const c = L.width / 2;
+  g.strokeStyle = "rgba(255,255,255,.85)"; g.lineWidth = 2;
+  g.beginPath(); g.moveTo(c - 28, c); g.lineTo(c - 8, c); g.moveTo(c + 8, c); g.lineTo(c + 28, c);
+  g.moveTo(c, c - 28); g.lineTo(c, c - 8); g.moveTo(c, c + 8); g.lineTo(c, c + 28); g.stroke();
+}
+
+function draw() {
+  const d = D();
+  if (!d || !d._base) {
+    ctx.fillStyle = "#1b2329"; ctx.fillRect(0, 0, cv.width, cv.height);
+    ctx.fillStyle = "#c9d3da"; ctx.font = `500 ${Math.round(cv.width / 30)}px "Onest", "Segoe UI", sans-serif`;
+    ctx.textAlign = "center"; ctx.textBaseline = "middle";
+    ctx.fillText(d ? "Фото этой чашки не открылось — загрузите его заново" : "Загрузите фото чашки или нажмите «Пример»", cv.width / 2, cv.height / 2);
+    return;
+  }
+  const k = d.w / (cv.getBoundingClientRect().width || d.w);   // 1 экранный пиксель в пикселях фото
+  ctx.globalAlpha = 1;
+  ctx.drawImage(d._base, 0, 0);
+  ctx.globalAlpha = P.alpha;
+  const mpp = mmPerPx();
+  // при настройке масштаба зоны прячем: видны только линейка и сам диск
+  if (P.mode !== "calib") d.items.forEach((it, i) => {
+    const sel = i === P.sel, c = center(it), R = diamPx(it) / 2;
+    const line = it.pts ? outline(it.pts) : null;
+    const col = needsCheck(it) ? "#ff9a62" : it.src === "none" ? "#b8c4cc" : it.src === "auto" ? "#3ff0cf" : "#ffc845";
+    const shape = () => {
+      ctx.beginPath();
+      if (line) { line.forEach((q, j) => j ? ctx.lineTo(q.x, q.y) : ctx.moveTo(q.x, q.y)); ctx.closePath(); }
+      else ctx.arc(c.x, c.y, R, 0, 2 * Math.PI);
+    };
+    ctx.lineJoin = "round";
+    if (sel && line) { ctx.fillStyle = "rgba(255,200,69,.08)"; shape(); ctx.fill(); }
+    ctx.strokeStyle = "rgba(0,0,0,.55)"; ctx.lineWidth = (sel ? 5 : 4) * k; shape(); ctx.stroke();
+    ctx.strokeStyle = col; ctx.lineWidth = (sel ? 3 : 2) * k;
+    ctx.setLineDash(sel ? [] : [8 * k, 5 * k]); shape(); ctx.stroke(); ctx.setLineDash([]);
+    const t = `${i + 1}` + (it.drug ? ` ${it.drug}` : "") + (mpp ? ` · ${fmt(diamPx(it) * mpp)} мм` : "") + (needsCheck(it) ? " ?" : "");
+    const top = line ? line.reduce((a, q) => q.y < a.y ? q : a).y : c.y - R;
+    label(t, c.x, top - 6 * k, k, col);
+    if (sel && P.mode !== "calib") {
+      if (!line) drawRuler(it.r, "#ffc845", k);
+      else {                              // точки, за которые тянут край
+        const hot = P.drag && P.drag.what === "pt" ? P.drag.i : P.hover;
+        it.pts.forEach((q, j) => drawHandle(q.x, q.y, "#ffc845", k, j === hot ? 9 : 6));
+      }
+    }
+  });
+  if (P.mode === "calib" && P.calib) {
+    drawRuler(P.calib, "#ffe066", k);
+    label(`${fmt(calibMm())} мм`, mid(P.calib).x, Math.min(P.calib.ay, P.calib.by) - 14 * k, k, "#ffe066");
+  }
+  ctx.globalAlpha = 1;
+  if (P.drag && P.drag.what !== "move" && P.drag.what !== "pan" && P.drag.p) drawLoupe(P.drag.p, k);   // лупа: и для точки контура, и для линейки масштаба
+  else $("loupe").hidden = true;
+}
+
+// стрелки и счётчик «2 / 5» — только когда фото больше одного
+function renderNav() {
+  const n = P.dishes.length, many = n > 1;
+  $("prevDish").hidden = $("nextDish").hidden = $("navCount").hidden = !many;
+  if (!many) return;
+  $("prevDish").disabled = P.cur <= 0; $("nextDish").disabled = P.cur >= n - 1;
+  $("navCount").textContent = `${P.cur + 1} / ${n}`;
+}
+function stepDish(k) {
+  const i = P.cur + k;
+  if (i >= 0 && i < P.dishes.length && !P.drag) openDish(i);
+}
+function renderDishes() {
+  renderNav();
+  $("dishes").innerHTML = P.dishes.map((d, i) => {
+    const n = d.items.filter(needsCheck).length;
+    return `<div class="dish${i === P.cur ? " cur" : ""}" data-i="${i}" tabindex="0" role="button" aria-label="Открыть ${esc(d.name)}">` +
+      `<img src="${d.thumb}" alt="">` +
+      `<span class="nm" title="${esc(d.name)}">${esc(d.name)}</span>` +
+      `<span class="ct${n ? " warn" : ""}">${d.items.length} ${disksWord(d.items.length)}${n ? ` · ${n} ?` : ""}</span>` +
+      `<button class="x" type="button" data-del="${i}" aria-label="Удалить чашку ${esc(d.name)}" title="Удалить чашку">×</button></div>`;
+  }).join("") + `<label class="dish add" for="file" tabindex="0"><b>+</b>Добавить фото</label>`;
+}
+
+function fillMeta() {
+  const d = D(), m = d ? d.meta : {};
+  $("mName").value = d ? d.name : ""; $("mDate").value = m.date || ""; $("mGroup").value = m.group || "опыт";
+  $("mMedium").value = m.medium || ""; $("mCulture").value = m.culture || ""; $("mPerson").value = m.person || ""; $("mOrg").value = m.org || ""; $("mDishMm").value = m.dishMm || "";
+  for (const id of ["mName", "mDate", "mGroup", "mMedium", "mCulture", "mPerson", "mOrg", "mDishMm"]) $(id).disabled = !d;
+  $("metaTitle").textContent = d ? `· ${d.name}` : "";
+}
+
+function catCell(it) {
+  const d = D(), c = categoryOf(it, d);
+  if (c) {
+    const r = c.rule, why = `${CAT_TEXT[c.cat]}\nЗона ${c.mm} мм (округлено до 1 мм). Пороги: Ч ≥ ${r.s}, Р < ${r.r}` +
+      (r.atu ? `, ЗТН ${r.atu[0] === r.atu[1] ? r.atu[0] : r.atu.join("–")}` : "") + (r.disk ? `, диск ${r.disk} мкг` : "") +
+      `.\nИсточник: ${r.src}${r.note ? ` (${r.note})` : ""}.` + (r.br ? "\nЗначения в таблице в скобках — применяются ограниченно, см. примечания." : "") +
+      (c.atu ? "\nЗона попала в ЗТН — зону технической неопределённости: результат ненадёжен, по рекомендациям его не сообщают как «чувствительный» без подтверждения." : "");
+    return `<span class="chip cat cat-${c.cat}" title="${esc(why)}">${c.cat}</span>` + (c.atu ? ` <span class="chip check" title="${esc(why)}">ЗТН</span>` : "");
+  }
+  if (!it.drug) return `<span class="nobreak" title="Впишите препарат (код с диска), чтобы узнать категорию">—</span>`;
+  if (!d.meta.org) return `<span class="nobreak" title="Выберите микроорганизм в паспорте чашки — пороги подставятся из рекомендаций">выберите микроорганизм</span>`;
+  return `<span class="nobreak" title="В таблице для «${esc(BREAKPOINTS[d.meta.org].name)}» нет «${esc(it.drug)}». Проверьте код препарата или задайте свои пороги ниже">нет в таблице</span>`;
+}
+// обновить только колонку «Категория», не трогая поля ввода (курсор в «Препарат» не теряется)
+function refreshCats() {
+  const d = D();
+  if (!d) return;
+  for (const td of $("tableBox").querySelectorAll(".catcell")) { const it = d.items[+td.dataset.i]; if (it) td.innerHTML = catCell(it); }
+}
+function renderTable() {
+  const d = D(), mpp = mmPerPx();
+  if (!d || !d.items.length) { $("tableBox").innerHTML = `<p class="empty">Зон пока нет.</p>`; return; }
+  $("tableBox").innerHTML = `<table><thead><tr><th>№</th><th>Препарат</th><th class="num">Зона, мм</th><th>Категория</th><th>Отметка</th></tr></thead><tbody>` +
+    d.items.map((it, i) => `<tr data-i="${i}" tabindex="0" class="${i === P.sel ? "sel" : ""}"><td>${i + 1}</td>` +
+      `<td><input class="drug" id="drug-${d.id}-${i}" data-i="${i}" list="drugList" value="${esc(it.drug)}" placeholder="—" aria-label="Препарат у диска ${i + 1}" autocomplete="off"><span class="dname" data-i="${i}"${guessOf(it.drug) ? ` title="Название предположительное — уточнить у тёти"` : ""}>${esc(dnameText(it))}</span></td>` +
+      `<td class="num">${mpp ? fmt(diamPx(it) * mpp) : "—"}${it.pts && mpp && spanPx(it).max - spanPx(it).min > 0.5 / mpp ? `<span class="sub">${fmt(spanPx(it).min * mpp)}–${fmt(spanPx(it).max * mpp)}</span>` : ""}</td>` +
+      `<td class="catcell" data-i="${i}">${catCell(it)}</td>` +
+      `<td><span class="chip ${needsCheck(it) ? "check" : it.src === "none" ? "none" : it.src === "auto" ? "" : "edited"}">${STATUS(it)}</span></td></tr>`).join("") +
+    `</tbody></table>`;
+}
+
+// Выбранный диск крупно: чтобы прочитать маркировку антибиотика
+function renderZoom(d, it) {
+  $("zoomBox").hidden = !(it && d._base);
+  if (!it || !d._base) return;
+  const zc = $("zoomCv"), z = zc.getContext("2d"), s = (d.scalePx || d.w * 0.05) * 1.9;
+  z.fillStyle = "#000"; z.fillRect(0, 0, zc.width, zc.height);
+  z.drawImage(d._base, it.x - s / 2, it.y - s / 2, s, s, 0, 0, zc.width, zc.height);
+  $("zoomTitle").textContent = `Диск ${P.sel + 1} крупно: прочитайте надпись`;
+  if (document.activeElement !== $("zoomDrug")) $("zoomDrug").value = it.drug;
+}
+
+function renderSide() {
+  const d = D(), it = d && P.sel >= 0 ? d.items[P.sel] : null, mpp = mmPerPx();
+  $("scale").innerHTML = mpp
+    ? `<span>Масштаб: <b>1 мм = ${fmt(1 / mpp)} px</b></span><span>${d.scaleSrc === "manual" ? "задан линейкой вручную" : `по ${d.nDisks} дискам, медиана`} · диск ${fmt(diskMm())} мм</span>`
+    : `<span>Масштаб: <b>не задан</b></span>`;
+  renderZoom(d, it);
+  $("check").hidden = !(it && needsCheck(it));
+  if (it && needsCheck(it)) {
+    const none = it.src === "none";
+    $("checkText").textContent = none ? `Зона у диска ${P.sel + 1} не найдена. Посмотрите на фото: бактерии растут вплотную к диску?`
+      : `Зона у диска ${P.sel + 1} найдена неуверенно: лучи от диска находят край на разном расстоянии — зона сливается с соседними или край размыт. Проверьте круг: если он неверный, поправьте линейку или включите гибкий контур — он ляжет по найденному краю.`;
+    $("checkYes").textContent = none ? "Да, зоны нет" : "Всё верно";
+    $("checkMark").textContent = none ? "Разметить зону вручную" : "Гибкий контур";
+  }
+  $("delBtn").disabled = !it;
+  $("axisBtn").disabled = !it;
+  setLabel("axisBtn", it && it.pts ? "Сделать кругом" : "Гибкий контур");
+  $("roundBtn").disabled = !(it && it.pts);
+  if (P.mode === "idle") $("hint").textContent = !it ? "Нажмите на зону, чтобы выбрать её. Shift + колёсико — лупа; приближенное фото двигается за пустое место. Правая кнопка мыши по зоне — удалить (вернуть — ↶)." : it.pts
+    ? "Тяните точку или край — контур прогнётся, как резинка. Тяните внутри — зона сдвинется. Отмена — ↶ или Ctrl+Z."
+    : "Тяните за концы линейки, чтобы исправить диаметр. Для неровной зоны — «Гибкий контур». Отмена — ↶ или Ctrl+Z.";
+  $("undoBtn").disabled = !d || !d._undo.length;
+  $("redoBtn").disabled = !d || !d._redo.length;
+  for (const id of ["addBtn", "calibBtn", "resetBtn", "copyBtn"]) $(id).disabled = !d;
+  $("xlsxBtn").disabled = $("projSaveBtn").disabled = !P.dishes.length;
+}
+
+function render() { draw(); renderTable(); renderSide(); }
+
+// Выбор зоны без пересборки таблицы (чтобы не терять курсор в поле «Препарат»)
+function select(i) {
+  P.sel = i;
+  for (const tr of $("tableBox").querySelectorAll("tr[data-i]")) tr.classList.toggle("sel", +tr.dataset.i === i);
+  draw(); renderSide();
+}
+
+// ----- мышь и палец -----
+function pos(e) {
+  const b = cv.getBoundingClientRect(), d = D();
+  return { x: (e.clientX - b.left) * d.w / b.width, y: (e.clientY - b.top) * d.h / b.height, k: d.w / b.width };
+}
+function distSeg(p, r) {
+  const L2 = (r.bx - r.ax) ** 2 + (r.by - r.ay) ** 2 || 1;
+  const t = Math.max(0, Math.min(1, ((p.x - r.ax) * (r.bx - r.ax) + (p.y - r.ay) * (r.by - r.ay)) / L2));
+  return Math.hypot(p.x - r.ax - t * (r.bx - r.ax), p.y - r.ay - t * (r.by - r.ay));
+}
+
+// Что под курсором у зон: конец линейки (a, b) или точка контура / край (pt),
+// линейка или середина контура (move), другая зона (pick)
+function hitZone(p) {
+  const d = D(), hit = 16 * p.k, it = P.sel >= 0 ? d.items[P.sel] : null;
+  if (it && !it.pts) {
+    const r = it.r;
+    if (Math.hypot(p.x - r.ax, p.y - r.ay) < hit) return { what: "a", r };
+    if (Math.hypot(p.x - r.bx, p.y - r.by) < hit) return { what: "b", r };
+    if (distSeg(p, r) < hit * 0.7) return { what: "move" };
+  }
+  if (it && it.pts) {
+    let bi = -1, bd = Infinity;
+    it.pts.forEach((q, i) => { const s = Math.hypot(p.x - q.x, p.y - q.y); if (s < bd) { bd = s; bi = i; } });
+    if (bd < hit) return { what: "pt", i: bi };
+    const line = outline(it.pts);
+    // за край можно хвататься в любом месте: тянется ближайшая точка
+    if (line.some(q => Math.hypot(p.x - q.x, p.y - q.y) < hit * 0.7)) return { what: "pt", i: bi };
+    if (inside(line, p)) return { what: "move" };
+  }
+  let best = -1, bestA = Infinity;
+  d.items.forEach((z, i) => {
+    const c = center(z), R = diamPx(z) / 2;
+    const hitIn = z.pts ? inside(outline(z.pts), p) : Math.hypot(p.x - c.x, p.y - c.y) < R;
+    if ((hitIn || Math.hypot(p.x - c.x, p.y - c.y) < 20 * p.k) && R < bestA) { best = i; bestA = R; }
+  });
+  return best >= 0 ? { what: "pick", i: best } : null;
+}
+// Контур как резинка: точка идёт за курсором, соседние — слабее, дальние стоят
+const PULL = [1, 0.4, 0.1];
+function pullPt(it, i, dx, dy) {
+  const n = it.pts.length;
+  for (let s = -2; s <= 2; s++) {
+    const q = it.pts[(i + s + n) % n], w = PULL[Math.abs(s)];
+    q.x += dx * w; q.y += dy * w;
+  }
+}
+
+cv.addEventListener("pointerdown", e => {
+  const d = D();
+  if (!d || !d._base || e.button !== 0) return;     // правая кнопка — отдельно, через contextmenu
+  const p = pos(e), hit = 16 * p.k;
+  const grab = g => {
+    P.drag = { ...g, last: p, p: null, pre: P.mode === "calib" ? null : snap(d), moved: false };
+    cv.setPointerCapture(e.pointerId); e.preventDefault();
+  };
+  if (P.mode === "calib") {
+    const r = P.calib;
+    if (!r) return;
+    if (Math.hypot(p.x - r.ax, p.y - r.ay) < hit) return grab({ what: "a", r });
+    if (Math.hypot(p.x - r.bx, p.y - r.by) < hit) return grab({ what: "b", r });
+    if (distSeg(p, r) < hit * 0.7) grab({ what: "move", r });
+    return;
+  }
+  if (P.mode === "add") {
+    commit();
+    const mpp = mmPerPx(), dd = mpp ? 12 / mpp : d.w * 0.12;
+    d.items.push({ x: p.x, y: p.y, src: "manual", r: rulerAt(p.x, p.y, dd), shape: null, drug: "", ok: false });
+    P.sel = d.items.length - 1; setMode("idle"); renderDishes(); render(); return;
+  }
+  const g = hitZone(p);
+  if (g && g.what !== "pick") return grab(g);
+  if (!g && P.zoom > 1) {             // приближено и нажали мимо зон — тащим фото; без движения это просто клик мимо
+    P.drag = { what: "pan", sx: e.clientX, sy: e.clientY, sl: $("view").scrollLeft, st: $("view").scrollTop, moved: false, pre: null };
+    cv.setPointerCapture(e.pointerId); e.preventDefault(); cv.style.cursor = "grabbing";
+    return;
+  }
+  hideAsk(); select(g ? g.i : -1);
+});
+cv.addEventListener("pointermove", e => {
+  const d = D();
+  if (!d || !d._base) return;
+  if (!P.drag) {                      // без нажатия: подсветка точки и вид курсора
+    const p = pos(e), g = P.mode === "idle" ? hitZone(p) : null, hov = g && g.what === "pt" ? g.i : -1;
+    cv.style.cursor = !g ? (P.zoom > 1 && P.mode === "idle" ? "grab" : "") : g.what === "pick" ? "pointer" : g.what === "move" ? "move" : "grab";
+    if (hov !== P.hover) { P.hover = hov; draw(); }
+    return;
+  }
+  const g = P.drag;
+  if (g.what === "pan") {
+    const dx = e.clientX - g.sx, dy = e.clientY - g.sy;
+    if (Math.abs(dx) + Math.abs(dy) > 3) g.moved = true;
+    $("view").scrollLeft = g.sl - dx; $("view").scrollTop = g.st - dy;
+    return;
+  }
+  const p = pos(e), r = g.r;
+  if (g.what === "a") { r.ax = p.x; r.ay = p.y; g.p = p; }
+  else if (g.what === "b") { r.bx = p.x; r.by = p.y; g.p = p; }
+  else if (g.what === "pt") { pullPt(d.items[P.sel], g.i, p.x - g.last.x, p.y - g.last.y); g.last = p; g.p = d.items[P.sel].pts[g.i]; }
+  else {
+    const dx = p.x - g.last.x, dy = p.y - g.last.y;
+    const it = P.mode === "calib" ? null : d.items[P.sel];
+    if (it && it.pts) for (const q of it.pts) { q.x += dx; q.y += dy; }
+    else { const q = it ? it.r : r; q.ax += dx; q.bx += dx; q.ay += dy; q.by += dy; }
+    g.last = p;
+  }
+  g.moved = true;
+  if (P.mode !== "calib" && P.sel >= 0) {
+    const it = d.items[P.sel];
+    if (it.src === "auto" || it.src === "none") it.src = "edited";
+  }
+  if (P.mode === "calib") draw(); else render();
+});
+const endDrag = () => {
+  const g = P.drag;
+  if (!g) return;
+  P.drag = null;
+  if (g.what === "pan") { cv.style.cursor = "grab"; if (!g.moved) { hideAsk(); select(-1); } return; }
+  if (g.pre && g.moved) { commit(g.pre); renderDishes(); }
+  render();
+};
+cv.addEventListener("pointerup", endDrag);
+cv.addEventListener("pointercancel", endDrag);
+
+// ----- кнопки -----
+async function loadSample() {
+  const have = P.dishes.findIndex(d => d.sample);
+  if (have >= 0) return openDish(have);
+  setMsg("Рисую пример…"); await tick();
+  const s = makeSample(), c = document.createElement("canvas");
+  c.width = s.w; c.height = s.h;
+  c.getContext("2d").putImageData(new ImageData(s.data, s.w, s.h), 0, 0);
+  await addDish(c, s.w, s.h, "Пример", true);
+  await openDish(P.dishes.length - 1);
+  setMsg("Это искусственная чашка: зоны 24, 17 и 13 мм и диск без зоны. Загрузите свои фото — пример уберётся сам.");
+}
+const calibMm = () => { const v = parseFloat($("calibMm").value); return v > 0 ? v : diskMm(); };
+
+$("file").addEventListener("change", e => { addFiles(e.target.files); e.target.value = ""; });
+$("projFile").addEventListener("change", e => { openProject(e.target.files[0]); e.target.value = ""; });
+for (const id of ["uploadBtn", "projOpenBtn"]) $(id).addEventListener("keydown", e => {
+  if (e.key === "Enter" || e.key === " ") { e.preventDefault(); $(id === "uploadBtn" ? "file" : "projFile").click(); }
+});
+$("sampleBtn").addEventListener("click", loadSample);
+$("helpBtn").addEventListener("click", () => $("helpBox").showModal());
+$("helpClose").addEventListener("click", () => $("helpBox").close());
+$("helpBox").addEventListener("click", e => {          // клик мимо окна закрывает его
+  const b = $("helpBox").getBoundingClientRect();
+  if (e.clientX < b.left || e.clientX > b.right || e.clientY < b.top || e.clientY > b.bottom) $("helpBox").close();
+});
+$("undoBtn").addEventListener("click", undo);
+$("redoBtn").addEventListener("click", redo);
+$("saveBtn2").addEventListener("click", saveBrowser);
+$("xlsxBtn").addEventListener("click", saveXlsx);
+$("projSaveBtn").addEventListener("click", saveProject);
+$("resetBtn").addEventListener("click", async () => {
+  const d = D();
+  if (!d || !d._base) return;
+  commit(); setMsg("Ищу диски и зоны…"); await tick();
+  const old = d.items, res = analyze(rgbaOf(d), d.w, d.h);
+  d.items = itemsFrom(res); d.scalePx = res.diskPx; d.scaleSrc = "auto"; d.nDisks = res.disks.length;
+  for (const it of d.items) {        // названия препаратов переносим на тот же диск
+    const o = old.find(o => o.drug && Math.hypot(o.x - it.x, o.y - it.y) < (d.scalePx || 30));
+    if (o) it.drug = o.drug;
+  }
+  P.sel = -1; renderDishes(); render();
+  setMsg("Найдено заново. Прежнюю разметку можно вернуть стрелкой ↶. " + summary(d), !d.items.length);
+});
+$("addBtn").addEventListener("click", () => { if (D()) setMode(P.mode === "add" ? "idle" : "add"); draw(); });
+$("calibBtn").addEventListener("click", () => {
+  const d = D();
+  if (!d) return;
+  if (P.mode === "calib") {
+    const L = len(P.calib);
+    if (L > 3) {
+      commit();
+      d.scalePx = L * diskMm() / calibMm(); d.scaleSrc = "manual";   // масштаб храним как «пикселей на диск»
+      setMsg(`Масштаб задан: ${fmt(calibMm())} мм = ${Math.round(L)} px. Диаметры зон пересчитаны.`);
+    }
+    P.calib = null; setMode("idle"); render(); return;
+  }
+  hideAsk();
+  $("calibMm").value = diskMm();
+  const first = d.items[0], dd = d.scalePx || d.w * 0.06;
+  P.calib = first ? rulerAt(first.x, first.y, dd) : rulerAt(d.w / 2, d.h / 2, dd);
+  setMode("calib"); render();
+});
+$("calibMm").addEventListener("input", draw);
+$("axisBtn").addEventListener("click", () => {
+  const d = D(), it = d && d.items[P.sel];
+  if (!it) return;
+  commit();
+  if (it.pts) {                                   // контур → круг того же диаметра
+    const c = center(it);
+    it.r = rulerAt(c.x, c.y, diamPx(it)); delete it.pts;
+    setMsg("Зона снова круг с линейкой, диаметр тот же. Вернуть контур — стрелка ↶.");
+  } else {
+    it.pts = toContour(it); delete it.r;
+    setMsg("Гибкий контур: тяните точки или край — контур прогибается. Точки уже стоят по найденному краю, размер — как был у линейки.");
+  }
+  if (it.src === "auto" || it.src === "none") it.src = "edited";
+  render();
+});
+$("roundBtn").addEventListener("click", () => {     // контур остаётся контуром, но ровным кругом
+  const d = D(), it = d && d.items[P.sel];
+  if (!it || !it.pts) return;
+  commit();
+  const c = center(it);
+  it.pts = circlePts(c.x, c.y, diamPx(it));
+  if (it.src === "auto" || it.src === "none") it.src = "edited";
+  setMsg("Контур скруглён, диаметр тот же. Точки остались — можно снова гнуть. Вернуть форму — стрелка ↶.");
+  render();
+});
+// Зона удаляется сразу, без вопроса: вернуть можно стрелкой ↶ (Ctrl+Z)
+function deleteZone(i) {
+  const d = D(), it = d.items[i];
+  commit(); d.items.splice(i, 1); P.sel = -1; hideAsk(); renderDishes(); render();
+  setMsg(`Зона ${i + 1}${it.drug ? ` (${it.drug})` : ""} удалена. Вернуть — стрелка ↶ или Ctrl+Z.`);
+}
+$("delBtn").addEventListener("click", () => { if (D() && P.sel >= 0) deleteZone(P.sel); });
+// Правая кнопка мыши по зоне — удалить её
+cv.addEventListener("contextmenu", e => {
+  const d = D();
+  if (!d || !d._base || P.mode !== "idle") return;
+  e.preventDefault();
+  const g = hitZone(pos(e)), i = !g ? -1 : g.what === "pick" ? g.i : P.sel;
+  if (i >= 0) deleteZone(i);
+});
+$("askOk").addEventListener("click", () => { const f = P.ask; hideAsk(); if (f) f(); });
+$("askNo").addEventListener("click", hideAsk);
+// клик мимо окошка закрывает его (кнопки удаления сами открывают его заново)
+document.addEventListener("pointerdown", e => {
+  if (!$("ask").hidden && !$("ask").contains(e.target) && !e.target.closest("#delBtn, [data-del]")) hideAsk();
+});
+window.addEventListener("resize", placeAsk);
+window.addEventListener("scroll", placeAsk, { passive: true });   // кнопка «Удалить» в закреплённом блоке едет вместе с экраном
+$("checkYes").addEventListener("click", () => {
+  const d = D(), it = d && d.items[P.sel];
+  if (!it) return;
+  const what = it.src === "none" ? "зоны нет" : "зона верная";
+  commit(); it.ok = true; renderDishes(); render();
+  const left = d.items.filter(needsCheck).length;
+  setMsg(left ? `Отмечено: ${what}. Осталось проверить: ${left}.` : `Отмечено: ${what}. Все диски этой чашки проверены.`);
+});
+$("checkMark").addEventListener("click", () => {
+  const d = D(), it = d && d.items[P.sel];
+  if (!it) return;
+  commit();
+  if (it.src !== "none") {                       // неуверенная зона → гибкий контур по найденному краю
+    it.pts = toContour(it); delete it.r; it.src = "edited";
+    renderDishes(); render();
+    return setMsg("Гибкий контур лёг по найденному краю. Подтяните точки там, где край другой; зона, сливающаяся с соседней, меряется по свободной стороне.");
+  }
+  const c = center(it), mpp = mmPerPx(), dd = mpp ? 12 / mpp : diamPx(it) * 2;
+  it.src = "manual"; it.ok = false; it.r = rulerAt(c.x, c.y, dd); delete it.pts;
+  renderDishes(); render();
+  setMsg("Поставьте концы линейки на края зоны. Если зона неровная, нажмите «Гибкий контур».");
+});
+
+$("dishes").addEventListener("click", e => {
+  const x = e.target.closest("[data-del]");
+  if (x) {
+    const i = +x.dataset.del, d = P.dishes[i];
+    return ask(`Удалить чашку «${d.name}» вместе с разметкой?`, "Удалить чашку", x, async () => {
+      P.dishes.splice(i, 1); markDirty();
+      if (!P.dishes.length) { P.cur = -1; fillMeta(); renderDishes(); render(); return setMsg("Чашек нет. Загрузите фото."); }
+      await openDish(Math.min(P.cur > i ? P.cur - 1 : P.cur === i ? i : P.cur, P.dishes.length - 1));
+    });
+  }
+  const t = e.target.closest(".dish[data-i]");
+  if (t && +t.dataset.i !== P.cur) openDish(+t.dataset.i);
+});
+$("dishes").addEventListener("keydown", e => {
+  if (e.key !== "Enter" && e.key !== " ") return;
+  if (e.target.matches(".dish.add")) { e.preventDefault(); $("file").click(); }
+  else if (e.target.matches(".dish[data-i]")) { e.preventDefault(); openDish(+e.target.dataset.i); }
+});
+
+const metaKeys = { mDate: "date", mGroup: "group", mMedium: "medium", mCulture: "culture", mPerson: "person", mOrg: "org", mDishMm: "dishMm" };
+for (const id of ["mName", ...Object.keys(metaKeys)]) $(id).addEventListener("input", () => {
+  const d = D();
+  if (!d) return;
+  if (id === "mName") { d.name = $(id).value; $("metaTitle").textContent = `· ${d.name}`; }
+  else d.meta[metaKeys[id]] = $(id).value;
+  markDirty(); renderDishes();
+  if (id === "mOrg") refreshCats();   // другой микроорганизм — другие пороги
+});
+$("diskMm").addEventListener("input", () => { const d = D(), v = parseFloat($("diskMm").value); if (d && v > 0) { d.diskMm = v; markDirty(); } render(); });
+$("alpha").addEventListener("input", () => {
+  const v = +$("alpha").value; P.alpha = 1 - v / 100; $("alphaOut").textContent = `${v} %`;
+  try { localStorage.setItem("zona-alpha", String(v)); } catch {}
+  draw();
+});
+
+$("tableBox").addEventListener("click", e => {
+  const tr = e.target.closest("tr[data-i]");
+  if (tr) { hideAsk(); select(+tr.dataset.i); }
+});
+$("tableBox").addEventListener("keydown", e => {
+  const tr = e.target.closest("tr[data-i]");
+  if (tr && e.key === "Enter" && e.target === tr) select(+tr.dataset.i);
+});
+$("tableBox").addEventListener("input", e => {
+  const d = D();
+  if (!d || !e.target.matches("input.drug")) return;
+  const it = d.items[+e.target.dataset.i];
+  it.drug = e.target.value.trim();
+  const nm = $("tableBox").querySelector(`.dname[data-i="${e.target.dataset.i}"]`);
+  if (nm) nm.textContent = dnameText(it);
+  markDirty(); draw(); refreshCats();
+});
+// Общие пороги по размеру зоны
+for (const id of ["gOn", "gS", "gR"]) $(id).addEventListener("input", () => {
+  const G = P.general;
+  G.on = $("gOn").checked; G.s = parseFloat($("gS").value) || 0; G.r = parseFloat($("gR").value) || 0;
+  $("generalBar").classList.toggle("off", !G.on);
+  saveBreaks(); markDirty(); refreshCats();
+  if (G.on && G.s > 0 && G.r > 0 && G.r > G.s) setMsg(`Порог R (${G.r}) больше порога S (${G.s}) — проверьте: должно быть R ≤ S.`, true);
+});
+// Пороги: правка на месте, без пересборки таблицы (чтобы курсор оставался в поле)
+$("breaksTable").addEventListener("input", e => {
+  const el = e.target, b = P.breaks[+el.dataset.b];
+  if (!b) return;
+  b[el.dataset.k] = el.dataset.k === "drug" ? el.value.trim() : parseFloat(el.value) || 0;
+  saveBreaks(); markDirty(); refreshCats();
+  const n = P.breaks.filter(x => x.drug && x.s > 0 && x.r > 0).length;
+  $("breaksCount").textContent = n ? `· заданы для ${n}` : "· не заданы";
+  if (b.s > 0 && b.r > 0 && b.r > b.s) setMsg(`У «${b.drug}» порог R (${b.r}) больше порога S (${b.s}) — проверьте: должно быть R ≤ S.`, true);
+});
+$("breaksTable").addEventListener("click", e => {
+  const x = e.target.closest("[data-bdel]");
+  if (!x) return;
+  P.breaks.splice(+x.dataset.bdel, 1); saveBreaks(); markDirty(); renderBreaks(); refreshCats();
+});
+$("breakAdd").addEventListener("click", () => {
+  P.breaks.push({ drug: "", s: 0, r: 0 }); saveBreaks(); renderBreaks();
+  const ins = $("breaksTable").querySelectorAll('input[data-k="drug"]'); ins[ins.length - 1].focus();
+});
+$("breakFromDishes").addEventListener("click", () => {
+  const have = new Set(P.breaks.map(b => normDrug(b.drug))), add = [];
+  for (const d of P.dishes) for (const it of d.items) { const k = normDrug(it.drug); if (k && !have.has(k)) { have.add(k); add.push(it.drug.trim()); } }
+  for (const drug of add) P.breaks.push({ drug, s: 0, r: 0 });
+  saveBreaks(); renderBreaks();
+  setMsg(add.length ? `Добавлены препараты: ${add.join(", ")}. Впишите для них пороги из таблицы EUCAST.` : "Новых препаратов в чашках нет: впишите препараты в колонку «Препарат».");
+});
+$("zoomDrug").addEventListener("input", () => {
+  const d = D(), it = d && d.items[P.sel];
+  if (!it) return;
+  it.drug = $("zoomDrug").value.trim();
+  const f = document.querySelector(`input.drug[data-i="${P.sel}"]`);
+  if (f) f.value = it.drug;
+  const nm = $("tableBox").querySelector(`.dname[data-i="${P.sel}"]`);
+  if (nm) nm.textContent = dnameText(it);
+  markDirty(); draw(); refreshCats();
+});
+$("copyBtn").addEventListener("click", async () => {
+  const text = tableRows().map(r => r.map(v => typeof v === "number" ? String(v).replace(".", ",") : v).join("\t")).join("\n");
+  const done = () => setMsg("Таблица всех чашек скопирована. Вставьте её в Excel или Word (Ctrl+V).");
+  try { await navigator.clipboard.writeText(text); return done(); } catch {}
+  // запасной способ: старое копирование через скрытое поле — работает там, где новое запрещено
+  const ta = document.createElement("textarea");
+  ta.value = text; ta.style.cssText = "position:fixed;top:0;left:0;opacity:0";
+  document.body.append(ta); ta.select();
+  let ok = false;
+  try { ok = document.execCommand("copy"); } catch {}
+  ta.remove();
+  if (ok) return done();
+  setMsg("Браузер не дал скопировать. Откройте сайт файлом index.html на своём компьютере — там работают и копирование, и скачивание.", true);
+});
+
+document.addEventListener("keydown", e => {
+  const typing = /^(INPUT|SELECT|TEXTAREA)$/.test(document.activeElement.tagName);
+  if (document.querySelector("dialog[open]")) return;   // открыта обрезка или справка
+  const ctrl = e.ctrlKey || e.metaKey, key = e.key.toLowerCase();
+  if (ctrl && (key === "s" || key === "ы")) { e.preventDefault(); saveBrowser(); return; }
+  if (typing) return;
+  if (ctrl && (key === "z" || key === "я") && !e.shiftKey) { e.preventDefault(); undo(); }
+  else if (ctrl && (key === "y" || key === "н" || ((key === "z" || key === "я") && e.shiftKey))) { e.preventDefault(); redo(); }
+  else if ((e.key === "Delete" || e.key === "Backspace") && P.sel >= 0) { e.preventDefault(); $("delBtn").click(); }
+  else if ((e.key === "ArrowLeft" || e.key === "ArrowRight") && !ctrl && !e.altKey && P.mode === "idle") {
+    e.preventDefault(); stepDish(e.key === "ArrowLeft" ? -1 : 1);       // ← → — предыдущее / следующее фото
+  }
+  else if (e.key === "Escape") {
+    // Esc сначала отменяет режим (добавление зоны, масштаб), а если ничего не было — выходит из «Во весь экран»
+    if (P.mode === "idle" && $("ask").hidden && document.body.classList.contains("focus")) return setFocus(false);
+    P.calib = null; hideAsk(); setMode("idle"); render();
+  }
+});
+window.addEventListener("beforeunload", e => { if (P.dirty) { e.preventDefault(); e.returnValue = ""; } });
+const stage = $("stage");
+stage.addEventListener("dragover", e => { e.preventDefault(); stage.classList.add("drop"); });
+stage.addEventListener("dragleave", () => stage.classList.remove("drop"));
+stage.addEventListener("drop", e => { e.preventDefault(); stage.classList.remove("drop"); addFiles(e.dataTransfer.files); });
+// Окно разметки постоянного размера; фото вписывается в него целиком, с сохранением пропорций,
+// и увеличивается лупой в P.zoom раз (1 — вписано)
+function fitCanvas() {
+  const v = $("view"), k = Math.min(v.clientWidth / cv.width, v.clientHeight / cv.height) * P.zoom;
+  cv.style.width = Math.floor(cv.width * k) + "px";
+  cv.style.height = Math.floor(cv.height * k) + "px";
+}
+// Лупа: точка фото под (cx, cy) остаётся на месте; без точки — приближаем к центру окна
+function setZoom(z, cx, cy) {
+  const v = $("view"), was = cv.getBoundingClientRect();
+  if (cx === undefined) { const r = v.getBoundingClientRect(); cx = r.left + r.width / 2; cy = r.top + r.height / 2; }
+  const fx = (cx - was.left) / was.width, fy = (cy - was.top) / was.height;
+  P.zoom = Math.min(8, Math.max(1, z));
+  fitCanvas();
+  const now = cv.getBoundingClientRect();
+  v.scrollLeft += now.left + fx * now.width - cx;
+  v.scrollTop += now.top + fy * now.height - cy;
+  $("zoomOut").textContent = Math.round(P.zoom * 100) + " %";
+  $("zoomMinus").disabled = $("zoomFit").disabled = P.zoom <= 1;
+  $("zoomPlus").disabled = P.zoom >= 8;
+  draw();
+}
+window.addEventListener("resize", () => { fitCanvas(); draw(); });
+$("view").addEventListener("wheel", e => {         // лупа — Shift + колёсико; без Shift страница прокручивается как обычно
+  const d = D();
+  if (!d || !d._base || !e.shiftKey) return;
+  e.preventDefault();
+  // с Shift браузеры (Safari на Mac) часто отдают прокрутку как горизонтальную — берём ту ось, что не ноль
+  const raw = e.deltaY || e.deltaX, dy = raw * (e.deltaMode === 1 ? 40 : e.deltaMode === 2 ? 400 : 1);   // строки и страницы — в пиксели
+  setZoom(P.zoom * Math.exp(-dy * 0.002), e.clientX, e.clientY);
+}, { passive: false });
+$("zoomPlus").addEventListener("click", () => setZoom(P.zoom * 1.5));
+$("zoomMinus").addEventListener("click", () => setZoom(P.zoom / 1.5));
+$("zoomFit").addEventListener("click", () => setZoom(1));
+
+try {
+  const v = parseInt(localStorage.getItem("zona-alpha"), 10);
+  if (v >= 0 && v <= 85) { $("alpha").value = v; $("alphaOut").textContent = `${v} %`; P.alpha = 1 - v / 100; }
+} catch {}
+try { const b = JSON.parse(localStorage.getItem("zona-breaks")); if (Array.isArray(b)) P.breaks = b; } catch {}
+try { const g = JSON.parse(localStorage.getItem("zona-general")); if (g && typeof g === "object") P.general = { ...P.general, ...g }; } catch {}
+try { localStorage.removeItem("zona-templates"); } catch {}     // примеры дисков от убранного автоузнавания больше не нужны
+renderBreaks(); renderGeneral();
+renderSaveState(); fillMeta(); renderDishes(); fitCanvas(); render();
+loadBrowser().then(ok => { if (!ok) loadSample(); });
+</script>
