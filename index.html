@@ -342,13 +342,13 @@ input.drug::placeholder { color: var(--muted); font-weight: 400; }
       <button class="help-btn" id="helpBtn" type="button" title="Как это работает" aria-label="Справка: как это работает" aria-haspopup="dialog">?</button>
       <button class="help-btn theme-btn" id="themeBtn" type="button"></button>
     </div>
-    <p>Загрузите одно или несколько фото чашек Петри. Программа найдёт диски с антибиотиком и измерит диаметр прозрачной зоны вокруг каждого. Если граница найдена неверно, выберите зону и передвиньте концы линейки; для неровной зоны есть гибкий контур. Разметка каждой чашки хранится отдельно.</p>
+    <p>Загрузите одно или несколько фото чашек Петри — кнопкой, перетаскиванием или вставкой из буфера обмена (Ctrl+V). Программа найдёт диски с антибиотиком и измерит диаметр прозрачной зоны вокруг каждого. Если граница найдена неверно, выберите зону и передвиньте концы линейки; для неровной зоны есть гибкий контур. Разметка каждой чашки хранится отдельно.</p>
     <p class="disclaimer">Исследовательский и учебный инструмент, не для клинической диагностики: каждый результат проверяет человек.</p>
   </header>
 
   <div class="toolbar">
     <input type="file" id="file" accept="image/*" multiple>
-    <label class="btn primary" for="file" id="uploadBtn" tabindex="0">Загрузить фото</label>
+    <label class="btn primary" for="file" id="uploadBtn" tabindex="0" title="Выбрать файлы. Можно и перетащить фото на окно или вставить из буфера обмена — Ctrl+V">Загрузить фото</label>
     <button class="btn" id="sampleBtn" type="button">Пример</button>
     <span class="spacer"></span>
     <span class="savestate" id="saveState" aria-live="polite"></span>
@@ -2633,6 +2633,20 @@ const stage = $("stage");
 stage.addEventListener("dragover", e => { e.preventDefault(); stage.classList.add("drop"); });
 stage.addEventListener("dragleave", () => stage.classList.remove("drop"));
 stage.addEventListener("drop", e => { e.preventDefault(); stage.classList.remove("drop"); addFiles(e.dataTransfer.files); });
+// Вставка из буфера обмена (Ctrl+V): снимок экрана, скопированная картинка из браузера, документа или чата.
+// В текстовом поле обычная вставка текста не мешает: перехватываем, только если в буфере есть картинка
+document.addEventListener("paste", e => {
+  if (document.querySelector("dialog[open]")) return;            // открыта обрезка, редактор или справка
+  const items = [...(e.clipboardData ? e.clipboardData.items : [])].filter(it => it.kind === "file" && it.type.startsWith("image/"));
+  if (!items.length) return;
+  e.preventDefault();
+  const t = new Date(), stamp = `${String(t.getDate()).padStart(2, "0")}.${String(t.getMonth() + 1).padStart(2, "0")} ${String(t.getHours()).padStart(2, "0")}-${String(t.getMinutes()).padStart(2, "0")}`;
+  const files = items.map((it, i) => {
+    const f = it.getAsFile(), ext = (f.type.split("/")[1] || "png").replace("jpeg", "jpg");
+    return new File([f], `Вставка ${stamp}${items.length > 1 ? ` (${i + 1})` : ""}.${ext}`, { type: f.type });
+  });
+  addFiles(files);
+});
 // Окно разметки постоянного размера; фото вписывается в него целиком, с сохранением пропорций,
 // и увеличивается лупой в P.zoom раз (1 — вписано)
 function fitCanvas() {
