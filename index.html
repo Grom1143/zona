@@ -268,7 +268,9 @@ input.drug::placeholder { color: var(--muted); font-weight: 400; }
 .how::backdrop { background: rgba(10, 14, 17, .55); }
 .how-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
 .crop { width: min(900px, calc(100vw - 32px)); }
-.crop canvas { display: block; max-width: 100%; max-height: calc(100vh - 230px); margin: 0 auto; touch-action: none; border-radius: 6px; background: var(--stage); }
+/* поле обрезки одного размера для любого фото: фото вписано внутрь по центру, окно не прыгает */
+.crop-stage { height: min(600px, calc(100vh - 230px)); display: flex; align-items: center; justify-content: center; border-radius: 6px; background: var(--stage); overflow: hidden; }
+.crop canvas { display: block; max-width: 100%; max-height: 100%; touch-action: none; }
 .crop-info { font: 13px var(--font-mono); color: var(--muted); }
 .crop-hint { margin: 0; font-size: 13px; color: var(--muted); }
 .how ol { margin: 0; padding-left: 22px; display: grid; gap: 10px; max-width: 80ch; }
@@ -471,7 +473,7 @@ input.drug::placeholder { color: var(--muted); font-weight: 400; }
       <h2 id="cropTitle">Обрезка фото</h2>
       <span class="crop-info" id="cropInfo"></span>
     </div>
-    <canvas id="cropCv" aria-label="Фото с рамкой обрезки"></canvas>
+    <div class="crop-stage"><canvas id="cropCv" aria-label="Фото с рамкой обрезки"></canvas></div>
     <p class="crop-hint">Тяните углы или стороны рамки, чтобы оставить только чашку. Внутри рамки — сдвиг. Лишнее затемнено.</p>
     <div class="row">
       <button class="btn primary" id="cropOk" type="button">Обрезать</button>
@@ -1009,7 +1011,7 @@ function cropImage(img, n, total) {
   c.width = Math.round(W * k); c.height = Math.round(H * k);
   const R = { x: 0, y: 0, w: c.width, h: c.height }, MIN = 40;
   $("cropInfo").textContent = total > 1 ? `фото ${n} из ${total}` : "";
-  $("cropAll").hidden = n >= total;
+  $("cropAll").style.visibility = n >= total ? "hidden" : "";   // место кнопки остаётся: ряд кнопок не сдвигается
   const sc = () => c.width / (c.getBoundingClientRect().width || c.width);   // экранный пиксель в пикселях холста
   const handles = () => {
     const xs = [R.x, R.x + R.w / 2, R.x + R.w], ys = [R.y, R.y + R.h / 2, R.y + R.h], out = [];
