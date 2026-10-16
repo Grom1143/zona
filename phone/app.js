@@ -2111,7 +2111,7 @@ frogImg.src = "frog.png?v=" + (document.querySelector('script[src^="app.js"]').g
 const FROG_PAW = { x: 0.877, y: 0.138 }; // кончик верхнего пальца правой передней лапы на frog.png (доли ширины и высоты); новая иконка 17.10.2026
 let eggRun = 0;
 function playEgg() {
-  const box = $("eggBox"), c = $("eggCv"), S = Math.round(Math.min(440, innerWidth * 0.92)), dpr = window.devicePixelRatio || 1;
+  const box = $("eggBox"), c = $("eggCv"), S = Math.round(Math.min(440, innerWidth - 40)), dpr = window.devicePixelRatio || 1;
   c.width = S * dpr; c.height = S * dpr; c.style.width = c.style.height = S + "px";
   const g = c.getContext("2d"); g.setTransform(dpr, 0, 0, dpr, 0, 0);
   const cx = S / 2, cy = S / 2, R = S * 0.46;
@@ -2192,10 +2192,47 @@ function playEgg() {
     }
     if (t < END + HOP) requestAnimationFrame(frame);
   }
-  box.showModal();
+  if (!box.open) box.showModal();
   requestAnimationFrame(frame);
 }
 const brandLogo = document.querySelector("header .brand-logo");
-brandLogo.addEventListener("click", playEgg);
-brandLogo.addEventListener("keydown", e => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); playEgg(); } });
+brandLogo.addEventListener("click", playIconAnim);
+brandLogo.addEventListener("keydown", e => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); playIconAnim(); } });
 $("eggBox").addEventListener("click", () => { eggRun++; $("eggBox").close(); });   // нажатие – закрыть
+
+// ----- Анимация иконки: нажатие на логотип -----
+// Иконка собрана из отдельных групп (как в «Новая иконка\MicroTest Vision – иконка.svg»), каждая оживает по очереди:
+// окружность чашки → зоны → диски → лягушка запрыгивает и машет лапками → угловые маркеры «находят» диск → линия «измеряет» зону.
+// Потом – кнопка «▶ Посев штрихом» (прежняя пасхалка). Нажатие в любом другом месте – закрыть
+function playIconAnim() {
+  const box = $("eggBox"), wrap = $("iconAnimWrap"), cv = $("eggCv"), btn = $("eggStreakBtn");
+  const run = ++eggRun, S = Math.round(Math.min(440, innerWidth - 40));
+  wrap.hidden = false; cv.hidden = true; btn.hidden = true;
+  wrap.style.width = wrap.style.height = S + "px";
+  if (!box.open) box.showModal();
+  const q = s => wrap.querySelector(s), all = s => [...wrap.querySelectorAll(s)];
+  wrap.getAnimations({ subtree: true }).forEach(a => a.cancel());
+  if (matchMedia("(prefers-reduced-motion: reduce)").matches) { btn.hidden = false; return; }
+  const ease = "cubic-bezier(.2, .8, .2, 1)", back = "cubic-bezier(.34, 1.56, .64, 1)", hold = { fill: "backwards" };
+  // 1. окружность чашки прорисовывается по кругу (длина линии = 1 через pathLength)
+  q("#ia-petri_outline circle").animate([{ strokeDasharray: "0 1" }, { strokeDasharray: "1 0" }], { duration: 900, easing: ease, ...hold });
+  // 2–3. зоны распускаются, в них появляются диски
+  all("#ia-zones circle").forEach((c, i) => c.animate([{ transform: "scale(0)" }, { transform: "scale(1)" }], { duration: 520, delay: 450 + i * 120, easing: back, ...hold }));
+  all("#ia-discs circle").forEach((c, i) => c.animate([{ transform: "scale(0)" }, { transform: "scale(1)" }], { duration: 380, delay: 800 + i * 120, easing: back, ...hold }));
+  // 4. лягушка запрыгивает, пружинит, машет передними лапками
+  q("#ia-frog").animate([{ opacity: 0, transform: "translateY(90px) scale(.6)" }, { opacity: 1, transform: "translateY(-24px) scale(1.04)", offset: .65 }, { opacity: 1, transform: "none" }],
+    { duration: 950, delay: 650, easing: ease, ...hold });
+  [["#ia-frog_leg_front_left", -9], ["#ia-frog_leg_front_right", 9]].forEach(([s, a]) =>
+    q(s).animate([{ transform: "rotate(0)" }, { transform: `rotate(${a}deg)` }, { transform: "rotate(0)" }], { duration: 420, delay: 1650, iterations: 2, easing: "ease-in-out" }));
+  // 5. угловые маркеры съезжаются к верхнему левому диску и дважды мигают – «диск найден»
+  const dir = [[-1, -1], [1, -1], [1, 1], [-1, 1]];
+  all("#ia-detection_markers path").forEach((p, i) => p.animate([{ opacity: 0, transform: `translate(${dir[i][0] * 40}px, ${dir[i][1] * 40}px)` }, { opacity: 1, transform: "none" }],
+    { duration: 450, delay: 1900, easing: back, ...hold }));
+  q("#ia-detection_markers").animate([{ opacity: 1 }, { opacity: .2 }, { opacity: 1 }, { opacity: .2 }, { opacity: 1 }], { duration: 700, delay: 2380 });
+  // 6. линия диаметра вытягивается из центра зоны, затем засечки – «зона измерена»
+  const m = all("#ia-measurement path");
+  m[0].animate([{ transform: "scaleX(0)" }, { transform: "scaleX(1)" }], { duration: 520, delay: 2500, easing: ease, ...hold });
+  m.slice(1).forEach(p => p.animate([{ opacity: 0, transform: "scaleY(0)" }, { opacity: 1, transform: "scaleY(1)" }], { duration: 260, delay: 2980, easing: back, ...hold }));
+  setTimeout(() => { if (run === eggRun && box.open) btn.hidden = false; }, 3300);
+}
+$("eggStreakBtn").addEventListener("click", e => { e.stopPropagation(); $("iconAnimWrap").hidden = true; $("eggStreakBtn").hidden = true; $("eggCv").hidden = false; playEgg(); });
