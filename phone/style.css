@@ -46,6 +46,7 @@ dialog, .pick-grid { overscroll-behavior: contain; }   /* окно докрут�
 /* шапка: лягушка слева на три строки, справа название с кнопками, описание и предупреждение */
 header { display: grid; grid-template-columns: auto minmax(0, 1fr); column-gap: 20px; row-gap: 4px; align-items: center; }
 header .brand-logo { grid-row: 1 / span 3; }
+.disclaimer-foot { margin: 8px 0 0; padding-top: 12px; border-top: 1px solid var(--line); font-size: 12px; color: var(--muted); text-align: center; }
 @media (max-width: 600px) {
   header { column-gap: 12px; } header .brand-logo { width: 72px; height: 72px; }
   .title-row { flex-wrap: nowrap; gap: 8px; } .title-row h1 { flex: 1; min-width: 0; font-size: 22px; }
@@ -383,7 +384,9 @@ dialog.drugsheet[open] { display: grid; }
    ряд чашек, подсказки, паспорт, масштаб. Для этого блоки .left и aside «растворяются» (display: contents),
    а их содержимое выстраивается по order */
 @media (max-width: 700px) {
-  header .brand-logo { width: 56px; height: 56px; }
+  /* шапка телефона – одна строка: лягушка-значок, «МикроТест», ? и тема */
+  header { grid-template-columns: auto minmax(0, 1fr); column-gap: 10px; }
+  header .brand-logo { width: 40px; height: 40px; grid-row: auto; }
   .title-row h1 { font-size: 20px; }
   /* «Загрузить фото · Открыть проект · Скачать проект» – одной строкой, три равные кнопки */
   .wrap > .toolbar:not(.projbar) { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; }
