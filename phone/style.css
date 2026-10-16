@@ -362,38 +362,58 @@ input.drug::placeholder { color: var(--muted); font-weight: 400; }
 
 /* ===== Телефон и планшет ===== */
 .btn.mob-only { display: none; }
+.photo-tools { display: none; }
 /* палец вместо мыши: подписи клавиш и подсказка про клавиши не нужны */
 @media (hover: none) {
   .btn .key, .help { display: none; }
 }
-/* узкий экран: инструменты – панелью внизу экрана, крупные значки, листается вбок; остальное – как было */
+/* Узкий экран. Порядок сверху вниз: фото (на нём справа внизу – ↶ ↷ ⊕ 🗑 ⛶), вопрос «Всё верно?», инструменты,
+   ряд чашек, подсказки, паспорт, масштаб. Для этого блоки .left и aside «растворяются» (display: contents),
+   а их содержимое выстраивается по order */
 @media (max-width: 700px) {
   header .brand-logo { width: 56px; height: 56px; }
   .title-row h1 { font-size: 20px; }
-  body { padding-bottom: calc(80px + env(safe-area-inset-bottom, 0px)); }
-  .tools .tools-grid, .tools.folded .tools-grid {
-    position: fixed; left: 0; right: 0; bottom: 0; z-index: 35;
-    display: flex; gap: 4px; align-items: center; overflow-x: auto; overscroll-behavior-x: contain;
-    padding: 8px 10px calc(8px + env(safe-area-inset-bottom, 0px));
-    background: var(--panel); border-top: 1px solid var(--line); box-shadow: 0 -4px 18px rgba(0, 0, 0, .25);
-  }
-  .tools-grid > * { order: 5; }
-  #undoBtn2 { order: 1; } #addBtn { order: 2; } #delBtn { order: 3; } #axisBtn { order: 4; } #roundBtn { order: 5; }
-  #calibBtn { order: 6; } .tools-grid .zoombar { order: 7; } #snapEditBtn { order: 8; } #saveBtn2 { order: 9; }
-  .tools-grid .lbl, .tools-grid .lbl-short, .tools-grid .key, .tools.folded #saveBtn2 .lbl, .tools.folded #snapEditBtn .lbl-short { display: none; }
-  .tools .tools-grid, .tools.folded .tools-grid { justify-content: space-between; }
-  .tools-grid .btn, .tools.folded .tools-grid .btn, .tools.folded .zoombar .btn { flex: none; width: 42px; height: 46px; padding: 0; justify-content: center; font-size: 22px; }
-  /* лупа на телефоне – двумя пальцами, снимок для отчёта – на компьютере: в панели остаются 8 значков в один ряд */
-  #zoomMinus, #zoomPlus, #zoomOut, #snapEditBtn { display: none; }
-  .tools-grid .btn svg { width: 22px; height: 22px; }
-  .btn.mob-only { display: inline-flex; }
-  /* «Масштаб по линейке» во время настройки – с подписью «Готово», иначе непонятно, чем закончить */
-  .tools-grid #calibBtn.on { width: auto; padding-inline: 12px; }
-  .tools-grid #calibBtn.on .lbl { display: inline; }
-  .tools-grid .zoombar, .tools.folded .zoombar { display: flex; flex: none; gap: 4px; margin: 0; align-items: center; }
-  .tools-grid .zoombar output { min-width: 4.5ch; font-size: 12px; }
-  /* длина отрезка при настройке масштаба – плашкой над панелью */
-  .tools-grid #calibField:not([hidden]) { position: fixed; left: 8px; right: 8px; bottom: calc(76px + env(safe-area-inset-bottom, 0px)); z-index: 36;
-    display: flex; justify-content: space-between; padding: 8px 12px; background: var(--panel); border: 1px solid var(--line); border-radius: 10px; }
-  body.focus .main { padding-bottom: calc(76px + env(safe-area-inset-bottom, 0px)); }
+  .main { display: grid; grid-template-columns: minmax(0, 1fr); gap: 12px; }
+  .main > .left > *, .main > aside > * { min-width: 0; }   /* блок не шире экрана, даже если внутри широкое (таблица, фото) */
+  .main > .left, .main > aside { display: contents; }
+  #stage { order: 1; } #check { order: 2; } .tools { order: 3; } #dishes { order: 4; }
+  #msg { order: 5; } #metaBox { order: 6; } #scale { order: 7; } #zoomBox { order: 8; }
+  /* бывшая правая панель растворилась – каждому блоку своя карточка */
+  .tools, details.meta, .scale, .zoom { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 12px; margin: 0; }
+  /* ↶ ↷ ⊕ 🗑 ⛶ теперь на фото – в инструментах их нет */
+  #undoBtn, #redoBtn, #focusBtn, #addBtn, #delBtn { display: none; }
+
+  /* высота окна с фото – одна переменная: от неё считаются стрелки, счётчик и кнопки на фото */
+  .stage { --vh: min(600px, calc(100vw - 52px)); }   /* квадрат по ширине экрана: фото чашки занимает окно целиком */
+  .view { height: var(--vh); }
+  .navbtn { top: calc(10px + var(--vh) / 2); }
+  .navcount { top: calc(10px + var(--vh) - 34px); left: 18px; transform: none; }   /* слева: справа – кнопки */
+  .tiltbar { top: calc(10px + var(--vh) / 2); }
+  /* кнопки на фото: справа внизу, крупные, полупрозрачные – как стрелки ‹ › */
+  .photo-tools { display: flex; gap: 6px; position: absolute; z-index: 5; right: 18px; top: calc(10px + var(--vh) - 56px); }
+  .photo-tools button { width: 44px; height: 44px; border: 0; border-radius: 12px; background: rgba(10, 14, 17, .62); color: #fff;
+    display: inline-flex; align-items: center; justify-content: center; font: 400 22px/1 var(--font-body); cursor: pointer; padding: 0; }
+  .photo-tools button svg { width: 22px; height: 22px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+  .photo-tools button.on { background: var(--accent); color: var(--accent-ink); }
+  .photo-tools button:disabled { opacity: .35; }
+
+  /* миниатюры чашек – примерно вдвое меньше; крестик – в углу картинки */
+  .dishes { gap: 6px; }
+  .dish { width: 60px; padding: 3px; gap: 1px; }
+  .dish img { border-radius: 4px; }
+  .dish .nm { font-size: 10px; }
+  .dish .ct { font-size: 10px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .dish .x { top: 0; right: 0; width: 22px; height: 22px; font-size: 13px; transform: translate(35%, -35%); }
+  .dish.add { min-height: 0; font-size: 10px; padding: 6px 3px; }
+  .dish.add b { font-size: 18px; }
+  .dishes { padding: 8px 8px 6px 2px; }   /* место для крестика, выглядывающего за угол */
+
+  /* во весь экран: только фото на весь экран и кнопки на нём; остальное спрятано */
+  body.focus .main { display: grid; grid-template-columns: minmax(0, 1fr); grid-template-rows: auto; align-content: start; padding: 8px; overflow: hidden; }
+  body.focus .main > aside > *, body.focus #dishes { display: none !important; }
+  body.focus .stage { --vh: calc(100dvh - 16px - 20px); }
+  body.focus .view { height: var(--vh); }   /* сильнее старого правила «во весь экран» для узких экранов */
+  body.focus .navbtn { top: calc(10px + var(--vh) / 2); }
+  body.focus .navcount { top: calc(10px + var(--vh) - 34px); }
+  body.focus .tiltbar { top: calc(10px + var(--vh) / 2); }
 }

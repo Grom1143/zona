@@ -1050,7 +1050,7 @@ function renderSide() {
   $("undoBtn").disabled = $("undoBtn2").disabled = !(d && d._undo.length) && !P.trash.length;
   $("redoBtn").disabled = !d || !d._redo.length;
   for (const id of ["addBtn", "calibBtn", "resetBtn", "copyBtn"]) $(id).disabled = !d;
-  $("xlsxBtn").disabled = $("projSaveBtn").disabled = !P.dishes.length;
+  $("xlsxBtn").disabled = $("projSaveBtn").disabled = $("shareBtn").disabled = !P.dishes.length;
 }
 
 function render() { draw(); renderTable(); renderSide(); renderTiltBar(); }
@@ -1299,6 +1299,21 @@ $("helpBox").addEventListener("click", e => {          // клик мимо ок
 });
 $("undoBtn").addEventListener("click", undo);
 $("undoBtn2").addEventListener("click", undo);
+// Кнопки на фото (телефон) – двойники кнопок инструментов: нажатие передаётся настоящей кнопке,
+// а «неактивна» и «включена» копируются с неё сами (MutationObserver следит за её атрибутами)
+const PHOTO_TOOLS = { ptUndo: "undoBtn", ptRedo: "redoBtn", ptAdd: "addBtn", ptDel: "delBtn", ptFocus: "focusBtn" };
+function syncPhotoTools() {
+  for (const [a, b] of Object.entries(PHOTO_TOOLS)) {
+    const src = $(b);
+    $(a).disabled = src.disabled;
+    $(a).classList.toggle("on", src.classList.contains("on"));
+  }
+}
+for (const [a, b] of Object.entries(PHOTO_TOOLS)) {
+  $(a).addEventListener("click", () => $(b).click());
+  new MutationObserver(syncPhotoTools).observe($(b), { attributes: true, attributeFilter: ["disabled", "class"] });
+}
+syncPhotoTools();
 $("redoBtn").addEventListener("click", redo);
 $("saveBtn2").addEventListener("click", () => saveBrowser(false));
 // Снимок для отчёта: видимая часть окна разметки – как на экране (видимость разметки, приближение, выбранная зона),
@@ -1770,6 +1785,80 @@ $("zoomDrug").addEventListener("input", () => {
   if (nm) nm.textContent = dnameText(it);
   markDirty(); draw(); refreshCats();
 });
+// ----- «Отправить таблицу»: картинка с измерениями всех чашек → меню «Поделиться» телефона -----
+// Сценарий: сфотографировал, проверил зоны, отправил руководителю в мессенджер – без скриншотов и Excel.
+// Картинка светлая (читается в любом мессенджере), в 2× разрешении, чтобы текст был чёткий
+function tableImage() {
+  const S = 2, W = 720, pad = 20, rowH = 34, headH = 30, titleH = 38, gap = 14;
+  const dishes = P.dishes.filter(d => d.items.length);
+  let H = pad + 34 + pad;
+  for (const d of dishes) H += titleH + headH + d.items.length * rowH + gap;
+  H += 26;
+  const c = document.createElement("canvas"); c.width = W * S; c.height = H * S;
+  const g = c.getContext("2d"); g.scale(S, S);
+  const font = (w, px) => `${w} ${px}px "Onest", "Segoe UI", system-ui, sans-serif`;
+  const mono = (w, px) => `${w} ${px}px "JetBrains Mono", Consolas, monospace`;
+  g.fillStyle = "#ffffff"; g.fillRect(0, 0, W, H);
+  g.textBaseline = "middle";
+  // заголовок
+  const now = new Date();
+  g.fillStyle = "#18232d"; g.font = font(700, 20); g.textAlign = "left";
+  g.fillText("Измерения зон подавления", pad, pad + 14);
+  g.fillStyle = "#5a6975"; g.font = font(400, 13); g.textAlign = "right";
+  g.fillText(now.toLocaleString("ru-RU", { day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit" }), W - pad, pad + 14);
+  let y = pad + 34 + 8;
+  // колонки: № | препарат | зона, мм | категория | отметка
+  const col = [pad + 8, pad + 44, pad + 330, pad + 420, pad + 500];
+  const catColor = { S: "#2e9e5b", I: "#c48a12", R: "#b4521f" };
+  for (const d of dishes) {
+    const m = d.meta, mpp = mmPerPx(d), org = BREAKPOINTS[m.org];
+    g.textAlign = "left"; g.fillStyle = "#18232d"; g.font = font(700, 16);
+    const date = m.date ? m.date.split("-").reverse().join(".") : "";
+    g.fillText(d.name, pad, y + titleH / 2);
+    const nameW = g.measureText(d.name).width;
+    g.font = font(400, 13); g.fillStyle = "#5a6975";
+    g.fillText([date, m.culture || (org && org.name), m.medium].filter(Boolean).join(" · "), pad + nameW + 12, y + titleH / 2);
+    y += titleH;
+    g.fillStyle = "#eef1f3"; g.fillRect(pad, y, W - 2 * pad, headH);
+    g.fillStyle = "#5a6975"; g.font = font(500, 12);
+    ["№", "Препарат", "Зона, мм", "Кат.", "Отметка"].forEach((t, i) => g.fillText(t, col[i], y + headH / 2));
+    y += headH;
+    d.items.forEach((it, i) => {
+      if (i % 2) { g.fillStyle = "#f7f9fa"; g.fillRect(pad, y, W - 2 * pad, rowH); }
+      const cy = y + rowH / 2, cat = categoryOf(it, d), name = drugName(it.drug);
+      g.fillStyle = "#18232d"; g.font = font(400, 15); g.fillText(String(i + 1), col[0], cy);
+      g.font = font(500, 15); g.fillText(it.drug || "–", col[1], cy);
+      if (name) { const w = g.measureText(it.drug || "–").width; g.font = font(400, 12); g.fillStyle = "#5a6975"; g.fillText(name, col[1] + w + 8, cy); }
+      g.fillStyle = "#18232d"; g.font = mono(600, 15); g.fillText(mpp ? fmt(diamPx(it) * mpp) : "–", col[2], cy);
+      if (cat) { g.fillStyle = catColor[cat.cat]; g.font = font(700, 15); g.fillText(cat.cat + (cat.atu ? " ЗТН" : ""), col[3], cy); }
+      const st = STATUS(it);
+      g.fillStyle = needsCheck(it) ? "#b4521f" : "#5a6975"; g.font = font(needsCheck(it) ? 700 : 400, 13); g.fillText(st, col[4], cy);
+      y += rowH;
+    });
+    g.strokeStyle = "#d3dae0"; g.lineWidth = 1; g.strokeRect(pad + .5, y - d.items.length * rowH - headH + .5, W - 2 * pad - 1, d.items.length * rowH + headH - 1);
+    y += gap;
+  }
+  g.fillStyle = "#93a3b0"; g.font = font(400, 11); g.textAlign = "left";
+  g.fillText("МикроТест Вижн – учебный инструмент, результат проверяет человек", pad, H - pad / 2 - 6);
+  return c;
+}
+async function shareTable() {
+  if (!P.dishes.some(d => d.items.length)) return setMsg("Нет измерений для отправки.", true);
+  const c = tableImage(), blob = await new Promise(r => c.toBlob(r, "image/png"));
+  if (!blob) return setMsg("Картинка таблицы не получилась.", true);
+  const t = new Date(), stamp = `${today().split("-").reverse().join(".")} ${[t.getHours(), t.getMinutes(), t.getSeconds()].map(v => String(v).padStart(2, "0")).join("-")}`;
+  const name = `Измерения ${stamp}.png`, file = new File([blob], name, { type: "image/png" });
+  const unchecked = P.dishes.reduce((n, d) => n + d.items.filter(needsCheck).length, 0);
+  // телефон: меню «Поделиться» (Telegram, WhatsApp, почта…); где его нет – просто сохранить картинку
+  if (navigator.canShare && navigator.canShare({ files: [file] })) {
+    try {
+      await navigator.share({ files: [file], title: "Измерения зон подавления" });
+      return setMsg("Таблица отправлена." + (unchecked ? ` Внимание: не проверено зон – ${unchecked}, они помечены в таблице.` : ""), !!unchecked);
+    } catch (e) { if (e && e.name === "AbortError") return; }
+  }
+  if (await saveFile(name, blob)) setMsg(`Картинка таблицы сохранена: ${name}.` + (unchecked ? ` Не проверено зон – ${unchecked}.` : ""), !!unchecked);
+}
+$("shareBtn").addEventListener("click", shareTable);
 $("copyBtn").addEventListener("click", async () => {
   const text = tableRows().map(r => r.map(v => typeof v === "number" ? String(v).replace(".", ",") : v).join("\t")).join("\n");
   const done = () => setMsg("Таблица всех чашек скопирована. Вставьте её в Excel или Word (Ctrl+V).");

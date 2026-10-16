@@ -28,10 +28,14 @@
     <p class="disclaimer">Учебный инструмент, не для клинической диагностики: результат проверяет человек.</p>
   </header>
 
+  <!-- кнопки в порядке работы: открыть прошлую работу → загрузить фото → (разметить) → скачать проект -->
   <div class="toolbar">
+    <input type="file" id="projFile" accept=".json,application/json">
+    <label class="btn" for="projFile" id="projOpenBtn" tabindex="0" title="Продолжить работу из файла проекта (.json)">Открыть проект</label>
     <input type="file" id="file" accept="image/*" multiple>
     <label class="btn primary" for="file" id="uploadBtn" tabindex="0" title="Выбрать файлы. Можно и перетащить фото на окно или вставить из буфера обмена – Ctrl+V">Загрузить фото</label>
     <button class="btn" id="sampleBtn" type="button">Пример</button>
+    <button class="btn" id="projSaveBtn" type="button" title="Файл со всеми фото и разметкой, чтобы перенести на другой компьютер">Скачать проект</button>
     <span class="spacer"></span>
     <span class="savestate" id="saveState" aria-live="polite"></span>
   </div>
@@ -45,6 +49,14 @@
         <button class="navbtn prev" id="prevDish" type="button" aria-label="Предыдущее фото (←)" title="Предыдущее фото (←)" hidden>‹</button>
         <button class="navbtn next" id="nextDish" type="button" aria-label="Следующее фото (→)" title="Следующее фото (→)" hidden>›</button>
         <span class="navcount" id="navCount" hidden></span>
+        <!-- телефон: главные кнопки прямо на фото, справа внизу (на компьютере скрыты) -->
+        <div class="photo-tools" id="photoTools">
+          <button type="button" id="ptUndo" aria-label="Назад (отменить)" title="Назад">↶</button>
+          <button type="button" id="ptRedo" aria-label="Вперёд (вернуть)" title="Вперёд">↷</button>
+          <button type="button" id="ptAdd" aria-label="Поставить метку" title="Поставить метку"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8"/><path d="M12 8v8M8 12h8"/></svg></button>
+          <button type="button" id="ptDel" aria-label="Удалить метку" title="Удалить метку"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M10 7V4h4v3M6 7l1 13h10l1-13"/></svg></button>
+          <button type="button" id="ptFocus" aria-label="Во весь экран" title="Во весь экран"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/></svg></button>
+        </div>
         <!-- фото под углом: крупное красное предупреждение прямо над фото -->
         <div class="tiltbar" id="tiltBar" role="alert" hidden><span id="tiltBarText"></span><button type="button" id="tiltBarX" aria-label="Скрыть предупреждение для этой чашки" title="Скрыть для этой чашки">×</button></div>
         <!-- лупа ×3, пока тянешь край: всегда в правом верхнем углу окна (уходит влево, только если точка под ней) -->
@@ -174,9 +186,6 @@
 
   <!-- файл проекта: между чашками и таблицей -->
   <div class="toolbar projbar">
-    <button class="btn" id="projSaveBtn" type="button" title="Файл со всеми фото и разметкой, чтобы перенести на другой компьютер">Скачать проект</button>
-    <input type="file" id="projFile" accept=".json,application/json">
-    <label class="btn" for="projFile" id="projOpenBtn" tabindex="0">Открыть проект</label>
     <button class="btn" id="delPickBtn" type="button" title="Отметить галочками, какие чашки удалить" disabled>Выбрать и удалить…</button>
   </div>
 
@@ -184,7 +193,8 @@
     <div class="results-head">
       <h2>Измерения</h2>
       <div class="row">
-        <button class="btn primary" id="xlsxBtn" type="button">Скачать Excel</button>
+        <button class="btn primary" id="shareBtn" type="button" title="Картинка с измерениями всех чашек – отправить в мессенджер или сохранить">Отправить таблицу</button>
+        <button class="btn" id="xlsxBtn" type="button">Скачать Excel</button>
         <button class="btn" id="copyBtn" type="button">Копировать таблицу</button>
         <button class="btn" id="resetBtn" type="button">Найти заново</button>
       </div>
