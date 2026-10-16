@@ -418,7 +418,22 @@ dialog.drugsheet[open] { display: grid; }
   #generalBar, #breaksBox          /* настройка порогов S / I / R – на компьютере */
   { display: none !important; }
   /* «Сохранить» и «Масштаб по линейке» – рядом, одной строкой, одинаковой высоты */
-  .tools-grid #saveBtn2, .tools-grid #calibBtn { grid-column: auto; min-height: 46px; padding: 8px 6px; white-space: normal; text-align: center; line-height: 1.15; }
+  /* Первая строка инструментов: «Инструменты» слева, значки 💾 и 📏 справа. Обёртки шапки и сетки «растворяются»,
+     и кнопки становятся ячейками одной сетки .tools. Свёрнутый вид (.folded) на телефоне не используется */
+  .tools, .tools.folded { display: grid; grid-template-columns: minmax(0, 1fr) auto auto; align-items: center; column-gap: 8px; row-gap: 10px; }
+  .tools .tools-head, .tools .tools-head .row, .tools .tools-grid, .tools.folded .tools-grid { display: contents; }
+  .tools h3 { grid-column: 1; grid-row: 1; }
+  .tools #saveBtn2, .tools.folded #saveBtn2 { grid-column: 2; grid-row: 1; grid-area: auto / 2 / auto / 3; }
+  .tools #calibBtn, .tools.folded #calibBtn { grid-column: 3; grid-row: 1; grid-area: auto / 3 / auto / 4; }
+  .tools #saveBtn2, .tools #calibBtn { width: 46px; height: 46px; padding: 0; justify-content: center; }
+  .tools #saveBtn2 .lbl, .tools #calibBtn .lbl, .tools.folded #saveBtn2 .lbl { display: none; }
+  .tools #saveBtn2 svg, .tools #calibBtn svg { width: 22px; height: 22px; }
+  .tools .btn.save.dirty::before { position: absolute; top: 5px; right: 5px; }   /* точка «не сохранено» – в углу значка */
+  .tools #saveBtn2 { position: relative; }
+  /* во время настройки масштаба линейка показывает «Готово» */
+  .tools #calibBtn.on { width: auto; padding-inline: 12px; }
+  .tools #calibBtn.on .lbl { display: inline; }
+  .tools #calibField, .tools .lookfold, .tools .lookbox, .tools.folded #calibField { grid-column: 1 / -1; grid-area: auto / 1 / auto / -1; }
   /* ↶ ↷ ⊕ 🗑 ⛶ теперь на фото – в инструментах их нет */
   #undoBtn, #redoBtn, #focusBtn, #addBtn, #delBtn { display: none; }
 

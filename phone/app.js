@@ -786,6 +786,8 @@ function foldLook(shut) {
 }
 $("lookFold").addEventListener("click", () => foldLook(!$("lookBox").classList.contains("shut")));
 try { const v = localStorage.getItem("zona-look-shut"); if (v === "1" || (v === null && PHONE)) foldLook(true); } catch {}
+// на телефоне инструментов мало – свёрнутый вид не нужен (мог остаться в памяти браузера с прошлой версии)
+if (PHONE) document.querySelector(".tools").classList.remove("folded");
 
 // ----- сообщения и подтверждения -----
 // Сообщение показывается списком: каждое предложение – отдельный пункт. «−» сворачивает список до заголовка
