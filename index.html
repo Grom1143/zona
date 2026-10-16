@@ -276,6 +276,14 @@ input.drug::placeholder { color: var(--muted); font-weight: 400; }
 .crop canvas { display: block; max-width: 100%; max-height: 100%; touch-action: none; }
 .crop-info { font: 13px var(--font-mono); color: var(--muted); }
 .crop-hint { margin: 0; font-size: 13px; color: var(--muted); }
+/* окно «Выбрать и удалить»: миниатюры чашек с галочками */
+.pick-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(118px, 1fr)); gap: 8px; max-height: calc(100vh - 260px); overflow-y: auto; padding: 2px; }
+.pick-item { position: relative; display: grid; gap: 3px; padding: 6px; border: 1px solid var(--line); border-radius: 8px; cursor: pointer; font-size: 13px; }
+.pick-item:has(input:checked) { border-color: var(--warn); box-shadow: inset 0 0 0 1px var(--warn); }
+.pick-item img { width: 100%; aspect-ratio: 1; object-fit: cover; border-radius: 5px; display: block; background: var(--stage); }
+.pick-item:has(input:checked) img { opacity: .55; }
+.pick-item input { position: absolute; top: 10px; left: 10px; width: 20px; height: 20px; margin: 0; accent-color: var(--warn); }
+.pick-item span { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .how ol { margin: 0; padding-left: 22px; display: grid; gap: 10px; max-width: 80ch; }
 .how li b { font-family: var(--font-display); }
 .how .note { color: var(--muted); font-size: 14px; max-width: 80ch; margin: 0; }
@@ -404,6 +412,7 @@ input.drug::placeholder { color: var(--muted); font-weight: 400; }
     <button class="btn" id="projSaveBtn" type="button" title="Файл со всеми фото и разметкой, чтобы перенести на другой компьютер">Скачать проект</button>
     <input type="file" id="projFile" accept=".json,application/json">
     <label class="btn" for="projFile" id="projOpenBtn" tabindex="0">Открыть проект</label>
+    <button class="btn" id="delPickBtn" type="button" title="Отметить галочками, какие чашки удалить" disabled>Выбрать и удалить…</button>
     <button class="btn" id="delAllBtn" type="button" title="Удалить все чашки серии (вернуть — ↶ до перезагрузки страницы)" disabled>Удалить серию</button>
     <span class="projnote">Файл со всеми чашками, фото, разметкой и порогами — для другого компьютера или резервной копии.</span>
   </div>
@@ -485,6 +494,24 @@ input.drug::placeholder { color: var(--muted); font-weight: 400; }
       <button class="btn" id="cropFull" type="button">Без обрезки</button>
       <button class="btn" id="cropAll" type="button">Без обрезки для всех</button>
       <button class="btn" id="cropSkip" type="button">Не добавлять это фото</button>
+    </div>
+  </dialog>
+
+  <!-- выбор чашек для удаления галочками -->
+  <dialog class="how" id="pickBox" aria-labelledby="pickTitle">
+    <div class="how-head">
+      <h2 id="pickTitle">Какие чашки удалить?</h2>
+      <button class="btn icon" id="pickClose" type="button" aria-label="Закрыть">×</button>
+    </div>
+    <div class="row">
+      <button class="btn" id="pickAll" type="button">Отметить все</button>
+      <button class="btn" id="pickNone" type="button">Снять все</button>
+    </div>
+    <div class="pick-grid" id="pickGrid"></div>
+    <p class="crop-hint">Вернуть удалённые можно стрелкой ↶ (Ctrl+Z) до перезагрузки страницы.</p>
+    <div class="row">
+      <button class="btn danger" id="pickDel" type="button" disabled>Удалить выбранные</button>
+      <button class="btn" id="pickCancel" type="button">Отмена</button>
     </div>
   </dialog>
 
@@ -1142,10 +1169,11 @@ function redo() {
 // Удалённые чашки (до 10 последних) лежат в P.trash до перезагрузки страницы — вместе со своей историей
 async function undeleteDish() {
   const e = P.trash.pop();
-  if (e.all) {                                     // вся серия: встаёт в начало ряда в прежнем порядке
-    P.dishes.unshift(...e.all); markDirty();
-    await openDish(e.cur);
-    return setMsg(`Серия возвращена: ${e.all.length} ${dishWord(e.all.length)}.`);
+  if (e.many) {                                    // несколько чашек сразу: каждая встаёт на своё прежнее место
+    for (const { dish, i } of e.many) P.dishes.splice(Math.min(i, P.dishes.length), 0, dish);
+    markDirty();
+    await openDish(Math.min(e.many[0].i, P.dishes.length - 1));
+    return setMsg(`Возвращено: ${e.many.length} ${dishWord(e.many.length)}.`);
   }
   const { dish, i } = e, at = Math.min(i, P.dishes.length);
   P.dishes.splice(at, 0, dish); markDirty();
@@ -1736,7 +1764,7 @@ function renderDishes() {
       `<span class="ct${n ? " warn" : ""}">${d.items.length} ${disksWord(d.items.length)}${n ? ` · ${n} ?` : ""}</span>` +
       `<button class="x" type="button" data-del="${i}" aria-label="Удалить чашку ${esc(d.name)}" title="Удалить чашку">×</button></div>`;
   }).join("") + `<label class="dish add" for="file" tabindex="0"><b>+</b>Добавить фото</label>`;
-  $("delAllBtn").disabled = !P.dishes.length;
+  $("delAllBtn").disabled = $("delPickBtn").disabled = !P.dishes.length;
 }
 
 function fillMeta() {
@@ -2124,17 +2152,54 @@ $("dishes").addEventListener("click", e => {
 });
 // удалить всю серию одним действием; ↶ возвращает её целиком
 const dishWord = n => n % 10 === 1 && n % 100 !== 11 ? "чашка" : n % 10 >= 2 && n % 10 <= 4 && (n % 100 < 12 || n % 100 > 14) ? "чашки" : "чашек";
+// удалить несколько чашек одним действием (номера по возрастанию); ↶ возвращает их все сразу
+async function deleteDishes(idx, what) {
+  const many = idx.map(i => ({ dish: P.dishes[i], i }));
+  for (let k = idx.length - 1; k >= 0; k--) P.dishes.splice(idx[k], 1);
+  for (const { dish } of many) { dish._base = null; dish._rgba = null; }
+  P.trash.push({ many, t: Date.now() });
+  if (P.trash.length > 10) P.trash.shift();
+  P.sel = -1; markDirty();
+  const text = `${what}: ${many.length} ${dishWord(many.length)}. Вернуть — стрелка ↶ или Ctrl+Z.`;
+  if (!P.dishes.length) { P.cur = -1; fillMeta(); renderDishes(); render(); return setMsg(text); }
+  // открытая чашка осталась — остаёмся на ней; удалена — открываем ближайшую
+  const cur = P.cur, gone = idx.includes(cur);
+  await openDish(gone ? Math.min(cur - idx.filter(i => i < cur).length, P.dishes.length - 1) : cur - idx.filter(i => i < cur).length);
+  setMsg(text);
+}
 $("delAllBtn").addEventListener("click", () => {
   const n = P.dishes.length;
   if (!n) return;
-  ask(`Удалить всю серию: ${n} ${dishWord(n)} вместе с разметкой? Вернуть можно стрелкой ↶ до перезагрузки страницы.`, "Удалить серию", $("delAllBtn"), () => {
-    const all = P.dishes.splice(0, n);
-    for (const d of all) { d._base = null; d._rgba = null; }
-    P.trash.push({ all, cur: Math.max(0, P.cur), t: Date.now() });
-    if (P.trash.length > 10) P.trash.shift();
-    P.cur = -1; P.sel = -1; markDirty(); fillMeta(); renderDishes(); render();
-    setMsg(`Серия удалена: ${n} ${dishWord(n)}. Вернуть — стрелка ↶ или Ctrl+Z.`);
-  });
+  ask(`Удалить всю серию: ${n} ${dishWord(n)} вместе с разметкой? Вернуть можно стрелкой ↶ до перезагрузки страницы.`, "Удалить серию", $("delAllBtn"),
+    () => deleteDishes(P.dishes.map((_, i) => i), "Серия удалена"));
+});
+// окно с галочками
+function pickCount() {
+  const n = $("pickGrid").querySelectorAll("input:checked").length;
+  $("pickDel").disabled = !n;
+  $("pickDel").textContent = n ? `Удалить выбранные (${n})` : "Удалить выбранные";
+}
+$("delPickBtn").addEventListener("click", () => {
+  hideAsk();
+  $("pickGrid").innerHTML = P.dishes.map((d, i) =>
+    `<label class="pick-item"><input type="checkbox" value="${i}" aria-label="Удалить ${esc(d.name)}">` +
+    `<img src="${d.thumb}" alt=""><span title="${esc(d.name)}">${esc(d.name)}</span></label>`).join("");
+  pickCount();
+  $("pickBox").showModal();
+});
+$("pickGrid").addEventListener("change", pickCount);
+$("pickAll").addEventListener("click", () => { for (const c of $("pickGrid").querySelectorAll("input")) c.checked = true; pickCount(); });
+$("pickNone").addEventListener("click", () => { for (const c of $("pickGrid").querySelectorAll("input")) c.checked = false; pickCount(); });
+$("pickClose").addEventListener("click", () => $("pickBox").close());
+$("pickCancel").addEventListener("click", () => $("pickBox").close());
+$("pickBox").addEventListener("click", e => {          // клик мимо окна закрывает его
+  const b = $("pickBox").getBoundingClientRect();
+  if (e.clientX < b.left || e.clientX > b.right || e.clientY < b.top || e.clientY > b.bottom) $("pickBox").close();
+});
+$("pickDel").addEventListener("click", () => {
+  const idx = [...$("pickGrid").querySelectorAll("input:checked")].map(c => +c.value).sort((a, b) => a - b);
+  $("pickBox").close();
+  if (idx.length) deleteDishes(idx, "Удалено");
 });
 $("dishes").addEventListener("keydown", e => {
   if (e.key !== "Enter" && e.key !== " ") return;
