@@ -124,7 +124,7 @@ input.num:focus { border-color: var(--accent); outline: none; }
 /* режим «Во весь экран»: окно разметки и инструменты занимают всё окно; ряд чашек спрятан */
 body.focus { overflow: hidden; }
 body.focus .main { position: fixed; inset: 0; z-index: 30; background: var(--bg); padding: 12px; gap: 12px;
-  grid-template-columns: minmax(0, 1fr) 380px; }
+  grid-template-columns: minmax(0, 1fr) 400px; }   /* на 10 px шире обычного: у панели здесь своя полоса прокрутки */
 /* ряд чашек в этом режиме переезжает в правую колонку, под инструменты (см. setFocus), а окно разметки – на всю высоту */
 body.focus .view { height: calc(100vh - 24px - 20px - 48px); }
 body.focus .dishes { padding-bottom: 4px; border-bottom: 1px solid var(--line); }
@@ -135,7 +135,9 @@ body.focus .dish .ct { font-size: 11px; }
 body.focus .dish .x { top: 6px; right: 6px; width: 20px; height: 20px; font-size: 13px; }
 body.focus .dish.add { min-height: 0; height: 96px; font-size: 11px; box-sizing: border-box; }
 body.focus .dish.add b { font-size: 20px; }
-body.focus .main > aside { max-height: calc(100vh - 24px); overflow-y: auto; box-sizing: border-box; }
+body.focus .main > aside { max-height: calc(100vh - 24px); overflow-y: auto; box-sizing: border-box; scrollbar-width: thin; }
+/* во весь экран страница не прокручивается – место под её полосу прокрутки справа не нужно */
+html:has(body.focus) { scrollbar-gutter: auto; }
 @media (max-width: 900px) {
   body.focus .main { grid-template-columns: minmax(0, 1fr); grid-template-rows: auto minmax(0, 1fr); overflow: hidden; }
   body.focus .view { height: 55vh; }
@@ -190,10 +192,11 @@ body.focus .navcount { top: calc(10px + 100vh - 24px - 20px - 48px - 34px); }
 .btn .key { font: 600 11px/1 var(--font-mono); padding: 2px 5px; border: 1px solid currentColor; border-radius: 4px; opacity: .6; }
 .tools.folded .key { display: none; }
 .help-tip kbd { font: 12px var(--font-mono); border: 1px solid var(--line); border-radius: 4px; padding: 0 4px; }
-.tools { display: grid; gap: 10px; padding-bottom: 14px; border-bottom: 1px solid var(--line); background: var(--panel); }
+.tools { display: grid; grid-template-columns: minmax(0, 1fr); gap: 10px; padding-bottom: 14px; border-bottom: 1px solid var(--line); background: var(--panel); }
+.tools-head .btn.icon { padding-inline: 8px; } .tools-head .row { gap: 6px; flex-wrap: nowrap; }   /* «?» и четыре кнопки помещаются рядом с заголовком и во весь экран */
 .tools-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; position: relative; }   /* к ней привязано окно «?» */
-.tools-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
-.tools-grid .btn { justify-content: center; }
+.tools-grid { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 8px; }   /* колонки не раздвигают панель */
+.tools-grid .btn { justify-content: center; padding-inline: 10px; }
 .tools-grid .wide { grid-column: 1 / -1; }
 /* редактор снимка */
 .edit-ctl { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 6px 16px; }
