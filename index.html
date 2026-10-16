@@ -168,11 +168,6 @@ body.focus .navcount { top: calc(10px + 100vh - 24px - 20px - 48px - 34px); }
 .tools-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
 .tools-grid .btn { justify-content: center; }
 .tools-grid .wide { grid-column: 1 / -1; }
-/* «Снимок для отчёта» и справа узкая кнопка редактора (~1 см) */
-.snaprow { display: flex; gap: 6px; }
-.snaprow #snapBtn { flex: 1 1 auto; min-width: 0; }
-.snaprow #snapEditBtn { flex: none; width: 40px; padding-inline: 0; }
-.tools.folded .snaprow { gap: 6px; }
 /* редактор снимка */
 .edit-ctl { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 6px 16px; }
 .edit-ctl label { display: grid; grid-template-columns: 13ch minmax(0, 1fr) 7ch; align-items: center; gap: 8px; font-size: 14px; color: var(--muted); }
@@ -363,12 +358,8 @@ input.drug::placeholder { color: var(--muted); font-weight: 400; }
         <div class="tools-grid">
           <button class="btn save wide" id="saveBtn2" type="button" title="Сохранить все чашки в этом браузере (Ctrl+S)">
             <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 3h11l3 3v15H5z"/><path d="M8 3v5h7V3M8 21v-7h8v7"/></svg><span class="lbl">Сохранить</span></button>
-          <div class="snaprow wide">
-            <button class="btn" id="snapBtn" type="button" title="Снимок окна разметки в PNG — для презентаций и отчётов: как на экране, с видимостью разметки и приближением" disabled>
+          <button class="btn wide" id="snapEditBtn" type="button" title="Снимок окна разметки для презентаций и отчётов: обрезка, яркость, контраст; сохранить PNG или скопировать" disabled>
             <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5"/></svg><span class="lbl">Снимок для отчёта</span></button>
-            <button class="btn" id="snapEditBtn" type="button" title="Снимок с редактором: обрезка, яркость, контраст, насыщенность" aria-label="Снимок с редактором" disabled>
-              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h10M18 7h2M4 17h4M12 17h8"/><circle cx="16" cy="7" r="2"/><circle cx="10" cy="17" r="2"/></svg></button>
-          </div>
           <button class="btn" id="addBtn" type="button" title="Добавить зону">
             <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8"/><path d="M12 8v8M8 12h8"/></svg><span class="lbl">Добавить зону</span></button>
           <button class="btn" id="delBtn" type="button" disabled title="Удалить зону (Delete, правая кнопка мыши)">
@@ -539,6 +530,7 @@ input.drug::placeholder { color: var(--muted); font-weight: 400; }
     <p class="crop-hint">Обрезка: потяните по снимку новую рамку, углы и стороны — изменить, внутри — сдвинуть. Двойной клик по ползунку — вернуть 0.</p>
     <div class="row">
       <button class="btn primary" id="editSave" type="button">Сохранить PNG</button>
+      <button class="btn" id="editCopy" type="button" title="В буфер обмена — вставить Ctrl+V в презентацию, документ или чат">Скопировать</button>
       <button class="btn" id="editReset" type="button">Сбросить всё</button>
       <button class="btn" id="editCancel" type="button">Отмена</button>
     </div>
@@ -1839,7 +1831,7 @@ function renderDishes() {
       `<span class="ct${n ? " warn" : ""}">${d.items.length} ${disksWord(d.items.length)}${n ? ` · ${n} ?` : ""}</span>` +
       `<button class="x" type="button" data-del="${i}" aria-label="Удалить чашку ${esc(d.name)}" title="Удалить чашку">×</button></div>`;
   }).join("") + `<label class="dish add" for="file" tabindex="0"><b>+</b>Добавить фото</label>`;
-  $("delPickBtn").disabled = $("snapBtn").disabled = $("snapEditBtn").disabled = !P.dishes.length;
+  $("delPickBtn").disabled = $("snapEditBtn").disabled = !P.dishes.length;
 }
 
 function fillMeta() {
@@ -2129,11 +2121,6 @@ async function savePng(c, name) {
   if (!blob) return setMsg("Снимок не получился.", true);
   if (await saveFile(name, blob)) setMsg(`Снимок сохранён: ${name} (${c.width}×${c.height} px).`);
 }
-async function snapshot() {
-  const g = grabView();
-  if (g) await savePng(g.canvas, g.name);
-}
-$("snapBtn").addEventListener("click", snapshot);
 
 // ----- редактор снимка -----
 // E.src — исходный снимок, E.adj — он же после яркости / контраста / насыщенности, E.R — рамка обрезки (в px снимка)
@@ -2234,13 +2221,31 @@ $("editReset").addEventListener("click", () => {
 });
 $("editCancel").addEventListener("click", () => $("editBox").close());
 $("editBox").addEventListener("close", () => { E.src = E.adj = null; E.drag = null; });   // память под снимок отпускаем
-$("editSave").addEventListener("click", async () => {
+// готовый снимок: только то, что в рамке, с яркостью / контрастом / насыщенностью
+function editResult() {
   const R = E.R, x = Math.round(R.x), y = Math.round(R.y), w = Math.max(1, Math.round(R.w)), h = Math.max(1, Math.round(R.h));
   const out = document.createElement("canvas"); out.width = w; out.height = h;
   out.getContext("2d").drawImage(E.adj, x, y, w, h, 0, 0, w, h);
-  const name = E.name;
+  return out;
+}
+$("editSave").addEventListener("click", async () => {
+  const out = editResult(), name = E.name;
   $("editBox").close();
   await savePng(out, name);
+});
+// В буфер обмена — без файла. Картинку отдаём обещанием (Promise): Safari требует, чтобы запись началась сразу по клику
+$("editCopy").addEventListener("click", async () => {
+  const out = editResult(), size = `${out.width}×${out.height} px`;
+  try {
+    if (!navigator.clipboard || !window.ClipboardItem) throw new Error("no clipboard");
+    const png = new Promise((res, rej) => out.toBlob(b => b ? res(b) : rej(new Error("no blob")), "image/png"));
+    await navigator.clipboard.write([new ClipboardItem({ "image/png": png })]);
+    $("editBox").close();
+    setMsg(`Снимок скопирован (${size}). Вставьте его Ctrl+V в презентацию, документ или чат.`);
+  } catch {
+    $("editBox").close();
+    setMsg("Скопировать не получилось: этот браузер или страница не дают доступ к буферу обмена. Нажмите «Сохранить PNG» — снимок сохранится файлом.", true);
+  }
 });
 addEventListener("resize", () => { if (E.src) editDraw(); });
 $("xlsxBtn").addEventListener("click", saveXlsx);
