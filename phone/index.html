@@ -286,6 +286,16 @@
   </dialog>
 
   <!-- выбор чашек для удаления галочками -->
+  <!-- выбор препарата пальцем (телефон): список снизу, одно нажатие – записано -->
+  <dialog class="how drugsheet" id="drugBox" aria-labelledby="drugTitle">
+    <div class="how-head">
+      <h2 id="drugTitle">Препарат</h2>
+      <button class="btn icon" id="drugClose" type="button" aria-label="Закрыть">×</button>
+    </div>
+    <div class="drug-own"><input id="drugOwn" type="text" placeholder="Свой код, например CIP 5" autocomplete="off" aria-label="Свой код препарата"><button class="btn primary" id="drugOwnOk" type="button">Готово</button></div>
+    <div class="drug-list" id="drugListBox"></div>
+  </dialog>
+
   <dialog class="how" id="pickBox" aria-labelledby="pickTitle">
     <div class="how-head">
       <h2 id="pickTitle">Какие чашки удалить?</h2>

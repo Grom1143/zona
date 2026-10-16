@@ -1005,7 +1005,7 @@ function renderTable() {
   if (!d || !d.items.length) { $("tableBox").innerHTML = `<p class="empty">Зон пока нет.</p>`; return; }
   $("tableBox").innerHTML = `<table><thead><tr><th>№</th><th>Препарат</th><th class="num">Зона, мм</th><th>Категория</th><th>Отметка</th></tr></thead><tbody>` +
     d.items.map((it, i) => `<tr data-i="${i}" tabindex="0" class="${i === P.sel ? "sel" : ""}"><td>${i + 1}</td>` +
-      `<td><input class="drug" id="drug-${d.id}-${i}" data-i="${i}" list="drugList" value="${esc(it.drug)}" placeholder="–" aria-label="Препарат у диска ${i + 1}" autocomplete="off"><span class="dname" data-i="${i}"${guessOf(it.drug) ? ` title="Название предположительное – уточнить у тёти"` : ""}>${esc(dnameText(it))}</span></td>` +
+      `<td><input class="drug" id="drug-${d.id}-${i}" data-i="${i}" list="drugList" value="${esc(it.drug)}" placeholder="–" aria-label="Препарат у диска ${i + 1}" autocomplete="off"${TOUCH ? " readonly" : ""}><span class="dname" data-i="${i}"${guessOf(it.drug) ? ` title="Название предположительное – уточнить у тёти"` : ""}>${esc(dnameText(it))}</span></td>` +
       `<td class="num">${mpp ? fmt(diamPx(it) * mpp) : "–"}${it.pts && mpp && spanPx(it).max - spanPx(it).min > 0.5 / mpp ? `<span class="sub">${fmt(spanPx(it).min * mpp)}–${fmt(spanPx(it).max * mpp)}</span>` : ""}</td>` +
       `<td class="catcell" data-i="${i}">${catCell(it)}</td>` +
       `<td><span class="chip ${needsCheck(it) ? "check" : it.src === "none" ? "none" : it.src === "auto" ? (it.ok ? "ok" : "") : "edited"}">${STATUS(it)}</span></td></tr>`).join("") +
@@ -1775,6 +1775,45 @@ $("breakFromDishes").addEventListener("click", () => {
   saveBreaks(); renderBreaks();
   setMsg(add.length ? `Добавлены препараты: ${add.join(", ")}. Впишите для них пороги из таблицы EUCAST.` : "Новых препаратов в чашках нет: впишите препараты в колонку «Препарат».");
 });
+// ----- выбор препарата пальцем -----
+// Подсказка браузера (datalist) на телефоне открывается через раз. Поэтому при касании клетки «Препарат»
+// (и поля под крупным диском) снизу выезжает свой список: одно нажатие – препарат записан. На компьютере – как было
+const TOUCH = matchMedia("(pointer: coarse)").matches;
+let drugTarget = -1;
+function openDrugPicker(i) {
+  const d = D();
+  if (!d || !d.items[i]) return;
+  drugTarget = i;
+  $("drugTitle").textContent = `Препарат – диск ${i + 1}`;
+  const cur = normDrug(d.items[i].drug);
+  const opts = [...document.querySelectorAll("#drugList option")].map(o => [o.value, o.textContent]);
+  $("drugListBox").innerHTML = `<button type="button" data-v="" class="${cur ? "" : "cur"}"><span>– без препарата –</span></button>` +
+    opts.map(([v, n]) => `<button type="button" data-v="${esc(v)}" class="${normDrug(v) === cur ? "cur" : ""}"><b>${esc(v)}</b><span>${esc(n)}</span></button>`).join("");
+  $("drugOwn").value = "";
+  $("drugBox").showModal();
+  const c = $("drugListBox").querySelector(".cur");
+  if (c) c.scrollIntoView({ block: "center" });
+}
+function setDrug(v) {
+  const d = D(), it = d && d.items[drugTarget];
+  $("drugBox").close();
+  if (!it) return;
+  if (it.drug !== v) { commit(); it.drug = v; }
+  renderTable(); renderSide(); draw(); renderDishes();
+}
+$("drugListBox").addEventListener("click", e => { const b = e.target.closest("button[data-v]"); if (b) setDrug(b.dataset.v); });
+$("drugOwnOk").addEventListener("click", () => { if ($("drugOwn").value.trim()) setDrug($("drugOwn").value.trim()); });
+$("drugOwn").addEventListener("keydown", e => { if (e.key === "Enter" && $("drugOwn").value.trim()) setDrug($("drugOwn").value.trim()); });
+$("drugClose").addEventListener("click", () => $("drugBox").close());
+$("drugBox").addEventListener("click", e => { if (e.target === $("drugBox")) $("drugBox").close(); });   // нажатие на затемнение – закрыть
+if (TOUCH) {
+  $("tableBox").addEventListener("click", e => {
+    const inp = e.target.closest("input.drug");
+    if (inp) { e.preventDefault(); inp.blur(); openDrugPicker(+inp.dataset.i); }
+  }, true);
+  $("zoomDrug").readOnly = true;
+  $("zoomDrug").addEventListener("click", () => { if (P.sel >= 0) openDrugPicker(P.sel); });
+}
 $("zoomDrug").addEventListener("input", () => {
   const d = D(), it = d && d.items[P.sel];
   if (!it) return;

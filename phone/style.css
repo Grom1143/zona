@@ -361,6 +361,18 @@ input.drug::placeholder { color: var(--muted); font-weight: 400; }
 @media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
 
 /* ===== Телефон и планшет ===== */
+/* список препаратов – «шторка» снизу экрана, строки крупные под палец */
+dialog.drugsheet { margin: auto auto 0; width: min(560px, 100%); max-width: 100%; max-height: 80dvh; padding: 14px 14px calc(14px + env(safe-area-inset-bottom, 0px));
+  border-radius: 16px 16px 0 0; display: none; grid-template-rows: auto auto minmax(0, 1fr); gap: 10px; overflow: hidden; }
+dialog.drugsheet[open] { display: grid; }
+.drug-own { display: flex; gap: 8px; }
+.drug-own input { flex: 1; min-width: 0; font: 16px var(--font-body); padding: 10px; border: 1px solid var(--line); border-radius: 8px; background: var(--panel); color: var(--ink); }
+.drug-list { overflow-y: auto; overscroll-behavior: contain; display: grid; border-top: 1px solid var(--line); }
+.drug-list button { display: flex; align-items: baseline; gap: 10px; min-height: 48px; padding: 10px 6px; border: 0; border-bottom: 1px solid var(--line);
+  background: none; color: var(--ink); font: 15px var(--font-body); text-align: left; cursor: pointer; }
+.drug-list button b { font-family: var(--font-mono); min-width: 4.5ch; }
+.drug-list button span { color: var(--muted); }
+.drug-list button.cur { background: var(--accent-soft); }
 .btn.mob-only { display: none; }
 .photo-tools { display: none; }
 /* палец вместо мыши: подписи клавиш и подсказка про клавиши не нужны */
@@ -380,6 +392,20 @@ input.drug::placeholder { color: var(--muted); font-weight: 400; }
   #msg { order: 5; } #metaBox { order: 6; } #scale { order: 7; } #zoomBox { order: 8; }
   /* бывшая правая панель растворилась – каждому блоку своя карточка */
   .tools, details.meta, .scale, .zoom { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 12px; margin: 0; }
+  /* «Самое вкусное»: на телефоне – только сценарий «сфотографировал → проверил → отправил».
+     Остальное лишь спрятано (код на месте): вернуть – убрать нужный пункт из этого списка */
+  header p:not(.disclaimer),       /* длинное описание */
+  #sampleBtn,                      /* «Пример» – открывается сам, когда чашек нет */
+  #snapEditBtn,                    /* снимок для отчёта – его заменяет «Отправить таблицу» */
+  .tools-grid .zoombar,            /* лупа кнопками – на телефоне двумя пальцами */
+  #roundBtn,                       /* «Скруглить» – редко нужно */
+  #toolsToggle,                    /* свернуть инструменты в иконки – их и так мало */
+  #scale,                          /* «Масштаб: 1 мм = 9,4 px» – служебное */
+  .projbar,                        /* «Выбрать и удалить…» – удалить можно крестиком на чашке */
+  #xlsxBtn, #copyBtn, #resetBtn,   /* Excel, копирование, «Найти заново» – на компьютере */
+  #generalBar, #breaksBox          /* настройка порогов S / I / R – на компьютере */
+  { display: none !important; }
+  .tools-grid #axisBtn { grid-column: 1 / -1; }   /* «Гибкий контур» – на всю ширину, раз «Скруглить» спрятан */
   /* ↶ ↷ ⊕ 🗑 ⛶ теперь на фото – в инструментах их нет */
   #undoBtn, #redoBtn, #focusBtn, #addBtn, #delBtn { display: none; }
 
