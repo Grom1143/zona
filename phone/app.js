@@ -148,9 +148,16 @@ async function addDish(src, w, h, name, sample) {
 // Пример, который никто не трогал, убираем, когда появились настоящие фото
 const dropSample = () => { P.dishes = P.dishes.filter(d => !(d.sample && !d._undo.length)); };
 
+// МикроТест для телефона – простой вариант: не больше 10 фото (чашек) в работе
+const MAX_DISHES = 10;
+const realDishes = () => P.dishes.filter(d => !(d.sample && !d._undo.length)).length;   // нетронутый пример не считается
 async function addFiles(files) {
   files = [...files];
   if (!files.length) return;
+  const room = MAX_DISHES - realDishes();
+  if (room <= 0) return setMsg(`Уже ${MAX_DISHES} фото – это максимум. Удалите лишнее (крестик на чашке) или скачайте проект и начните новый.`, true);
+  const over = Math.max(0, files.length - room);
+  if (over) files = files.slice(0, room);
   const keep = D();
   let first = -1, bad = 0, skipped = 0, noCrop = false;
   // 1) сначала обрезаем все фото подряд, не закрывая окно обрезки
@@ -191,6 +198,7 @@ async function addFiles(files) {
   markDirty();
   await openDish(first);
   const added = files.length - bad - skipped;
+  if (over) return setMsg(`Можно не больше ${MAX_DISHES} фото: добавлено ${added}, остальные ${over} пропущены. ` + summary(D()), true);
   if (added > 1 || bad || skipped) setMsg(`Добавлено чашек: ${added}${skipped ? `, пропущено: ${skipped}` : ""}${bad ? `, не открылось файлов: ${bad}` : ""}. ` + summary(D()), !!bad);
 }
 
@@ -494,7 +502,10 @@ async function openProject(f) {
     if (!o || o.app !== "zona-ingibirovaniya" || !Array.isArray(o.dishes)) throw 0;
     dropSample();
     const start = P.dishes.length;
-    for (const x of o.dishes) P.dishes.push(hydrate({ ...x, img: dataURLToBlob(x.img) }));
+    const room = MAX_DISHES - realDishes(), take = o.dishes.slice(0, Math.max(0, room));
+    if (!take.length) return setMsg(`Уже ${MAX_DISHES} фото – это максимум. Удалите лишнее, чтобы открыть проект.`, true);
+    for (const x of take) P.dishes.push(hydrate({ ...x, img: dataURLToBlob(x.img) }));
+    o.dishes = take.length < o.dishes.length ? (setTimeout(() => setMsg(`Открыто ${take.length} фото из ${o.dishes.length}: больше ${MAX_DISHES} здесь нельзя. Все чашки – в версии для компьютера.`, true), 0), take) : o.dishes;
     // пороги из файла добавляются к своим; при совпадении препарата берутся из файла
     for (const b of Array.isArray(o.breaks) ? o.breaks : []) {
       const own = P.breaks.find(x => normDrug(x.drug) === normDrug(b.drug));
@@ -1039,6 +1050,7 @@ function renderSide() {
       : `Край зоны у диска ${P.sel + 1} найден неуверенно: зона сливается с соседней или размыта. Проверьте круг.`;
     $("checkYes").textContent = none ? "Да, зоны нет" : "Всё верно";
     $("checkMark").textContent = none ? "Разметить зону вручную" : it.colonies ? "Зоны нет" : "Гибкий контур";
+    $("checkMark").hidden = !none && !it.colonies;   // гибкого контура в версии для телефона нет – только «Всё верно» и линейка
   }
   $("delBtn").disabled = !it;
   $("axisBtn").disabled = !it;
