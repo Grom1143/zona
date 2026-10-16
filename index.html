@@ -175,6 +175,14 @@ body.focus .navcount { top: calc(10px + 100vh - 24px - 20px - 48px - 34px); }
 .edit-ctl output { font: 600 13px var(--font-mono); color: var(--ink); text-align: right; }
 .tools .field { justify-content: space-between; }
 .lookhint { font-size: 12px; color: var(--muted); flex: 1; }
+/* треугольник слева: скрыть / показать видимость разметки и цвета */
+.lookfold { display: flex; align-items: center; gap: 6px; padding: 2px 0; border: 0; background: none; color: var(--muted); font: 500 13px var(--font-body); cursor: pointer; text-align: left; }
+.lookfold svg { width: 12px; height: 12px; fill: currentColor; opacity: .5; transform: rotate(90deg); transition: transform .15s, opacity .15s; }
+.lookfold:hover svg, .lookfold:focus-visible svg { opacity: .9; }
+.lookfold:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 4px; }
+.lookfold[aria-expanded="false"] svg { transform: none; }
+.lookbox { display: grid; gap: 10px; }
+.lookbox.shut { display: none; }
 /* ползунки инструментов — в одну колонку: подпись | ползунок | число */
 .tools .field:has(input[type="range"]) { display: grid; grid-template-columns: 158px minmax(0, 1fr) 6ch; gap: 8px; white-space: nowrap; }
 .tools .field:has(input[type="range"]) input[type="range"] { width: 100%; }
@@ -380,11 +388,16 @@ input.drug::placeholder { color: var(--muted); font-weight: 400; }
               <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/></svg><span class="lbl">Вписать</span></button>
           </div>
         </div>
-        <label class="field tools-more" for="alpha">Видимость разметки, % <input type="range" id="alpha" title="Вправо — ярче, влево — бледнее; 0 % — разметка скрыта, видно только фото" min="0" max="100" step="1" value="100"><input type="text" inputmode="decimal" class="num" id="alphaOut" value="100" aria-label="Значение числом" autocomplete="off"></label>
-        <label class="field tools-more" for="lkBright" title="Только для просмотра: на поиск зон и измерения не влияет. Двойной клик — вернуть 0">Яркость <input type="range" id="lkBright" min="-100" max="100" step="1" value="0"><input type="text" inputmode="decimal" class="num" id="lkBrightOut" value="0" aria-label="Значение числом" autocomplete="off"></label>
-        <label class="field tools-more" for="lkContrast" title="Только для просмотра: на поиск зон и измерения не влияет. Двойной клик — вернуть 0">Контраст <input type="range" id="lkContrast" min="-100" max="100" step="1" value="0"><input type="text" inputmode="decimal" class="num" id="lkContrastOut" value="0" aria-label="Значение числом" autocomplete="off"></label>
-        <label class="field tools-more" for="lkSat" title="Только для просмотра: на поиск зон и измерения не влияет. Двойной клик — вернуть 0">Насыщенность <input type="range" id="lkSat" min="-100" max="100" step="1" value="0"><input type="text" inputmode="decimal" class="num" id="lkSatOut" value="0" aria-label="Значение числом" autocomplete="off"></label>
-        <div class="field tools-more"><span class="lookhint">Цвета — только для просмотра, на измерения не влияют</span><button class="btn" id="lkReset" type="button" disabled>Сбросить</button></div>
+        <!-- видимость разметки и цвета фото: прячутся треугольником слева -->
+        <button class="lookfold tools-more" id="lookFold" type="button" aria-expanded="true" aria-controls="lookBox" title="Скрыть / показать видимость разметки и цвета фото">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5l10 7-10 7z"/></svg><span>Видимость и цвета</span></button>
+        <div class="lookbox tools-more" id="lookBox">
+          <label class="field tools-more" for="alpha">Видимость разметки, % <input type="range" id="alpha" title="Вправо — ярче, влево — бледнее; 0 % — разметка скрыта, видно только фото" min="0" max="100" step="1" value="100"><input type="text" inputmode="decimal" class="num" id="alphaOut" value="100" aria-label="Значение числом" autocomplete="off"></label>
+          <label class="field tools-more" for="lkBright" title="Только для просмотра: на поиск зон и измерения не влияет. Двойной клик — вернуть 0">Яркость <input type="range" id="lkBright" min="-100" max="100" step="1" value="0"><input type="text" inputmode="decimal" class="num" id="lkBrightOut" value="0" aria-label="Значение числом" autocomplete="off"></label>
+          <label class="field tools-more" for="lkContrast" title="Только для просмотра: на поиск зон и измерения не влияет. Двойной клик — вернуть 0">Контраст <input type="range" id="lkContrast" min="-100" max="100" step="1" value="0"><input type="text" inputmode="decimal" class="num" id="lkContrastOut" value="0" aria-label="Значение числом" autocomplete="off"></label>
+          <label class="field tools-more" for="lkSat" title="Только для просмотра: на поиск зон и измерения не влияет. Двойной клик — вернуть 0">Насыщенность <input type="range" id="lkSat" min="-100" max="100" step="1" value="0"><input type="text" inputmode="decimal" class="num" id="lkSatOut" value="0" aria-label="Значение числом" autocomplete="off"></label>
+          <div class="field tools-more"><span class="lookhint">Цвета — только для просмотра, на измерения не влияют</span><button class="btn" id="lkReset" type="button" disabled>Сбросить</button></div>
+        </div>
         <label class="field tools-more" for="diskMm">Диаметр диска, мм <input type="number" id="diskMm" value="6" min="1" max="20" step="0.1"></label>
       </section>
       <details class="meta" id="metaBox" open>
@@ -1641,6 +1654,14 @@ document.addEventListener("fullscreenchange", () => {
 });
 $("toolsToggle").addEventListener("click", () => foldTools(!document.querySelector(".tools").classList.contains("folded")));
 try { if (localStorage.getItem("zona-tools-folded") === "1") foldTools(true); } catch {}
+// треугольник «Видимость и цвета»: свернуть / развернуть, выбор запоминается в браузере
+function foldLook(shut) {
+  $("lookBox").classList.toggle("shut", shut);
+  $("lookFold").setAttribute("aria-expanded", String(!shut));
+  try { localStorage.setItem("zona-look-shut", shut ? "1" : "0"); } catch {}
+}
+$("lookFold").addEventListener("click", () => foldLook(!$("lookBox").classList.contains("shut")));
+try { if (localStorage.getItem("zona-look-shut") === "1") foldLook(true); } catch {}
 
 // ----- сообщения и подтверждения -----
 function setMsg(t, warn) { $("msg").textContent = t; $("msg").className = "msg" + (warn ? " warn" : ""); }
