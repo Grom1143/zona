@@ -54,6 +54,9 @@ body {
 }
 [hidden] { display: none !important; }
 html { scrollbar-gutter: stable; }   /* полоса прокрутки не сдвигает страницу, когда появляется */
+/* открыто окно (справка, обрезка, снимок, выбор чашек): страница под ним стоит на месте, листается только окно */
+html:has(dialog[open]) { overflow: hidden; }
+dialog, .pick-grid { overscroll-behavior: contain; }   /* окно докрутили до конца – прокрутка не уходит дальше */
 .wrap { max-width: 1280px; margin: 0 auto; display: grid; gap: 14px; }
 header { display: grid; gap: 6px; }
 h1 { font-family: var(--font-display); font-weight: 700; font-size: 28px; line-height: 1.15; margin: 0; letter-spacing: -0.01em; text-wrap: balance; }
