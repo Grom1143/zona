@@ -10,4 +10,3 @@ Tests/
 # кроме логотипа сайта (лягушка МикроТест Вижн)
 !logo.png
 !favicon.png
-!frog.png

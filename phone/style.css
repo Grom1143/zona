@@ -53,13 +53,11 @@ header .brand-logo { grid-row: 1 / span 3; }
 /* пасхалка: чашка с лягушкой поверх страницы */
 dialog.egg { padding: 0; border: 0; background: transparent; overflow: visible; }
 dialog.egg::backdrop { background: rgba(10, 14, 17, .78); }
-dialog.egg canvas { display: block; }
-dialog.egg canvas[hidden], .icon-anim[hidden], .egg-btn[hidden] { display: none; }
+.icon-anim[hidden] { display: none; }
 /* анимация иконки: каждая часть SVG вращается и растёт вокруг своего центра */
 .icon-anim svg { display: block; }
 .icon-anim svg * { transform-box: fill-box; transform-origin: center; }
 .icon-anim .ring { transform: rotate(-90deg); }   /* окружность прорисовывается сверху */
-dialog.egg .egg-btn { display: flex; width: fit-content; margin: 14px auto 0; }
 .egg-hint { margin: 10px 0 0; text-align: center; color: rgba(255, 255, 255, .6); font-size: 13px; }
 .disclaimer-foot a { color: var(--accent); display: inline-block; margin-top: 8px; }
 .disclaimer-foot { margin: 8px 0 0; padding-top: 12px; border-top: 1px solid var(--line); font-size: 12px; color: var(--muted); text-align: center; }
