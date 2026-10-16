@@ -10,6 +10,8 @@
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Onest:wght@400;500;700&family=JetBrains+Mono:wght@400;600&display=swap">
 <!-- SheetJS 0.20.3 лежит рядом с сайтом: Excel работает и без интернета -->
 <script async src="vendor/xlsx.full.min.js"></script>
+<!-- тема ставится до показа страницы, чтобы она не мигала другой темой -->
+<script>try { const t = localStorage.getItem("zona-theme"); if (t === "light" || t === "dark") document.documentElement.dataset.theme = t; } catch {}</script>
 <style>
 /* Лабораторный прибор: сверху серия чашек, слева поле с чашкой Петри, справа паспорт чашки и журнал измерений */
 :root {
@@ -237,6 +239,7 @@ input.drug::placeholder { color: var(--muted); font-weight: 400; }
 }
 .help-btn:hover { border-color: var(--accent); background: var(--accent-soft); }
 .help-btn:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.theme-btn { font-size: 17px; font-weight: 400; }
 .results { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 16px; display: grid; gap: 12px; min-width: 0; }
 .projnote { font-size: 13px; color: var(--muted); }
 .general { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 16px; padding: 10px 12px; border: 1px solid var(--line); border-radius: 8px; background: var(--accent-soft); font-size: 14px; }
@@ -284,6 +287,7 @@ input.drug::placeholder { color: var(--muted); font-weight: 400; }
     <div class="title-row">
       <h1>Зона ингибирования <small>диско-диффузионный метод</small></h1>
       <button class="help-btn" id="helpBtn" type="button" title="Как это работает" aria-label="Справка: как это работает" aria-haspopup="dialog">?</button>
+      <button class="help-btn theme-btn" id="themeBtn" type="button"></button>
     </div>
     <p>Загрузите одно или несколько фото чашек Петри. Программа найдёт диски с антибиотиком и измерит диаметр прозрачной зоны вокруг каждого. Если граница найдена неверно, выберите зону и передвиньте концы линейки; для неровной зоны есть гибкий контур. Разметка каждой чашки хранится отдельно.</p>
     <p class="disclaimer">Исследовательский и учебный инструмент, не для клинической диагностики: каждый результат проверяет человек.</p>
@@ -1007,7 +1011,7 @@ async function addFiles(files) {
 // "all" (без обрезки для этого и остальных фото) или "skip" (не добавлять)
 function cropImage(img, n, total) {
   const box = $("cropBox"), c = $("cropCv"), g = c.getContext("2d");
-  const W = img.naturalWidth, H = img.naturalHeight, k = Math.min(1, 900 / Math.max(W, H));
+  const W = img.naturalWidth, H = img.naturalHeight, k = 900 / Math.max(W, H);   // любое фото — 900 px по длинной стороне: маленькие тоже растягиваются на всё поле
   c.width = Math.round(W * k); c.height = Math.round(H * k);
   const R = { x: 0, y: 0, w: c.width, h: c.height }, MIN = 40;
   $("cropInfo").textContent = total > 1 ? `фото ${n} из ${total}` : "";
@@ -1960,6 +1964,23 @@ for (const id of ["uploadBtn", "projOpenBtn"]) $(id).addEventListener("keydown",
 });
 $("sampleBtn").addEventListener("click", loadSample);
 $("helpBtn").addEventListener("click", () => $("helpBox").showModal());
+// тема: по кругу «как в системе» → светлая → тёмная; выбор запоминается в этом браузере
+const THEMES = [["", "◐", "как в системе"], ["light", "☀", "светлая"], ["dark", "☾", "тёмная"]];
+function showTheme() {
+  const t = document.documentElement.dataset.theme || "", i = THEMES.findIndex(m => m[0] === t);
+  const [, icon, name] = THEMES[i < 0 ? 0 : i], next = THEMES[(i + 1) % THEMES.length][2];
+  $("themeBtn").textContent = icon;
+  $("themeBtn").title = `Тема: ${name}. Нажмите — ${next}`;
+  $("themeBtn").setAttribute("aria-label", `Тема оформления: ${name}`);
+}
+$("themeBtn").addEventListener("click", () => {
+  const t = document.documentElement.dataset.theme || "", i = THEMES.findIndex(m => m[0] === t);
+  const n = THEMES[(i + 1) % THEMES.length][0];
+  if (n) document.documentElement.dataset.theme = n; else delete document.documentElement.dataset.theme;
+  try { if (n) localStorage.setItem("zona-theme", n); else localStorage.removeItem("zona-theme"); } catch {}
+  showTheme();
+});
+showTheme();
 $("helpClose").addEventListener("click", () => $("helpBox").close());
 $("helpBox").addEventListener("click", e => {          // клик мимо окна закрывает его
   const b = $("helpBox").getBoundingClientRect();
