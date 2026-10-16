@@ -1,9 +1,9 @@
 <!doctype html>
 <html lang="ru">
-<!-- кодировка и масштаб на телефоне: на claude.ai их добавляла платформа, на GitHub Pages и localhost — нужны свои -->
+<!-- кодировка и масштаб на телефоне: на claude.ai их добавляла платформа, на GitHub Pages и localhost – нужны свои -->
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>МикроТест Вижн — диско-диффузионный метод</title>
+<title>МикроТест Вижн – диско-диффузионный метод</title>
 <link rel="icon" type="image/png" href="favicon.png">
 <link rel="apple-touch-icon" href="logo.png">
 <meta name="claude:viewport-fit-sides" content="cover">
@@ -120,7 +120,7 @@ input.num:focus { border-color: var(--accent); outline: none; }
 body.focus { overflow: hidden; }
 body.focus .main { position: fixed; inset: 0; z-index: 30; background: var(--bg); padding: 12px; gap: 12px;
   grid-template-columns: minmax(0, 1fr) 380px; }
-/* ряд чашек в этом режиме переезжает в правую колонку, под инструменты (см. setFocus), а окно разметки — на всю высоту */
+/* ряд чашек в этом режиме переезжает в правую колонку, под инструменты (см. setFocus), а окно разметки – на всю высоту */
 body.focus .view { height: calc(100vh - 24px - 20px - 48px); }
 body.focus .dishes { padding-bottom: 4px; border-bottom: 1px solid var(--line); }
 body.focus .dish { width: 76px; padding: 4px; gap: 1px; }
@@ -139,7 +139,7 @@ body.focus .main > aside { max-height: calc(100vh - 24px); overflow-y: auto; box
 .ask.pop { z-index: 40; }
 .stage { background: var(--stage); border-radius: 10px; padding: 10px; position: relative; min-width: 0; }
 .ov { position: absolute; pointer-events: none; z-index: 2; }
-/* плашка — по центру окна разметки (как стрелки ‹ ›: середина окна высотой 600 px) */
+/* плашка – по центру окна разметки (как стрелки ‹ ›: середина окна высотой 600 px) */
 .tiltbar { position: absolute; top: calc(10px + 300px); left: 50%; transform: translate(-50%, -50%); z-index: 4; max-width: calc(100% - 140px);
   display: flex; align-items: center; gap: 10px; padding: 8px 8px 8px 14px; border-radius: 10px;
   background: #c62828; color: #fff; font-weight: 700; font-size: 15px; line-height: 1.3; white-space: nowrap; box-shadow: 0 4px 14px rgba(0, 0, 0, .35); }
@@ -192,13 +192,13 @@ body.focus .navcount { top: calc(10px + 100vh - 24px - 20px - 48px - 34px); }
 .lookfold[aria-expanded="false"] svg { transform: none; }
 .lookbox { display: grid; gap: 10px; }
 .lookbox.shut { display: none; }
-/* ползунки инструментов — в одну колонку: подпись | ползунок | число */
+/* ползунки инструментов – в одну колонку: подпись | ползунок | число */
 .tools .field:has(input[type="range"]) { display: grid; grid-template-columns: 158px minmax(0, 1fr) 6ch; gap: 8px; white-space: nowrap; }
 .tools .field:has(input[type="range"]) input[type="range"] { width: 100%; }
 #lkReset { padding: 6px 10px; font-size: 13px; }
 .tools .btn svg { width: 18px; height: 18px; flex: none; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
 .tools .fold svg { transition: transform .15s; }
-/* свёрнуто: одна полоска маленьких иконок, подписи и ползунки спрятаны (подсказка — при наведении) */
+/* свёрнуто: одна полоска маленьких иконок, подписи и ползунки спрятаны (подсказка – при наведении) */
 .tools.folded .lbl, .tools.folded .tools-more { display: none; }
 .tools.folded .fold svg { transform: rotate(180deg); }
 .tools.folded .tools-grid { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
@@ -207,7 +207,7 @@ body.focus .navcount { top: calc(10px + 100vh - 24px - 20px - 48px - 34px); }
 .tools.folded .zoombar output { min-width: 5ch; font-size: 12px; }
 .tools.folded .wide { grid-column: auto; }
 .tools.folded #calibField:not([hidden]) { flex-basis: 100%; }
-/* свёрнутые инструменты — сетка по картинке «Кнопки.png» (20 узких колонок): «Сохранить» на половину ширины,
+/* свёрнутые инструменты – сетка по картинке «Кнопки.png» (20 узких колонок): «Сохранить» на половину ширины,
    добавить / удалить зону; «Снимок» на всю ширину; контур, скругление, линейка и лупа с «Вписать» */
 .tools.folded .tools-grid { display: grid; grid-template-columns: repeat(20, minmax(0, 1fr)); gap: 6px 3px; align-items: stretch;
   grid-template-areas:
@@ -233,7 +233,7 @@ body.focus .navcount { top: calc(10px + 100vh - 24px - 20px - 48px - 34px); }
 .tools.folded .zoombar output { flex: 1 1 auto; min-width: 0; font-size: 11px; display: flex; align-items: center; justify-content: center; }
 .tools.folded #calibField { grid-area: cf; }
 @media (min-width: 901px) {
-  /* инструменты не прилипают к экрану — уезжают вместе со страницей (так понравилось больше) */
+  /* инструменты не прилипают к экрану – уезжают вместе со страницей (так понравилось больше) */
   .tools { margin: -16px -16px 0; padding: 16px; border-radius: 10px 10px 0 0; }
 }
 
@@ -255,7 +255,7 @@ details.meta summary span { font-weight: 400; color: var(--muted); }
 .scale .tilt { color: var(--warn); }
 .msg { font-size: 14px; padding: 8px 10px 10px 12px; border-radius: 8px; background: var(--accent-soft); }
 .msg.warn { background: transparent; border: 1px solid var(--warn); color: var(--warn); }
-/* сообщения — списком, «−» сворачивает до заголовка, «+» разворачивает */
+/* сообщения – списком, «−» сворачивает до заголовка, «+» разворачивает */
 .msg-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
 .msg-head b { font-weight: 400; font-size: 13px; opacity: .75; }
 .msg:not(.shut) .msg-head { float: right; margin: 0 0 4px 8px; }   /* развёрнуто: «−» справа сверху, текст обтекает */
@@ -299,7 +299,7 @@ input.drug::placeholder { color: var(--muted); font-weight: 400; }
 .row { display: flex; gap: 8px; flex-wrap: wrap; }
 
 .title-row { display: flex; align-items: center; gap: 12px; }
-.brand-logo { width: 44px; height: 44px; flex: none; border-radius: 50%; }   /* лягушка в чашке — логотип МикроТест Вижн */
+.brand-logo { width: 44px; height: 44px; flex: none; border-radius: 50%; }   /* лягушка в чашке – логотип МикроТест Вижн */
 .help-btn {
   flex: none; width: 34px; height: 34px; border-radius: 50%; border: 1px solid var(--line); background: var(--panel);
   color: var(--accent); font: 700 18px/1 var(--font-display); cursor: pointer;
@@ -330,7 +330,7 @@ input.drug::placeholder { color: var(--muted); font-weight: 400; }
 .breaks input { width: 100%; box-sizing: border-box; font: 500 14px var(--font-body); padding: 6px 8px; border: 1px solid var(--line); border-radius: 6px; background: var(--panel); color: var(--ink); }
 .breaks input[type="number"] { font-family: var(--font-mono); max-width: 90px; }
 .results-head { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 10px; }
-/* справка — окно поверх страницы по кнопке «?» */
+/* справка – окно поверх страницы по кнопке «?» */
 .how { color: var(--ink); background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 18px; gap: 12px;
   width: min(820px, calc(100vw - 32px)); max-height: calc(100vh - 48px); overflow-y: auto; box-sizing: border-box; }
 .how[open] { display: grid; }
@@ -364,13 +364,13 @@ input.drug::placeholder { color: var(--muted); font-weight: 400; }
       <button class="help-btn" id="helpBtn" type="button" title="Как это работает" aria-label="Справка: как это работает" aria-haspopup="dialog">?</button>
       <button class="help-btn theme-btn" id="themeBtn" type="button"></button>
     </div>
-    <p>Загрузите одно или несколько фото чашек Петри — кнопкой, перетаскиванием или вставкой из буфера обмена (Ctrl+V). Программа найдёт диски с антибиотиком и измерит диаметр прозрачной зоны вокруг каждого. Если граница найдена неверно, выберите зону и передвиньте концы линейки; для неровной зоны есть гибкий контур. Разметка каждой чашки хранится отдельно.</p>
+    <p>Загрузите одно или несколько фото чашек Петри – кнопкой, перетаскиванием или вставкой из буфера обмена (Ctrl+V). Программа найдёт диски с антибиотиком и измерит диаметр прозрачной зоны вокруг каждого. Если граница найдена неверно, выберите зону и передвиньте концы линейки; для неровной зоны есть гибкий контур. Разметка каждой чашки хранится отдельно.</p>
     <p class="disclaimer">Исследовательский и учебный инструмент, не для клинической диагностики: каждый результат проверяет человек.</p>
   </header>
 
   <div class="toolbar">
     <input type="file" id="file" accept="image/*" multiple>
-    <label class="btn primary" for="file" id="uploadBtn" tabindex="0" title="Выбрать файлы. Можно и перетащить фото на окно или вставить из буфера обмена — Ctrl+V">Загрузить фото</label>
+    <label class="btn primary" for="file" id="uploadBtn" tabindex="0" title="Выбрать файлы. Можно и перетащить фото на окно или вставить из буфера обмена – Ctrl+V">Загрузить фото</label>
     <button class="btn" id="sampleBtn" type="button">Пример</button>
     <span class="spacer"></span>
     <span class="savestate" id="saveState" aria-live="polite"></span>
@@ -389,9 +389,9 @@ input.drug::placeholder { color: var(--muted); font-weight: 400; }
         <div class="tiltbar" id="tiltBar" role="alert" hidden><span id="tiltBarText"></span><button type="button" id="tiltBarX" aria-label="Скрыть предупреждение для этой чашки" title="Скрыть для этой чашки">×</button></div>
         <!-- лупа ×3, пока тянешь край: всегда в правом верхнем углу окна (уходит влево, только если точка под ней) -->
         <canvas class="loupe" id="loupe" width="360" height="360" hidden aria-hidden="true"></canvas>
-        <p class="hint" id="hint">Нажмите на зону, чтобы выбрать её. Shift + колёсико — лупа; приближенное фото двигается за пустое место. Правая кнопка мыши по зоне — удалить (вернуть — ↶).</p>
+        <p class="hint" id="hint">Нажмите на зону, чтобы выбрать её. Shift + колёсико – лупа; приближенное фото двигается за пустое место. Правая кнопка мыши по зоне – удалить (вернуть – ↶).</p>
       </div>
-      <!-- фото чашек — под окном разметки -->
+      <!-- фото чашек – под окном разметки -->
       <div class="dishes" id="dishes" aria-label="Чашки"></div>
     </div>
     <aside>
@@ -402,7 +402,7 @@ input.drug::placeholder { color: var(--muted); font-weight: 400; }
           <div class="row">
             <button class="btn icon" id="undoBtn" type="button" title="Отменить действие (Ctrl+Z)" aria-label="Отменить действие">↶</button>
             <button class="btn icon" id="redoBtn" type="button" title="Вернуть действие (Ctrl+Y)" aria-label="Вернуть действие">↷</button>
-            <button class="btn icon" id="focusBtn" type="button" title="Во весь экран (выход — Esc)" aria-label="Во весь экран" aria-pressed="false">
+            <button class="btn icon" id="focusBtn" type="button" title="Во весь экран (выход – Esc)" aria-label="Во весь экран" aria-pressed="false">
               <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/></svg>
             </button>
             <button class="btn icon fold" id="toolsToggle" type="button" title="Свернуть инструменты в иконки" aria-expanded="true" aria-label="Свернуть инструменты">
@@ -420,9 +420,9 @@ input.drug::placeholder { color: var(--muted); font-weight: 400; }
             <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8"/><path d="M12 8v8M8 12h8"/></svg><span class="lbl">Добавить зону</span></button>
           <button class="btn" id="delBtn" type="button" disabled title="Удалить зону (Delete, правая кнопка мыши)">
             <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M10 7V4h4v3M6 7l1 13h10l1-13"/></svg><span class="lbl">Удалить зону</span></button>
-          <button class="btn" id="axisBtn" type="button" disabled title="Гибкий контур: для зоны неправильной формы. Нажмите ещё раз — снова круг">
+          <button class="btn" id="axisBtn" type="button" disabled title="Гибкий контур: для зоны неправильной формы. Нажмите ещё раз – снова круг">
             <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4c5 0 8.5 3 7.5 8s-4 8-8.5 7.5S4 16 4 12s3-8 8-8z"/><circle cx="12" cy="4" r="1.6"/><circle cx="19.5" cy="12" r="1.6"/><circle cx="4" cy="12" r="1.6"/></svg><span class="lbl">Гибкий контур</span></button>
-          <button class="btn" id="roundBtn" type="button" disabled title="Скруглить: гибкий контур — ровным кругом того же диаметра, точки остаются">
+          <button class="btn" id="roundBtn" type="button" disabled title="Скруглить: гибкий контур – ровным кругом того же диаметра, точки остаются">
             <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8"/></svg><span class="lbl">Скруглить</span></button>
           <button class="btn wide" id="calibBtn" type="button" title="Масштаб по линейке">
             <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="8" width="18" height="8" rx="1"/><path d="M7 8v3M11 8v4M15 8v3M19 8v2"/></svg><span class="lbl">Масштаб по линейке</span></button>
@@ -440,11 +440,11 @@ input.drug::placeholder { color: var(--muted); font-weight: 400; }
         <button class="lookfold" id="lookFold" type="button" aria-expanded="true" aria-controls="lookBox" title="Скрыть / показать видимость разметки и цвета фото">
           <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5l10 7-10 7z"/></svg><span>Видимость и цвета</span></button>
         <div class="lookbox" id="lookBox">
-          <label class="field" for="alpha">Видимость разметки, % <input type="range" id="alpha" title="Вправо — ярче, влево — бледнее; 0 % — разметка скрыта, видно только фото" min="0" max="100" step="1" value="100"><input type="text" inputmode="decimal" class="num" id="alphaOut" value="100" aria-label="Значение числом" autocomplete="off"></label>
-          <label class="field" for="lkBright" title="Только для просмотра: на поиск зон и измерения не влияет. Двойной клик — вернуть 0">Яркость <input type="range" id="lkBright" min="-100" max="100" step="1" value="0"><input type="text" inputmode="decimal" class="num" id="lkBrightOut" value="0" aria-label="Значение числом" autocomplete="off"></label>
-          <label class="field" for="lkContrast" title="Только для просмотра: на поиск зон и измерения не влияет. Двойной клик — вернуть 0">Контраст <input type="range" id="lkContrast" min="-100" max="100" step="1" value="0"><input type="text" inputmode="decimal" class="num" id="lkContrastOut" value="0" aria-label="Значение числом" autocomplete="off"></label>
-          <label class="field" for="lkSat" title="Только для просмотра: на поиск зон и измерения не влияет. Двойной клик — вернуть 0">Насыщенность <input type="range" id="lkSat" min="-100" max="100" step="1" value="0"><input type="text" inputmode="decimal" class="num" id="lkSatOut" value="0" aria-label="Значение числом" autocomplete="off"></label>
-          <div class="field"><span class="lookhint">Цвета — только для просмотра, на измерения не влияют</span><button class="btn" id="lkReset" type="button" disabled>Сбросить</button></div>
+          <label class="field" for="alpha">Видимость разметки, % <input type="range" id="alpha" title="Вправо – ярче, влево – бледнее; 0 % – разметка скрыта, видно только фото" min="0" max="100" step="1" value="100"><input type="text" inputmode="decimal" class="num" id="alphaOut" value="100" aria-label="Значение числом" autocomplete="off"></label>
+          <label class="field" for="lkBright" title="Только для просмотра: на поиск зон и измерения не влияет. Двойной клик – вернуть 0">Яркость <input type="range" id="lkBright" min="-100" max="100" step="1" value="0"><input type="text" inputmode="decimal" class="num" id="lkBrightOut" value="0" aria-label="Значение числом" autocomplete="off"></label>
+          <label class="field" for="lkContrast" title="Только для просмотра: на поиск зон и измерения не влияет. Двойной клик – вернуть 0">Контраст <input type="range" id="lkContrast" min="-100" max="100" step="1" value="0"><input type="text" inputmode="decimal" class="num" id="lkContrastOut" value="0" aria-label="Значение числом" autocomplete="off"></label>
+          <label class="field" for="lkSat" title="Только для просмотра: на поиск зон и измерения не влияет. Двойной клик – вернуть 0">Насыщенность <input type="range" id="lkSat" min="-100" max="100" step="1" value="0"><input type="text" inputmode="decimal" class="num" id="lkSatOut" value="0" aria-label="Значение числом" autocomplete="off"></label>
+          <div class="field"><span class="lookhint">Цвета – только для просмотра, на измерения не влияют</span><button class="btn" id="lkReset" type="button" disabled>Сбросить</button></div>
         </div>
         <label class="field tools-more" for="diskMm">Диаметр диска, мм <input type="number" id="diskMm" value="6" min="1" max="20" step="0.1"></label>
       </section>
@@ -459,9 +459,9 @@ input.drug::placeholder { color: var(--muted); font-weight: 400; }
           <label class="f" for="mMedium">Питательная среда <input id="mMedium" type="text" list="mediaList" placeholder="Мюллер-Хинтон" autocomplete="off"></label>
           <label class="f" for="mDishMm">Диаметр чашки, мм <input id="mDishMm" type="number" list="dishList" min="30" max="200" step="1" placeholder="90" autocomplete="off"></label>
           <label class="f" for="mCulture">Культура <input id="mCulture" type="text" placeholder="S. aureus ATCC 25923" autocomplete="off"></label>
-          <label class="f full" for="mOrg">Микроорганизм — для категорий S / I / R
+          <label class="f full" for="mOrg">Микроорганизм – для категорий S / I / R
             <select id="mOrg">
-              <option value="">— не выбран (только свои пороги) —</option>
+              <option value="">– не выбран (только свои пороги) –</option>
               <option value="entero">Enterobacterales (E. coli, Klebsiella, Proteus…)</option>
               <option value="saureus">Staphylococcus aureus</option>
               <option value="cons">Коагулазонегативные стафилококки</option>
@@ -514,12 +514,12 @@ input.drug::placeholder { color: var(--muted); font-weight: 400; }
       <label class="gchk"><input type="checkbox" id="gOn" checked> Категория по размеру зоны:</label>
       <label>S, если зона ≥ <input type="number" id="gS" value="22" min="1" max="60" step="1" aria-label="S, если зона не меньше, мм"> мм</label>
       <label>R, если зона &lt; <input type="number" id="gR" value="19" min="1" max="60" step="1" aria-label="R, если зона меньше, мм"> мм</label>
-      <span class="gnote">между — I. Зона округляется до целого мм.</span>
+      <span class="gnote">между – I. Зона округляется до целого мм.</span>
     </div>
     <!-- пороги S / I / R: свои для каждого препарата (и культуры), берутся из актуальной таблицы EUCAST -->
     <details class="breaks" id="breaksBox">
       <summary>Свои пороги S / I / R <span id="breaksCount"></span></summary>
-      <p class="note">Обычно пороги подставляются сами: выберите микроорганизм в паспорте чашки (таблицы «Российских рекомендаций», МАКМАХ 2024-02, по EUCAST; зона округляется до 1 мм). Здесь — свои пороги для препаратов, которых нет в таблице, или если нужно другое значение; свои пороги важнее табличных. Зона ≥ «S, если» — <b>S</b>, чувствительный (стандартная доза); между порогами — <b>I</b>, чувствительный при повышенной экспозиции; зона &lt; «R, если» — <b>R</b>, резистентный. Если пороги равны, категории I нет. Название препарата — как в колонке «Препарат».</p>
+      <p class="note">Обычно пороги подставляются сами: выберите микроорганизм в паспорте чашки (таблицы «Российских рекомендаций», МАКМАХ 2024-02, по EUCAST; зона округляется до 1 мм). Здесь – свои пороги для препаратов, которых нет в таблице, или если нужно другое значение; свои пороги важнее табличных. Зона ≥ «S, если» – <b>S</b>, чувствительный (стандартная доза); между порогами – <b>I</b>, чувствительный при повышенной экспозиции; зона &lt; «R, если» – <b>R</b>, резистентный. Если пороги равны, категории I нет. Название препарата – как в колонке «Препарат».</p>
       <div class="tablewrap" id="breaksTable"></div>
       <div class="row">
         <button class="btn" id="breakAdd" type="button">Добавить препарат</button>
@@ -570,7 +570,7 @@ input.drug::placeholder { color: var(--muted); font-weight: 400; }
       <span class="crop-info" id="cropInfo"></span>
     </div>
     <div class="crop-stage"><canvas id="cropCv" aria-label="Фото с рамкой обрезки"></canvas></div>
-    <p class="crop-hint">Тяните углы или стороны рамки, чтобы оставить только чашку. Внутри рамки — сдвиг. Лишнее затемнено.</p>
+    <p class="crop-hint">Тяните углы или стороны рамки, чтобы оставить только чашку. Внутри рамки – сдвиг. Лишнее затемнено.</p>
     <div class="row">
       <button class="btn primary" id="cropOk" type="button">Обрезать</button>
       <button class="btn" id="cropFull" type="button">Без обрезки</button>
@@ -591,10 +591,10 @@ input.drug::placeholder { color: var(--muted); font-weight: 400; }
       <label for="edContrast">Контраст <input type="range" id="edContrast" min="-100" max="100" step="1" value="0"><input type="text" inputmode="decimal" class="num" id="edContrastOut" value="0" aria-label="Значение числом" autocomplete="off"></label>
       <label for="edSat">Насыщенность <input type="range" id="edSat" min="-100" max="100" step="1" value="0"><input type="text" inputmode="decimal" class="num" id="edSatOut" value="0" aria-label="Значение числом" autocomplete="off"></label>
     </div>
-    <p class="crop-hint">Обрезка: потяните по снимку новую рамку, углы и стороны — изменить, внутри — сдвинуть. Двойной клик по ползунку — вернуть 0.</p>
+    <p class="crop-hint">Обрезка: потяните по снимку новую рамку, углы и стороны – изменить, внутри – сдвинуть. Двойной клик по ползунку – вернуть 0.</p>
     <div class="row">
       <button class="btn primary" id="editSave" type="button">Сохранить PNG</button>
-      <button class="btn" id="editCopy" type="button" title="В буфер обмена — вставить Ctrl+V в презентацию, документ или чат">Скопировать</button>
+      <button class="btn" id="editCopy" type="button" title="В буфер обмена – вставить Ctrl+V в презентацию, документ или чат">Скопировать</button>
       <button class="btn" id="editReset" type="button">Сбросить всё</button>
       <button class="btn" id="editCancel" type="button">Отмена</button>
     </div>
@@ -625,23 +625,23 @@ input.drug::placeholder { color: var(--muted); font-weight: 400; }
     </div>
     <ol>
       <li><b>Масштаб по дискам.</b> Бумажный диск с антибиотиком стандартный, 6 мм. Программа ищет белые пятна без цветового оттенка, круглые и одного размера. Надписи на дисках закрашиваются «закрытием»: белая область сначала расширяется, потом сужается обратно. Диаметр дисков в пикселях даёт масштаб; дисков несколько, поэтому берётся медиана. Размер самой чашки не нужен: подойдёт чашка любого диаметра.</li>
-      <li><b>Лучи от центра диска.</b> От каждого диска проводится 96 лучей. Вдоль луча записывается самый тёмный из каналов R, G, B: у жёлтого газона мало синего, у прозрачной зоны больше. Тень под диском пропускается. Край зоны — место, где значение переходит середину между уровнем зоны у диска и уровнем газона по всей чашке.</li>
+      <li><b>Лучи от центра диска.</b> От каждого диска проводится 96 лучей. Вдоль луча записывается самый тёмный из каналов R, G, B: у жёлтого газона мало синего, у прозрачной зоны больше. Тень под диском пропускается. Край зоны – место, где значение переходит середину между уровнем зоны у диска и уровнем газона по всей чашке.</li>
       <li><b>Отсев выбросов.</b> Луч может уйти в соседнюю зону или упереться в блик. Радиус берётся по самой плотной группе лучей с почти одинаковым краем (±7 %). Если зона почти не отличается от газона, она помечается «нет зоны?», и человек подтверждает это или размечает зону сам.</li>
-      <li><b>Проверка человеком.</b> Обычная зона — круг: выберите её и тяните концы линейки к краям зоны; при этом в углу появляется лупа ×3. Деления на линейке — миллиметры. Для зоны неправильной формы нажмите «Гибкий контур»: появится линия через 12 точек, уже поставленных на найденный край. Тяните любую точку или сам край — контур прогибается, соседние точки немного идут следом; тяните внутри — зона сдвигается. Диаметр такой зоны — диаметр круга той же площади; в таблице мелко показан самый узкий и самый широкий размер. «Сделать кругом» возвращает линейку. Любое действие можно отменить стрелкой ↶ — в том числе правку текста и удаление чашки.</li>
+      <li><b>Проверка человеком.</b> Обычная зона – круг: выберите её и тяните концы линейки к краям зоны; при этом в углу появляется лупа ×3. Деления на линейке – миллиметры. Для зоны неправильной формы нажмите «Гибкий контур»: появится линия через 12 точек, уже поставленных на найденный край. Тяните любую точку или сам край – контур прогибается, соседние точки немного идут следом; тяните внутри – зона сдвигается. Диаметр такой зоны – диаметр круга той же площади; в таблице мелко показан самый узкий и самый широкий размер. «Сделать кругом» возвращает линейку. Любое действие можно отменить стрелкой ↶ – в том числе правку текста и удаление чашки.</li>
       <li><b>Калибровка вручную.</b> Если диски не найдены или на фото лежит линейка, нажмите «Масштаб по линейке», поставьте концы жёлтой линейки на отрезок известной длины (диск или деления настоящей линейки), введите его длину в миллиметрах и нажмите «Готово».</li>
     </ol>
-    <p class="note">Почему диск может показать 5,9 мм вместо 6,0: масштаб — это медиана по всем дискам, а каждый диск ещё раз измеряется отдельно. Если на фото он вышел на 1–2 пикселя меньше остальных (наклон, тень, размытый край), получается 5,9. Это погрешность около 0,1 мм; зоны принято записывать с точностью до 1 мм.</p>
+    <p class="note">Почему диск может показать 5,9 мм вместо 6,0: масштаб – это медиана по всем дискам, а каждый диск ещё раз измеряется отдельно. Если на фото он вышел на 1–2 пикселя меньше остальных (наклон, тень, размытый край), получается 5,9. Это погрешность около 0,1 мм; зоны принято записывать с точностью до 1 мм.</p>
     <p class="note">Если диски на фото заметно вытянуты, программа предупреждает: скорее всего, фото снято под углом, и размеры в разных направлениях отличаются. Лучше переснять строго сверху.</p>
-    <p class="note">Сохранение: работа сама сохраняется в этом браузере на этом компьютере через пару секунд после каждого изменения (кнопка «Сохранить» и Ctrl+S — сразу). Чтобы перенести работу или сделать резервную копию, нажмите «Скачать проект», а на другом компьютере — «Открыть проект». Фото никуда не отправляются. Ограничения: фото сверху, без сильных бликов. Это исследовательский и учебный инструмент, не для клинической диагностики. Категория S / I / R (Ч / У / Р) ставится по таблицам «Российских рекомендаций. Определение чувствительности микроорганизмов к антимикробным препаратам», версия 2024-02 (МАКМАХ, по EUCAST), для микроорганизма из паспорта чашки; зона сравнивается с порогом с точностью до 1 мм; попадание в ЗТН (зону технической неопределённости) отмечается. Таблицы пересматриваются ежегодно — сверяйте с актуальной версией. Нейросеть не используется, только обработка изображения.</p>
+    <p class="note">Сохранение: работа сама сохраняется в этом браузере на этом компьютере через пару секунд после каждого изменения (кнопка «Сохранить» и Ctrl+S – сразу). Чтобы перенести работу или сделать резервную копию, нажмите «Скачать проект», а на другом компьютере – «Открыть проект». Фото никуда не отправляются. Ограничения: фото сверху, без сильных бликов. Это исследовательский и учебный инструмент, не для клинической диагностики. Категория S / I / R (Ч / У / Р) ставится по таблицам «Российских рекомендаций. Определение чувствительности микроорганизмов к антимикробным препаратам», версия 2024-02 (МАКМАХ, по EUCAST), для микроорганизма из паспорта чашки; зона сравнивается с порогом с точностью до 1 мм; попадание в ЗТН (зону технической неопределённости) отмечается. Таблицы пересматриваются ежегодно – сверяйте с актуальной версией. Нейросеть не используется, только обработка изображения.</p>
   </dialog>
 </div>
 
 <script id="core">
 // ===== Анализ изображения: без DOM, чтобы можно было проверить отдельно =====
 // Признаки цвета для каждого пикселя:
-// W — «белизна»: светлый и без оттенка (так выглядят бумажные диски);
-// Z — самый тёмный из каналов R, G, B: у жёлтого газона мало синего, у прозрачной зоны больше
-// B — «яркость без самого тёмного канала»: запасной признак для цветных (кремовых, жёлтых) дисков,
+// W – «белизна»: светлый и без оттенка (так выглядят бумажные диски);
+// Z – самый тёмный из каналов R, G, B: у жёлтого газона мало синего, у прозрачной зоны больше
+// B – «яркость без самого тёмного канала»: запасной признак для цветных (кремовых, жёлтых) дисков,
 // у которых «белизна» W низкая
 function features(d, w, h) {
   const n = w * h, W = new Float32Array(n), Z = new Float32Array(n), B = new Float32Array(n);
@@ -722,8 +722,8 @@ function blobs(mask, w, h, minD, maxD, seen, stack) {
 }
 
 // Уточняем диаметр диска: от края внутрь по 36 лучам до первой белой точки (надписи внутри не мешают).
-// stretch — во сколько раз диск вытянут: самый длинный диаметр к самому короткому (90-й и 10-й процентили
-// из 18 диаметров, чтобы один неровный луч не мешал). У диска на фото сверху ≈ 1, на фото под углом — больше
+// stretch – во сколько раз диск вытянут: самый длинный диаметр к самому короткому (90-й и 10-й процентили
+// из 18 диаметров, чтобы один неровный луч не мешал). У диска на фото сверху ≈ 1, на фото под углом – больше
 function refineDisk(F, w, h, b) {
   const r0 = b.d / 2, inner = [], ring = [], radii = [], byK = new Array(36).fill(NaN);
   for (let k = 0; k < 36; k++) {
@@ -743,13 +743,13 @@ function refineDisk(F, w, h, b) {
   for (let k = 0; k < 18; k++) if (isFinite(byK[k]) && isFinite(byK[k + 18])) dia.push(byK[k] + byK[k + 18]);
   dia.sort((p, q) => p - q);
   const stretch = dia.length >= 12 ? dia[Math.floor((dia.length - 1) * 0.9)] / dia[Math.floor((dia.length - 1) * 0.1)] : NaN;
-  // направление вытянутости (удвоенный угол длинной оси: ось под 0° и 180° — одна и та же)
+  // направление вытянутости (удвоенный угол длинной оси: ось под 0° и 180° – одна и та же)
   let cx = 0, cy = 0;
   byK.forEach((r, k) => { if (isFinite(r)) { cx += r * r * Math.cos(k * Math.PI / 9); cy += r * r * Math.sin(k * Math.PI / 9); } });
   return { x: b.x, y: b.y, d: radii.length > 10 ? 2 * median(radii) : b.d, stretch, axis: Math.atan2(cy, cx) };
 }
 
-// 96 лучей от диска; вдоль каждого — значение Z, сглаженное окном 5
+// 96 лучей от диска; вдоль каждого – значение Z, сглаженное окном 5
 function rayProfiles(Z, w, h, disk, disks) {
   const rd = disk.d / 2, r0 = rd * 1.5;            // 1,5 радиуса: пропускаем тень от диска
   let rMax = rd * 8;
@@ -774,7 +774,7 @@ function rayProfiles(Z, w, h, disk, disks) {
 // Край зоны: первое место на луче, где значение перешло середину между «зоной у диска» и «газоном»
 function measureZones(Z, w, h, disks) {
   const P = disks.map(d => rayProfiles(Z, w, h, d, disks));
-  // процентили, а не min/max: тени дисков — маленькие тёмные пятна, они не должны сбивать уровни
+  // процентили, а не min/max: тени дисков – маленькие тёмные пятна, они не должны сбивать уровни
   const q = (r, f) => { const t = Float64Array.from(r).sort(); return t[Math.floor((t.length - 1) * f)]; };
   const pool = [];
   const st = P.map(p => {
@@ -792,9 +792,9 @@ function measureZones(Z, w, h, disks) {
   let score = 0;
   for (const s of st) if (s) score += (s.start - s.lo) - (s.hi - s.start);
   const down = score > 0;
-  const lawn = q(pool, down ? 0.12 : 0.88);       // уровень газона — один на всю чашку
+  const lawn = q(pool, down ? 0.12 : 0.88);       // уровень газона – один на всю чашку
   const contrast = st.map(s => s ? Math.abs(s.start - lawn) : 0);
-  // эталон контраста — медиана заметных зон, а не самая контрастная: одна необычная (например, жёлтая)
+  // эталон контраста – медиана заметных зон, а не самая контрастная: одна необычная (например, жёлтая)
   // зона не должна отсеивать обычные
   const visible = contrast.filter(c => c > 15), ref = visible.length ? median(visible) : 0;
   disks.forEach((d, i) => {
@@ -813,7 +813,7 @@ function measureZones(Z, w, h, disks) {
         break;
       }
     });
-    // Радиус — самая плотная группа лучей (±7 %). Лучи, ушедшие в соседнюю зону, дают
+    // Радиус – самая плотная группа лучей (±7 %). Лучи, ушедшие в соседнюю зону, дают
     // слишком большой радиус и в группу не попадают. При равенстве берём меньший радиус
     edges.sort((a, b) => a - b);
     let best = 0, cnt = 0;
@@ -827,7 +827,7 @@ function measureZones(Z, w, h, disks) {
     d.zonePx = 2 * keep.reduce((t, e) => t + e, 0) / keep.length;
     d.none = false;
     // Неуверенно, если с выбранным краем согласны меньше 40 % лучей: зоны сливаются с соседними
-    // или край размыт — лучи находят «край» на разном расстоянии. Такую зону должен проверить человек
+    // или край размыт – лучи находят «край» на разном расстоянии. Такую зону должен проверить человек
     d.doubt = keep.length < 0.4 * P[i].rays.length;
     // Форма края: 12 секторов по 8 лучей, в каждом медиана. Допуск шире (±25 %), чтобы
     // неровная зона осталась неровной; луч, ушедший в соседнюю зону, всё равно отбрасывается
@@ -871,7 +871,7 @@ function analyze(rgba, w, h) {
       const sum = S[y1 * (w + 1) + x1] - S[y0 * (w + 1) + x1] - S[y1 * (w + 1) + x0] + S[y0 * (w + 1) + x0];
       L[y * w + x] = 128 + B[y * w + x] - sum / ((x1 - x0) * (y1 - y0));
     }
-    // пятно — кандидат, если нашлось хотя бы при двух порогах (случайный блик обычно при одном)
+    // пятно – кандидат, если нашлось хотя бы при двух порогах (случайный блик обычно при одном)
     const cand = [];
     for (let T = 190; T >= 140; T -= 4) {
       for (let i = 0; i < n; i++) mask[i] = L[i] > T ? 1 : 0;
@@ -885,7 +885,7 @@ function analyze(rgba, w, h) {
   };
   // До 120, а не до 150: на тёмных фото бумажные диски серые (яркость ~150–170)
   let best = find(W, 120), F = W;
-  // Белых дисков почти нет — возможно, диски кремовые или жёлтые: ищем по яркости без требования «без оттенка»
+  // Белых дисков почти нет – возможно, диски кремовые или жёлтые: ищем по яркости без требования «без оттенка»
   if (best.length < 3) {
     const alt = find(B, 100);
     if (alt.length > best.length) { best = alt; F = B; }
@@ -901,13 +901,13 @@ function analyze(rgba, w, h) {
     if (r.d > 0.7 * md0 && r.d < 1.4 * md0) disks.push(r);
   }
   const diskPx = disks.length ? median(disks.map(d => d.d)) : null;
-  // Фото под углом — все диски вытянуты одинаково и в одну сторону. Если вытянуты кто куда — это неровные края
-  // и шум поиска, а не наклон. Нужно ≥ 3 дисков; согласие направлений — длина среднего единичного вектора (≥ 0,7)
+  // Фото под углом – все диски вытянуты одинаково и в одну сторону. Если вытянуты кто куда – это неровные края
+  // и шум поиска, а не наклон. Нужно ≥ 3 дисков; согласие направлений – длина среднего единичного вектора (≥ 0,7)
   const ok = disks.filter(d => isFinite(d.stretch));
   const ax = ok.reduce((t, d) => t + Math.cos(d.axis), 0), ay = ok.reduce((t, d) => t + Math.sin(d.axis), 0);
   const aligned = ok.length >= 3 && Math.hypot(ax, ay) / ok.length >= 0.7;
   // На сильно наклонённом фото диски плохо находятся, и их бывает 1–2. Тогда предупреждаем, только если
-  // вытянутость явная (≥ 20 %, шум столько не даёт), а у двух дисков — ещё и в одну сторону
+  // вытянутость явная (≥ 20 %, шум столько не даёт), а у двух дисков – ещё и в одну сторону
   const few = ok.length >= 1 && ok.length <= 2 && Math.hypot(ax, ay) / ok.length >= 0.7 && ok.every(d => d.stretch >= TILT_FEW);
   const stretch = aligned || few ? median(ok.map(d => d.stretch)) : null;
   measureZones(Z, w, h, disks);
@@ -950,12 +950,12 @@ function makeSample() {
 <script>
 // ===== Интерфейс =====
 const $ = id => document.getElementById(id);
-// cv — только фото (в его разрешении); разметка рисуется отдельно на ov — в разрешении экрана, поэтому
-// при приближении не размывается. ctx — холст, на котором сейчас рисуется разметка (ov, лупа или снимок)
+// cv – только фото (в его разрешении); разметка рисуется отдельно на ov – в разрешении экрана, поэтому
+// при приближении не размывается. ctx – холст, на котором сейчас рисуется разметка (ov, лупа или снимок)
 const cv = $("cv"), pctx = cv.getContext("2d"), ov = $("ov"), octx = ov.getContext("2d");
 let ctx = pctx;
 const MAX_SIDE = 1100;   // большие фото уменьшаем: точность не страдает, анализ быстрее
-// P — всё приложение; чашки лежат в P.dishes, открыта P.dishes[P.cur]
+// P – всё приложение; чашки лежат в P.dishes, открыта P.dishes[P.cur]
 const P = { dishes: [], cur: -1, sel: -1, mode: "idle", calib: null, drag: null, hover: -1, zoom: 1, breaks: [], general: { on: true, s: 22, r: 19 }, dirty: false, savedAt: null, alpha: 1, ask: null, ver: 0, trash: [] };
 const D = () => P.dishes[P.cur] || null;
 
@@ -972,7 +972,7 @@ const newId = () => Date.now().toString(36) + (uid++).toString(36);
 
 const diskMm = () => { const d = D(); return d && d.diskMm > 0 ? d.diskMm : 6; };
 const mmPerPx = (d = D()) => d && d.scalePx ? (d.diskMm > 0 ? d.diskMm : 6) / d.scalePx : null;
-// Зона бывает двух видов: круг — линейка-диаметр it.r (классика, для ровных зон),
+// Зона бывает двух видов: круг – линейка-диаметр it.r (классика, для ровных зон),
 // или гибкий контур из 12 точек по краю it.pts (для сложных); точка i смотрит под углом i·30° от центра
 const N_PTS = 12;
 const ringPts = (x, y, radii) => radii.map((r, i) => {
@@ -980,7 +980,7 @@ const ringPts = (x, y, radii) => radii.map((r, i) => {
   return { x: x + Math.cos(a) * r, y: y + Math.sin(a) * r };
 });
 const circlePts = (x, y, d) => ringPts(x, y, new Array(N_PTS).fill(d / 2));
-// Гладкая замкнутая линия через точки (сплайн Катмулла — Рома), по 8 отрезков между соседями
+// Гладкая замкнутая линия через точки (сплайн Катмулла – Рома), по 8 отрезков между соседями
 function outline(pts) {
   const out = [], n = pts.length;
   for (let i = 0; i < n; i++) {
@@ -1006,27 +1006,27 @@ function inside(poly, p) {
   }
   return c;
 }
-// Диаметр неровной зоны — диаметр круга той же площади. Линия через 12 точек круга чуть
+// Диаметр неровной зоны – диаметр круга той же площади. Линия через 12 точек круга чуть
 // меньше самого круга (~0,5 %), делим на эту поправку, чтобы круг давал ровно свой диаметр
 const ROUND_K = Math.sqrt(areaOf(outline(circlePts(0, 0, 2))) / Math.PI);
 const diamPx = it => it.pts ? 2 * Math.sqrt(areaOf(outline(it.pts)) / Math.PI) / ROUND_K : len(it.r);
 const center = it => it.pts
   ? { x: it.pts.reduce((t, p) => t + p.x, 0) / it.pts.length, y: it.pts.reduce((t, p) => t + p.y, 0) / it.pts.length }
   : mid(it.r);
-// Контур из круга: форма — найденный программой край (it.shape), размер — как сейчас у линейки
+// Контур из круга: форма – найденный программой край (it.shape), размер – как сейчас у линейки
 function toContour(it) {
   const c = center(it), d = diamPx(it);
   if (!it.shape) return circlePts(c.x, c.y, d);
   const pts = ringPts(c.x, c.y, it.shape), k = d / diamPx({ pts });
   return ringPts(c.x, c.y, it.shape.map(r => r * k));
 }
-// Самый узкий и самый широкий размер — между противоположными точками
+// Самый узкий и самый широкий размер – между противоположными точками
 function spanPx(it) {
   const h = it.pts.length / 2, v = [];
   for (let i = 0; i < h; i++) v.push(Math.hypot(it.pts[i].x - it.pts[i + h].x, it.pts[i].y - it.pts[i + h].y));
   return { min: Math.min(...v), max: Math.max(...v) };
 }
-// Старые проекты хранили линейки r и r2 — превращаем их в контур (круг или овал)
+// Старые проекты хранили линейки r и r2 – превращаем их в контур (круг или овал)
 function ptsFromRulers(r, r2) {
   const m1 = mid(r), m2 = r2 ? mid(r2) : m1, c = { x: (m1.x + m2.x) / 2, y: (m1.y + m2.y) / 2 };
   const A = len(r) / 2, B = r2 ? len(r2) / 2 : A, t = Math.atan2(r.by - r.ay, r.bx - r.ax), ct = Math.cos(t), st = Math.sin(t);
@@ -1038,8 +1038,8 @@ function ptsFromRulers(r, r2) {
 const disksWord = n => n % 10 === 1 && n % 100 !== 11 ? "диск" : [2, 3, 4].includes(n % 10) && ![12, 13, 14].includes(n % 100) ? "диска" : "дисков";
 // проверить: «нет зоны?» или зона, найденная неуверенно (пока её не поправили и не подтвердили)
 const needsCheck = it => !it.ok && (it.src === "none" || (it.doubt && it.src === "auto"));
-// Фото под углом: круглые диски выходят овалами. 1,06 — это наклон ~20°; у фото сверху вытянутость ~1,00–1,03
-const TILT_WARN = 1.06, TILT_FEW = 1.2;   // TILT_FEW — порог, когда дисков найдено всего 1–2
+// Фото под углом: круглые диски выходят овалами. 1,06 – это наклон ~20°; у фото сверху вытянутость ~1,00–1,03
+const TILT_WARN = 1.06, TILT_FEW = 1.2;   // TILT_FEW – порог, когда дисков найдено всего 1–2
 const tiltOf = d => d && d.stretch >= TILT_WARN
   ? { pct: Math.round((d.stretch - 1) * 100), deg: Math.round(Math.acos(1 / d.stretch) * 180 / Math.PI) } : null;
 const tiltText = t => `Фото под углом (~${t.deg}°): диски вытянуты на ${t.pct} %. Лучше переснять сверху.`;
@@ -1069,7 +1069,7 @@ function thumbOf(c) {
   return t.toDataURL("image/jpeg", 0.8);
 }
 const rgbaOf = d => d._rgba || (d._rgba = d._base.getContext("2d").getImageData(0, 0, d.w, d.h).data);
-// Все диски стандартные, 6 мм: «нет зоны» — ровно диаметр диска (по медиане всех дисков, а не по одному,
+// Все диски стандартные, 6 мм: «нет зоны» – ровно диаметр диска (по медиане всех дисков, а не по одному,
 // который на фото мог выйти 5,7 или 6,3), и зона не бывает меньше диска
 const itemsFrom = res => res.disks.map(d => ({
   x: d.x, y: d.y, src: d.none ? "none" : "auto", drug: "", ok: false, doubt: !d.none && !!d.doubt,
@@ -1139,7 +1139,7 @@ async function addFiles(files) {
   markDirty();
   await openDish(first);
   const added = files.length - bad - skipped;
-  if (added > 1 || bad || skipped) setMsg(`Добавлено чашек: ${added}${skipped ? `, пропущено: ${skipped}` : ""}${bad ? `, не открылось файлов: ${bad}` : ""}. Открыта первая; остальные — в ряду сверху. ` + summary(D()), !!bad);
+  if (added > 1 || bad || skipped) setMsg(`Добавлено чашек: ${added}${skipped ? `, пропущено: ${skipped}` : ""}${bad ? `, не открылось файлов: ${bad}` : ""}. Открыта первая; остальные – в ряду сверху. ` + summary(D()), !!bad);
 }
 
 // ----- обрезка при загрузке -----
@@ -1147,7 +1147,7 @@ async function addFiles(files) {
 // "all" (без обрезки для этого и остальных фото) или "skip" (не добавлять)
 function cropImage(img, n, total) {
   const box = $("cropBox"), c = $("cropCv"), g = c.getContext("2d");
-  const W = img.naturalWidth, H = img.naturalHeight, k = 900 / Math.max(W, H);   // любое фото — 900 px по длинной стороне: маленькие тоже растягиваются на всё поле
+  const W = img.naturalWidth, H = img.naturalHeight, k = 900 / Math.max(W, H);   // любое фото – 900 px по длинной стороне: маленькие тоже растягиваются на всё поле
   c.width = Math.round(W * k); c.height = Math.round(H * k);
   const R = { x: 0, y: 0, w: c.width, h: c.height }, MIN = 40;
   $("cropInfo").textContent = total > 1 ? `фото ${n} из ${total}` : "";
@@ -1169,7 +1169,7 @@ function cropImage(img, n, total) {
     for (const [x, y] of handles()) { g.fillRect(x - 6 * s, y - 6 * s, 12 * s, 12 * s); g.strokeRect(x - 6 * s, y - 6 * s, 12 * s, 12 * s); }
   };
   const at = e => { const b = c.getBoundingClientRect(); return { x: (e.clientX - b.left) * c.width / b.width, y: (e.clientY - b.top) * c.height / b.height }; };
-  // какие стороны рамки под курсором: l, r, t, b; внутри без сторон — сдвиг
+  // какие стороны рамки под курсором: l, r, t, b; внутри без сторон – сдвиг
   const grabOf = p => {
     const hit = 16 * sc(), inY = p.y > R.y - hit && p.y < R.y + R.h + hit, inX = p.x > R.x - hit && p.x < R.x + R.w + hit;
     const s = { l: inY && Math.abs(p.x - R.x) < hit, r: inY && Math.abs(p.x - R.x - R.w) < hit, t: inX && Math.abs(p.y - R.y) < hit, b: inX && Math.abs(p.y - R.y - R.h) < hit };
@@ -1211,7 +1211,7 @@ function cropImage(img, n, total) {
     $("cropFull").onclick = () => done("full");
     $("cropAll").onclick = () => done("all");
     $("cropSkip").onclick = () => done("skip");
-    box.oncancel = e => { e.preventDefault(); done("full"); };   // Esc — оставить фото целиком
+    box.oncancel = e => { e.preventDefault(); done("full"); };   // Esc – оставить фото целиком
     window.addEventListener("resize", draw);
     if (!box.open) box.showModal();
     draw();
@@ -1236,12 +1236,12 @@ function summary(d) {
   if (!d.items.length) return "Диски не найдены. Нажмите «Масштаб по линейке», поставьте линейку на диск, затем добавьте зоны вручную.";
   const n = d.items.filter(needsCheck).length, t = tiltOf(d);
   return (t ? tiltText(t) + " " : "") + `Дисков: ${d.items.length}.` + (n ? ` Проверьте строки с «?»: ${n} (зона не найдена или найдена неуверенно).` : "") +
-    " Если граница не совпадает, нажмите на зону и поправьте линейку; для неровной зоны — «Гибкий контур».";
+    " Если граница не совпадает, нажмите на зону и поправьте линейку; для неровной зоны – «Гибкий контур».";
 }
 
 // ----- история: отменить / вернуть -----
-// Снимок — зоны, масштаб и текст чашки (название, паспорт, диаметр диска), без картинки.
-// В стеке лежит { s: снимок, t: время }: по времени отмена решает, что было позже — правка этой чашки или удаление другой
+// Снимок – зоны, масштаб и текст чашки (название, паспорт, диаметр диска), без картинки.
+// В стеке лежит { s: снимок, t: время }: по времени отмена решает, что было позже – правка этой чашки или удаление другой
 const snap = d => JSON.stringify({ items: d.items, scalePx: d.scalePx, scaleSrc: d.scaleSrc, nDisks: d.nDisks, stretch: d.stretch,
   name: d.name, meta: d.meta, diskMm: d.diskMm });
 function commit(prev) {
@@ -1263,7 +1263,7 @@ function afterHistory(d, text) {
 }
 function undo() {
   const d = D(), top = d && d._undo[d._undo.length - 1], del = P.trash[P.trash.length - 1];
-  if (del && (!top || del.t > top.t)) return undeleteDish();   // удаление чашки было позже — возвращаем её
+  if (del && (!top || del.t > top.t)) return undeleteDish();   // удаление чашки было позже – возвращаем её
   if (!top) return;
   d._redo.push({ s: snap(d), t: Date.now() }); restore(d, d._undo.pop().s);
   afterHistory(d, "Действие отменено.");
@@ -1274,7 +1274,7 @@ function redo() {
   d._undo.push({ s: snap(d), t: Date.now() }); restore(d, d._redo.pop().s);
   afterHistory(d, "Действие возвращено.");
 }
-// Удалённые чашки (до 10 последних) лежат в P.trash до перезагрузки страницы — вместе со своей историей
+// Удалённые чашки (до 10 последних) лежат в P.trash до перезагрузки страницы – вместе со своей историей
 async function undeleteDish() {
   const e = P.trash.pop();
   if (e.many) {                                    // несколько чашек сразу: каждая встаёт на своё прежнее место
@@ -1300,7 +1300,7 @@ document.addEventListener("change", e => {
 });
 
 // ----- сохранение -----
-// Автосохранение: через 2 с после последнего изменения (серия правок — одно сохранение).
+// Автосохранение: через 2 с после последнего изменения (серия правок – одно сохранение).
 // P.ver растёт при каждом изменении: если во время записи что-то поменяли, чашки остаются «несохранёнными»
 let saveTimer = 0, saving = false, persistAsked = false;
 function markDirty() {
@@ -1316,7 +1316,7 @@ function persistOnce() {
 function renderSaveState() {
   const el = $("saveState");
   el.className = "savestate" + (P.dirty ? " warn" : "");
-  el.textContent = P.dirty ? (P.saveFailed ? "Не сохранено: браузер запретил — нажмите «Скачать проект»" : "Сохраняю…") :
+  el.textContent = P.dirty ? (P.saveFailed ? "Не сохранено: браузер запретил – нажмите «Скачать проект»" : "Сохраняю…") :
     P.savedAt ? `Сохранено в ${P.savedAt.toLocaleTimeString("ru-RU", { hour: "2-digit", minute: "2-digit" })}` : "";
   $("saveBtn2").classList.toggle("dirty", P.dirty);
   setLabel("saveBtn2", P.dirty ? "Сохранить" : P.savedAt ? `Сохранено в ${P.savedAt.toLocaleTimeString("ru-RU", { hour: "2-digit", minute: "2-digit" })}` : "Сохранить");
@@ -1330,7 +1330,7 @@ function hydrate(o) {
   const items = (o.items || []).map(it => {
     const z = { x: it.x, y: it.y, src: it.src || "manual", drug: it.drug || "", ok: !!it.ok, doubt: !!it.doubt, shape: Array.isArray(it.shape) ? it.shape : null };
     if (Array.isArray(it.pts) && it.pts.length === N_PTS) z.pts = it.pts;
-    else if (it.r2) z.pts = ptsFromRulers(it.r, it.r2);   // старая «вторая ось» — уже неровная зона
+    else if (it.r2) z.pts = ptsFromRulers(it.r, it.r2);   // старая «вторая ось» – уже неровная зона
     else z.r = it.r;
     return z;
   });
@@ -1353,7 +1353,7 @@ async function idbDo(mode, fn) {
     t.oncomplete = () => res(q.result); t.onerror = () => rej(t.error); t.onabort = () => rej(t.error);
   });
 }
-// auto = true — автосохранение: молча, без сообщения (кроме первой ошибки)
+// auto = true – автосохранение: молча, без сообщения (кроме первой ошибки)
 async function saveBrowser(auto) {
   clearTimeout(saveTimer);
   if (saving) { saveTimer = setTimeout(() => saveBrowser(auto), 500); return; }   // прошлая запись ещё идёт
@@ -1369,7 +1369,7 @@ async function saveBrowser(auto) {
     if (!auto) setMsg(`Сохранено в этом браузере: чашек ${P.dishes.length}. Для другого компьютера нажмите «Скачать проект».`);
     persistOnce();
   } catch {
-    if (!auto || !P.saveFailed) setMsg("Браузер не дал сохранить (например, в режиме инкогнито). Нажмите «Скачать проект» — так разметка точно не пропадёт.", true);
+    if (!auto || !P.saveFailed) setMsg("Браузер не дал сохранить (например, в режиме инкогнито). Нажмите «Скачать проект» – так разметка точно не пропадёт.", true);
     P.saveFailed = true; renderSaveState();
   } finally { saving = false; }
 }
@@ -1388,12 +1388,12 @@ async function loadBrowser() {
   } catch { return false; }
 }
 
-// Скачивание файла: в окне Claude — через разрешение «downloads», в обычном браузере — ссылкой
+// Скачивание файла: в окне Claude – через разрешение «downloads», в обычном браузере – ссылкой
 const dlP = window.claude && window.claude.use ? window.claude.use("downloads").catch(() => null) : Promise.resolve(null);
-// Если сайт открыт по ссылке не участником организации, платформа скачивание запрещает —
+// Если сайт открыт по ссылке не участником организации, платформа скачивание запрещает –
 // тогда пробуем обычную ссылку браузера и подсказываем, что делать, если файл так и не появился
 const NO_DL = "Если файл не скачался: скачивание с этой страницы разрешено только участникам организации. " +
-  "Таблицу можно перенести кнопкой «Копировать таблицу» и вставить в Excel (Ctrl+V), а для полной работы — открыть сайт файлом index.html на своём компьютере.";
+  "Таблицу можно перенести кнопкой «Копировать таблицу» и вставить в Excel (Ctrl+V), а для полной работы – открыть сайт файлом index.html на своём компьютере.";
 async function saveFile(name, blob) {
   const dl = await dlP;
   if (dl) {
@@ -1456,9 +1456,9 @@ async function openProject(f) {
 
 // ----- категории S / I / R -----
 // Пороги диско-диффузионного метода из «Российских рекомендаций. Определение чувствительности микроорганизмов
-// к антимикробным препаратам. Версия 2024-02» (МАКМАХ, по EUCAST). s — «Ч ≥», r — «Р <», atu — ЗТН [от, до],
-// disk — содержание в диске; br — значения в таблице в скобках (применяются ограниченно, см. примечания таблицы).
-// s = 50 в таблицах — «условное значение»: дикий тип такого микроорганизма относится к категории I, а не S.
+// к антимикробным препаратам. Версия 2024-02» (МАКМАХ, по EUCAST). s – «Ч ≥», r – «Р <», atu – ЗТН [от, до],
+// disk – содержание в диске; br – значения в таблице в скобках (применяются ограниченно, см. примечания таблицы).
+// s = 50 в таблицах – «условное значение»: дикий тип такого микроорганизма относится к категории I, а не S.
 const BP_SRC = "МАКМАХ 2024-02";
 const BREAKPOINTS = {
   entero: { name: "Enterobacterales", table: "табл. 2.2", drugs: {
@@ -1532,20 +1532,20 @@ const BREAKPOINTS = {
     AMP: { disk: "2", s: 10, r: 8 },
     IPM: { disk: "10", s: 50, r: 21 },
     LZD: { disk: "10", s: 20, r: 20 },
-    VA: { disk: "5", s: 12, r: 12, note: "смотрите и на край зоны: нечёткий край — признак резистентности" },
+    VA: { disk: "5", s: 12, r: 12, note: "смотрите и на край зоны: нечёткий край – признак резистентности" },
     TEC: { disk: "30", s: 16, r: 16 },
   } },
 };
-// P.breaks — свои пороги: [{ drug: "CIP", s: 25, r: 22 }]; важнее табличных
+// P.breaks – свои пороги: [{ drug: "CIP", s: 25, r: 22 }]; важнее табличных
 const normDrug = s => String(s || "").trim().toUpperCase();
 const breakOf = drug => P.breaks.find(b => b.drug && normDrug(b.drug) === normDrug(drug) && b.s > 0 && b.r > 0);
 const CAT_TEXT = {
-  S: "S (Ч) — чувствительный (стандартная доза): рост надёжно подавлен",
-  I: "I (У) — чувствительный при повышенной экспозиции: рост подавлен частично",
-  R: "R (Р) — резистентный: рост практически не подавлен",
+  S: "S (Ч) – чувствительный (стандартная доза): рост надёжно подавлен",
+  I: "I (У) – чувствительный при повышенной экспозиции: рост подавлен частично",
+  R: "R (Р) – резистентный: рост практически не подавлен",
 };
 // Правило для зоны: свои пороги препарата → строка таблицы для выбранного микроорганизма →
-// общие пороги по размеру зоны для всех зон (по умолчанию S ≥ 22, R < 19 — как считала тётя)
+// общие пороги по размеру зоны для всех зон (по умолчанию S ≥ 22, R < 19 – как считала тётя)
 function ruleOf(drug, d) {
   const own = drug && breakOf(drug);
   if (own) return { s: own.s, r: own.r, src: "свои пороги" };
@@ -1607,7 +1607,7 @@ const EN_NAMES = {
   "азтреонам": "aztreonam", "моксифлоксацин": "moxifloxacin", "офлоксацин": "ofloxacin", "клиндамицин": "clindamycin",
   "тейкопланин": "teicoplanin", "рифампицин": "rifampicin", "фузидовая кислота": "fusidic acid", "тигециклин": "tigecycline",
 };
-// ТЕСТОВО: русские коды, которые расшифрованы только предположительно (по буквам) — пометка «(?)»,
+// ТЕСТОВО: русские коды, которые расшифрованы только предположительно (по буквам) – пометка «(?)»,
 // пока тётя не скажет точно. Исправить или убрать здесь
 const GUESS_NAMES = {
   "АКЦ": ["амоксициллин/клавуланат", "amoxicillin/clavulanate"],
@@ -1615,10 +1615,10 @@ const GUESS_NAMES = {
   "ПТК": ["пиперациллин/тазобактам", "piperacillin/tazobactam"],
   "АН": ["амикацин", "amikacin"],
 };
-// полное название тоже понимаем — на русском или на английском: «ампициллин», «Ampicillin»
+// полное название тоже понимаем – на русском или на английском: «ампициллин», «Ampicillin»
 const BY_NAME = {};
 for (const [ru, en] of Object.entries(EN_NAMES)) { BY_NAME[ru.toUpperCase()] = ru; BY_NAME[en.toUpperCase()] = ru; }
-// код с диска часто с дозой: «AZM 15», «P 10», «ОКС1» — для поиска названия дозу отбрасываем
+// код с диска часто с дозой: «AZM 15», «P 10», «ОКС1» – для поиска названия дозу отбрасываем
 const drugKey = s => normDrug(s).replace(/[\s\d.,]+$/, "").trim();
 const guessOf = s => GUESS_NAMES[drugKey(s)];
 const drugName = s => DRUG_NAMES[drugKey(s)] || BY_NAME[drugKey(s)] || (guessOf(s) ? guessOf(s)[0] + " (?)" : "");   // по-русски
@@ -1664,7 +1664,7 @@ async function saveXlsx() {
   const blob = new Blob([buf], { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" });
   const unchecked = P.dishes.reduce((t, d) => t + d.items.filter(needsCheck).length, 0);
   if (await saveFile(`Зоны ингибирования ${today()}.xlsx`, blob))
-    setMsg(`Таблица Excel готова: чашек ${P.dishes.length}.` + (unchecked ? ` Не проверено зон: ${unchecked} — они помечены в таблице.` : ""), !!unchecked);
+    setMsg(`Таблица Excel готова: чашек ${P.dishes.length}.` + (unchecked ? ` Не проверено зон: ${unchecked} – они помечены в таблице.` : ""), !!unchecked);
 }
 
 // Подпись кнопки с иконкой: меняем только текст, иконка остаётся; в свёрнутом виде он виден как подсказка
@@ -1676,7 +1676,7 @@ function setLabel(id, text) {
 // Свернуть / развернуть инструменты; выбор запоминается в этом браузере
 function foldTools(on, restoring) {
   document.querySelector(".tools").classList.toggle("folded", on);
-  // при сворачивании кнопкой «Видимость и цвета» тоже сворачивается (но не прячется); при загрузке страницы — как было
+  // при сворачивании кнопкой «Видимость и цвета» тоже сворачивается (но не прячется); при загрузке страницы – как было
   if (on && !restoring && typeof foldLook === "function") foldLook(true);
   const t = $("toolsToggle"), text = on ? "Развернуть инструменты" : "Свернуть инструменты в иконки";
   t.setAttribute("aria-expanded", String(!on)); t.setAttribute("aria-label", text); t.title = text;
@@ -1687,7 +1687,7 @@ function setFocus(on) {
   document.body.classList.toggle("focus", on);
   const strip = $("dishes");
   if (on) document.querySelector(".tools").after(strip); else document.querySelector(".left").append(strip);
-  const b = $("focusBtn"), t = on ? "Обычный вид (Esc)" : "Во весь экран (выход — Esc)";
+  const b = $("focusBtn"), t = on ? "Обычный вид (Esc)" : "Во весь экран (выход – Esc)";
   b.setAttribute("aria-pressed", String(on)); b.title = t; b.setAttribute("aria-label", t);
   b.classList.toggle("on", on);
   if (on && !document.fullscreenElement && document.documentElement.requestFullscreen)
@@ -1699,14 +1699,14 @@ function setFocus(on) {
 $("focusBtn").addEventListener("click", () => setFocus(!document.body.classList.contains("focus")));
 $("prevDish").addEventListener("click", () => stepDish(-1));
 $("nextDish").addEventListener("click", () => stepDish(1));
-// браузер сам вышел из полноэкранного (Esc) — выходим и из нашего режима
+// браузер сам вышел из полноэкранного (Esc) – выходим и из нашего режима
 document.addEventListener("fullscreenchange", () => {
   if (!document.fullscreenElement && P.fs) setFocus(false);
   else requestAnimationFrame(() => { fitCanvas(); draw(); });
 });
 $("toolsToggle").addEventListener("click", () => foldTools(!document.querySelector(".tools").classList.contains("folded")));
 try { if (localStorage.getItem("zona-tools-folded") === "1") foldTools(true, true); } catch {}
-// «Чашка» (паспорт) свёрнута или развёрнута — запоминается в браузере
+// «Чашка» (паспорт) свёрнута или развёрнута – запоминается в браузере
 try { if (localStorage.getItem("zona-meta-open") === "0") $("metaBox").open = false; } catch {}
 $("metaBox").addEventListener("toggle", () => { try { localStorage.setItem("zona-meta-open", $("metaBox").open ? "1" : "0"); } catch {} });
 // треугольник «Видимость и цвета»: свернуть / развернуть, выбор запоминается в браузере
@@ -1719,7 +1719,7 @@ $("lookFold").addEventListener("click", () => foldLook(!$("lookBox").classList.c
 try { if (localStorage.getItem("zona-look-shut") === "1") foldLook(true); } catch {}
 
 // ----- сообщения и подтверждения -----
-// Сообщение показывается списком: каждое предложение — отдельный пункт. «−» сворачивает список до заголовка
+// Сообщение показывается списком: каждое предложение – отдельный пункт. «−» сворачивает список до заголовка
 // (видно, сколько там пунктов), «+» разворачивает; выбор запоминается в браузере
 let msgShut = false;
 try { msgShut = localStorage.getItem("zona-msg-shut") === "1"; } catch {}
@@ -1733,7 +1733,7 @@ function setMsg(t, warn) {
 function showMsgFold() {
   const n = +$("msg").dataset.n || 0;
   $("msg").classList.toggle("shut", msgShut);
-  $("msgTitle").textContent = msgShut && n ? `свёрнуто: ${n}` : "";   // без заголовка; в свёрнутом виде — сколько пунктов
+  $("msgTitle").textContent = msgShut && n ? `свёрнуто: ${n}` : "";   // без заголовка; в свёрнутом виде – сколько пунктов
   $("msgFold").textContent = msgShut ? "+" : "−";
   $("msgFold").title = msgShut ? "Показать подсказки" : "Свернуть подсказки";
   $("msgFold").setAttribute("aria-expanded", String(!msgShut));
@@ -1772,7 +1772,7 @@ function setMode(m) {
   $("hint").textContent =
     m === "add" ? "Нажмите в центр диска, вокруг которого нужна зона." :
     m === "calib" ? "Поставьте концы жёлтой линейки на отрезок известной длины (диск или деления настоящей линейки), введите длину и нажмите «Готово»." :
-    "Нажмите на зону, чтобы выбрать её. Shift + колёсико — лупа; приближенное фото двигается за пустое место. Правая кнопка мыши по зоне — удалить (вернуть — ↶).";
+    "Нажмите на зону, чтобы выбрать её. Shift + колёсико – лупа; приближенное фото двигается за пустое место. Правая кнопка мыши по зоне – удалить (вернуть – ↶).";
 }
 
 // ----- рисование -----
@@ -1796,7 +1796,7 @@ function drawRuler(r, color, k) {
   for (const [x, y] of [[r.ax, r.ay], [r.bx, r.by]]) drawHandle(x, y, color, k, 9);
 }
 
-// Ручка — пустое кольцо с точкой: край зоны под ней остаётся виден
+// Ручка – пустое кольцо с точкой: край зоны под ней остаётся виден
 function drawHandle(x, y, color, k, rad) {
   ctx.strokeStyle = "rgba(0,0,0,.7)"; ctx.lineWidth = 4.5 * k;
   ctx.beginPath(); ctx.arc(x, y, rad * k, 0, 7); ctx.stroke();
@@ -1831,7 +1831,7 @@ function drawLoupe(p, k) {
   g.imageSmoothingEnabled = false;
   g.fillStyle = "#000"; g.fillRect(0, 0, L.width, L.height);
   g.drawImage(cv, p.x - s / 2, p.y - s / 2, s, s, 0, 0, L.width, L.height);
-  const z = L.width / s, was = ctx;                               // разметку в лупе рисуем заново — она чёткая
+  const z = L.width / s, was = ctx;                               // разметку в лупе рисуем заново – она чёткая
   ctx = g; g.setTransform(z, 0, 0, z, -(p.x - s / 2) * z, -(p.y - s / 2) * z);
   drawMarks(D(), k);
   g.setTransform(1, 0, 0, 1, 0, 0); ctx = was;
@@ -1841,7 +1841,7 @@ function drawLoupe(p, k) {
   g.moveTo(c, c - 28); g.lineTo(c, c - 8); g.moveTo(c, c + 8); g.lineTo(c, c + 28); g.stroke();
 }
 
-// Разметка (зоны, подписи, линейки) на холсте ctx в координатах фото; k — сколько px фото в 1 экранном px
+// Разметка (зоны, подписи, линейки) на холсте ctx в координатах фото; k – сколько px фото в 1 экранном px
 function drawMarks(d, k) {
   ctx.globalAlpha = P.alpha;
   const mpp = mmPerPx();
@@ -1877,7 +1877,7 @@ function drawMarks(d, k) {
   }
   ctx.globalAlpha = 1;
 }
-// Холст разметки ov — ровно по окну разметки, в пикселях экрана (с учётом devicePixelRatio).
+// Холст разметки ov – ровно по окну разметки, в пикселях экрана (с учётом devicePixelRatio).
 // Возвращает масштаб и сдвиг «координаты фото → px холста ov»
 function placeOverlay() {
   const v = $("view"), dpr = window.devicePixelRatio || 1;
@@ -1895,7 +1895,7 @@ function draw() {
     ctx.fillStyle = "#1b2329"; ctx.fillRect(0, 0, cv.width, cv.height);
     ctx.fillStyle = "#c9d3da"; ctx.font = `500 ${Math.round(cv.width / 30)}px "Onest", "Segoe UI", sans-serif`;
     ctx.textAlign = "center"; ctx.textBaseline = "middle";
-    ctx.fillText(d ? "Фото этой чашки не открылось — загрузите его заново" : "Загрузите фото чашки или нажмите «Пример»", cv.width / 2, cv.height / 2);
+    ctx.fillText(d ? "Фото этой чашки не открылось – загрузите его заново" : "Загрузите фото чашки или нажмите «Пример»", cv.width / 2, cv.height / 2);
     return;
   }
   const k = d.w / (cv.getBoundingClientRect().width || d.w);   // 1 экранный пиксель в пикселях фото
@@ -1908,7 +1908,7 @@ function draw() {
   else $("loupe").hidden = true;
 }
 
-// стрелки и счётчик «2 / 5» — только когда фото больше одного
+// стрелки и счётчик «2 / 5» – только когда фото больше одного
 function renderNav() {
   const n = P.dishes.length, many = n > 1;
   $("prevDish").hidden = $("nextDish").hidden = $("navCount").hidden = !many;
@@ -1946,12 +1946,12 @@ function catCell(it) {
   if (c) {
     const r = c.rule, why = `${CAT_TEXT[c.cat]}\nЗона ${c.mm} мм (округлено до 1 мм). Пороги: Ч ≥ ${r.s}, Р < ${r.r}` +
       (r.atu ? `, ЗТН ${r.atu[0] === r.atu[1] ? r.atu[0] : r.atu.join("–")}` : "") + (r.disk ? `, диск ${r.disk} мкг` : "") +
-      `.\nИсточник: ${r.src}${r.note ? ` (${r.note})` : ""}.` + (r.br ? "\nЗначения в таблице в скобках — применяются ограниченно, см. примечания." : "") +
-      (c.atu ? "\nЗона попала в ЗТН — зону технической неопределённости: результат ненадёжен, по рекомендациям его не сообщают как «чувствительный» без подтверждения." : "");
+      `.\nИсточник: ${r.src}${r.note ? ` (${r.note})` : ""}.` + (r.br ? "\nЗначения в таблице в скобках – применяются ограниченно, см. примечания." : "") +
+      (c.atu ? "\nЗона попала в ЗТН – зону технической неопределённости: результат ненадёжен, по рекомендациям его не сообщают как «чувствительный» без подтверждения." : "");
     return `<span class="chip cat cat-${c.cat}" title="${esc(why)}">${c.cat}</span>` + (c.atu ? ` <span class="chip check" title="${esc(why)}">ЗТН</span>` : "");
   }
-  if (!it.drug) return `<span class="nobreak" title="Впишите препарат (код с диска), чтобы узнать категорию">—</span>`;
-  if (!d.meta.org) return `<span class="nobreak" title="Выберите микроорганизм в паспорте чашки — пороги подставятся из рекомендаций">выберите микроорганизм</span>`;
+  if (!it.drug) return `<span class="nobreak" title="Впишите препарат (код с диска), чтобы узнать категорию">–</span>`;
+  if (!d.meta.org) return `<span class="nobreak" title="Выберите микроорганизм в паспорте чашки – пороги подставятся из рекомендаций">выберите микроорганизм</span>`;
   return `<span class="nobreak" title="В таблице для «${esc(BREAKPOINTS[d.meta.org].name)}» нет «${esc(it.drug)}». Проверьте код препарата или задайте свои пороги ниже">нет в таблице</span>`;
 }
 // обновить только колонку «Категория», не трогая поля ввода (курсор в «Препарат» не теряется)
@@ -1965,8 +1965,8 @@ function renderTable() {
   if (!d || !d.items.length) { $("tableBox").innerHTML = `<p class="empty">Зон пока нет.</p>`; return; }
   $("tableBox").innerHTML = `<table><thead><tr><th>№</th><th>Препарат</th><th class="num">Зона, мм</th><th>Категория</th><th>Отметка</th></tr></thead><tbody>` +
     d.items.map((it, i) => `<tr data-i="${i}" tabindex="0" class="${i === P.sel ? "sel" : ""}"><td>${i + 1}</td>` +
-      `<td><input class="drug" id="drug-${d.id}-${i}" data-i="${i}" list="drugList" value="${esc(it.drug)}" placeholder="—" aria-label="Препарат у диска ${i + 1}" autocomplete="off"><span class="dname" data-i="${i}"${guessOf(it.drug) ? ` title="Название предположительное — уточнить у тёти"` : ""}>${esc(dnameText(it))}</span></td>` +
-      `<td class="num">${mpp ? fmt(diamPx(it) * mpp) : "—"}${it.pts && mpp && spanPx(it).max - spanPx(it).min > 0.5 / mpp ? `<span class="sub">${fmt(spanPx(it).min * mpp)}–${fmt(spanPx(it).max * mpp)}</span>` : ""}</td>` +
+      `<td><input class="drug" id="drug-${d.id}-${i}" data-i="${i}" list="drugList" value="${esc(it.drug)}" placeholder="–" aria-label="Препарат у диска ${i + 1}" autocomplete="off"><span class="dname" data-i="${i}"${guessOf(it.drug) ? ` title="Название предположительное – уточнить у тёти"` : ""}>${esc(dnameText(it))}</span></td>` +
+      `<td class="num">${mpp ? fmt(diamPx(it) * mpp) : "–"}${it.pts && mpp && spanPx(it).max - spanPx(it).min > 0.5 / mpp ? `<span class="sub">${fmt(spanPx(it).min * mpp)}–${fmt(spanPx(it).max * mpp)}</span>` : ""}</td>` +
       `<td class="catcell" data-i="${i}">${catCell(it)}</td>` +
       `<td><span class="chip ${needsCheck(it) ? "check" : it.src === "none" ? "none" : it.src === "auto" ? "" : "edited"}">${STATUS(it)}</span></td></tr>`).join("") +
     `</tbody></table>`;
@@ -1995,7 +1995,7 @@ function renderSide() {
   if (it && needsCheck(it)) {
     const none = it.src === "none";
     $("checkText").textContent = none ? `Зона у диска ${P.sel + 1} не найдена. Посмотрите на фото: бактерии растут вплотную к диску?`
-      : `Зона у диска ${P.sel + 1} найдена неуверенно: лучи от диска находят край на разном расстоянии — зона сливается с соседними или край размыт. Проверьте круг: если он неверный, поправьте линейку или включите гибкий контур — он ляжет по найденному краю.`;
+      : `Зона у диска ${P.sel + 1} найдена неуверенно: лучи от диска находят край на разном расстоянии – зона сливается с соседними или край размыт. Проверьте круг: если он неверный, поправьте линейку или включите гибкий контур – он ляжет по найденному краю.`;
     $("checkYes").textContent = none ? "Да, зоны нет" : "Всё верно";
     $("checkMark").textContent = none ? "Разметить зону вручную" : "Гибкий контур";
   }
@@ -2003,9 +2003,9 @@ function renderSide() {
   $("axisBtn").disabled = !it;
   setLabel("axisBtn", it && it.pts ? "Сделать кругом" : "Гибкий контур");
   $("roundBtn").disabled = !(it && it.pts);
-  if (P.mode === "idle") $("hint").textContent = !it ? "Нажмите на зону, чтобы выбрать её. Shift + колёсико — лупа; приближенное фото двигается за пустое место. Правая кнопка мыши по зоне — удалить (вернуть — ↶)." : it.pts
-    ? "Тяните точку или край — контур прогнётся, как резинка. Тяните внутри — зона сдвинется. Отмена — ↶ или Ctrl+Z."
-    : "Тяните за концы линейки, чтобы исправить диаметр. Для неровной зоны — «Гибкий контур». Отмена — ↶ или Ctrl+Z.";
+  if (P.mode === "idle") $("hint").textContent = !it ? "Нажмите на зону, чтобы выбрать её. Shift + колёсико – лупа; приближенное фото двигается за пустое место. Правая кнопка мыши по зоне – удалить (вернуть – ↶)." : it.pts
+    ? "Тяните точку или край – контур прогнётся, как резинка. Тяните внутри – зона сдвинется. Отмена – ↶ или Ctrl+Z."
+    : "Тяните за концы линейки, чтобы исправить диаметр. Для неровной зоны – «Гибкий контур». Отмена – ↶ или Ctrl+Z.";
   $("undoBtn").disabled = !(d && d._undo.length) && !P.trash.length;
   $("redoBtn").disabled = !d || !d._redo.length;
   for (const id of ["addBtn", "calibBtn", "resetBtn", "copyBtn"]) $(id).disabled = !d;
@@ -2066,7 +2066,7 @@ function hitZone(p) {
   });
   return best >= 0 ? { what: "pick", i: best } : null;
 }
-// Контур как резинка: точка идёт за курсором, соседние — слабее, дальние стоят
+// Контур как резинка: точка идёт за курсором, соседние – слабее, дальние стоят
 const PULL = [1, 0.4, 0.1];
 function pullPt(it, i, dx, dy) {
   const n = it.pts.length;
@@ -2078,7 +2078,7 @@ function pullPt(it, i, dx, dy) {
 
 cv.addEventListener("pointerdown", e => {
   const d = D();
-  if (!d || !d._base || e.button !== 0) return;     // правая кнопка — отдельно, через contextmenu
+  if (!d || !d._base || e.button !== 0) return;     // правая кнопка – отдельно, через contextmenu
   const p = pos(e), hit = 16 * p.k;
   const grab = g => {
     P.drag = { ...g, last: p, p: null, pre: P.mode === "calib" ? null : snap(d), moved: false };
@@ -2100,7 +2100,7 @@ cv.addEventListener("pointerdown", e => {
   }
   const g = hitZone(p);
   if (g && g.what !== "pick") return grab(g);
-  if (!g && P.zoom > 1) {             // приближено и нажали мимо зон — тащим фото; без движения это просто клик мимо
+  if (!g && P.zoom > 1) {             // приближено и нажали мимо зон – тащим фото; без движения это просто клик мимо
     P.drag = { what: "pan", sx: e.clientX, sy: e.clientY, sl: $("view").scrollLeft, st: $("view").scrollTop, moved: false, pre: null };
     cv.setPointerCapture(e.pointerId); e.preventDefault(); cv.style.cursor = "grabbing";
     return;
@@ -2162,7 +2162,7 @@ async function loadSample() {
   c.getContext("2d").putImageData(new ImageData(s.data, s.w, s.h), 0, 0);
   await addDish(c, s.w, s.h, "Пример", true);
   await openDish(P.dishes.length - 1);
-  setMsg("Это искусственная чашка: зоны 24, 17 и 13 мм и диск без зоны. Загрузите свои фото — пример уберётся сам.");
+  setMsg("Это искусственная чашка: зоны 24, 17 и 13 мм и диск без зоны. Загрузите свои фото – пример уберётся сам.");
 }
 const calibMm = () => { const v = parseFloat($("calibMm").value); return v > 0 ? v : diskMm(); };
 
@@ -2179,7 +2179,7 @@ function showTheme() {
   const t = document.documentElement.dataset.theme || "", i = THEMES.findIndex(m => m[0] === t);
   const [, icon, name] = THEMES[i < 0 ? 0 : i], next = THEMES[(i + 1) % THEMES.length][2];
   $("themeBtn").textContent = icon;
-  $("themeBtn").title = `Тема: ${name}. Нажмите — ${next}`;
+  $("themeBtn").title = `Тема: ${name}. Нажмите – ${next}`;
   $("themeBtn").setAttribute("aria-label", `Тема оформления: ${name}`);
 }
 $("themeBtn").addEventListener("click", () => {
@@ -2198,8 +2198,8 @@ $("helpBox").addEventListener("click", e => {          // клик мимо ок
 $("undoBtn").addEventListener("click", undo);
 $("redoBtn").addEventListener("click", redo);
 $("saveBtn2").addEventListener("click", () => saveBrowser(false));
-// Снимок для отчёта: видимая часть окна разметки — как на экране (видимость разметки, приближение, выбранная зона),
-// в разрешении фото, без надписей поверх: чашка и дата — только в имени файла
+// Снимок для отчёта: видимая часть окна разметки – как на экране (видимость разметки, приближение, выбранная зона),
+// в разрешении фото, без надписей поверх: чашка и дата – только в имени файла
 function grabView() {
   const d = D();
   if (!d || !d._base) { setMsg("Сначала откройте фото чашки.", true); return null; }
@@ -2209,9 +2209,9 @@ function grabView() {
   const x0 = Math.max(0, (vr.left - cr.left) * sx), y0 = Math.max(0, (vr.top - cr.top) * sy);
   const x1 = Math.min(cv.width, (vr.right - cr.left) * sx), y1 = Math.min(cv.height, (vr.bottom - cr.top) * sy);
   const w = Math.round(x1 - x0), h = Math.round(y1 - y0);
-  if (w < 2 || h < 2) { setMsg("Фото не видно в окне — нажмите «Вписать».", true); return null; }
+  if (w < 2 || h < 2) { setMsg("Фото не видно в окне – нажмите «Вписать».", true); return null; }
   const date = d.meta.date ? d.meta.date.split("-").reverse().join(".") : "";
-  // масштаб снимка — не меньше экранного: при приближении разметка на снимке тоже чёткая
+  // масштаб снимка – не меньше экранного: при приближении разметка на снимке тоже чёткая
   const sc = Math.max(1, (window.devicePixelRatio || 1) * cr.width / cv.width);
   const out = document.createElement("canvas"); out.width = Math.round(w * sc); out.height = Math.round(h * sc);
   const g = out.getContext("2d"), was = ctx;
@@ -2229,7 +2229,7 @@ async function savePng(c, name) {
 }
 
 // ----- редактор снимка -----
-// E.src — исходный снимок, E.adj — он же после яркости / контраста / насыщенности, E.R — рамка обрезки (в px снимка)
+// E.src – исходный снимок, E.adj – он же после яркости / контраста / насыщенности, E.R – рамка обрезки (в px снимка)
 const E = { src: null, adj: null, R: null, name: "", drag: null };
 const EDIT_IDS = ["edBright", "edContrast", "edSat"];
 // Яркость, контраст, насыщенность (каждое от −100 до +100): из холста src в холст dst того же размера
@@ -2254,7 +2254,7 @@ function editAdjust() {
 function editDraw() {
   const c = $("editCv"), g = c.getContext("2d"), R = E.R, s = c.width / (c.getBoundingClientRect().width || c.width);
   g.drawImage(E.adj, 0, 0);
-  g.fillStyle = "rgba(0,0,0,.6)";                                 // вне рамки — затемнено
+  g.fillStyle = "rgba(0,0,0,.6)";                                 // вне рамки – затемнено
   g.fillRect(0, 0, c.width, R.y); g.fillRect(0, R.y + R.h, c.width, c.height - R.y - R.h);
   g.fillRect(0, R.y, R.x, R.h); g.fillRect(R.x + R.w, R.y, c.width - R.x - R.w, R.h);
   g.strokeStyle = "#ff8c1a"; g.lineWidth = 2 * s; g.strokeRect(R.x, R.y, R.w, R.h);
@@ -2276,7 +2276,7 @@ function openEditor() {
   const c = $("editCv"), MIN = 10;
   const at = e => { const b = c.getBoundingClientRect(); return { x: (e.clientX - b.left) * c.width / b.width, y: (e.clientY - b.top) * c.height / b.height }; };
   const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
-  // что под курсором: стороны рамки (l r t b), внутри — сдвиг, снаружи — новая рамка
+  // что под курсором: стороны рамки (l r t b), внутри – сдвиг, снаружи – новая рамка
   const grabOf = p => {
     const R = E.R, hit = 14 * c.width / (c.getBoundingClientRect().width || c.width);
     const inY = p.y > R.y - hit && p.y < R.y + R.h + hit, inX = p.x > R.x - hit && p.x < R.x + R.w + hit;
@@ -2339,7 +2339,7 @@ $("editSave").addEventListener("click", async () => {
   $("editBox").close();
   await savePng(out, name);
 });
-// В буфер обмена — без файла. Картинку отдаём обещанием (Promise): Safari требует, чтобы запись началась сразу по клику
+// В буфер обмена – без файла. Картинку отдаём обещанием (Promise): Safari требует, чтобы запись началась сразу по клику
 $("editCopy").addEventListener("click", async () => {
   const out = editResult(), size = `${out.width}×${out.height} px`;
   try {
@@ -2350,7 +2350,7 @@ $("editCopy").addEventListener("click", async () => {
     setMsg(`Снимок скопирован (${size}). Вставьте его Ctrl+V в презентацию, документ или чат.`);
   } catch {
     $("editBox").close();
-    setMsg("Скопировать не получилось: этот браузер или страница не дают доступ к буферу обмена. Нажмите «Сохранить PNG» — снимок сохранится файлом.", true);
+    setMsg("Скопировать не получилось: этот браузер или страница не дают доступ к буферу обмена. Нажмите «Сохранить PNG» – снимок сохранится файлом.", true);
   }
 });
 addEventListener("resize", () => { if (E.src) editDraw(); });
@@ -2396,10 +2396,10 @@ $("axisBtn").addEventListener("click", () => {
   if (it.pts) {                                   // контур → круг того же диаметра
     const c = center(it);
     it.r = rulerAt(c.x, c.y, diamPx(it)); delete it.pts;
-    setMsg("Зона снова круг с линейкой, диаметр тот же. Вернуть контур — стрелка ↶.");
+    setMsg("Зона снова круг с линейкой, диаметр тот же. Вернуть контур – стрелка ↶.");
   } else {
     it.pts = toContour(it); delete it.r;
-    setMsg("Гибкий контур: тяните точки или край — контур прогибается. Точки уже стоят по найденному краю, размер — как был у линейки.");
+    setMsg("Гибкий контур: тяните точки или край – контур прогибается. Точки уже стоят по найденному краю, размер – как был у линейки.");
   }
   if (it.src === "auto" || it.src === "none") it.src = "edited";
   render();
@@ -2411,17 +2411,17 @@ $("roundBtn").addEventListener("click", () => {     // контур остаёт
   const c = center(it);
   it.pts = circlePts(c.x, c.y, diamPx(it));
   if (it.src === "auto" || it.src === "none") it.src = "edited";
-  setMsg("Контур скруглён, диаметр тот же. Точки остались — можно снова гнуть. Вернуть форму — стрелка ↶.");
+  setMsg("Контур скруглён, диаметр тот же. Точки остались – можно снова гнуть. Вернуть форму – стрелка ↶.");
   render();
 });
 // Зона удаляется сразу, без вопроса: вернуть можно стрелкой ↶ (Ctrl+Z)
 function deleteZone(i) {
   const d = D(), it = d.items[i];
   commit(); d.items.splice(i, 1); P.sel = -1; hideAsk(); renderDishes(); render();
-  setMsg(`Зона ${i + 1}${it.drug ? ` (${it.drug})` : ""} удалена. Вернуть — стрелка ↶ или Ctrl+Z.`);
+  setMsg(`Зона ${i + 1}${it.drug ? ` (${it.drug})` : ""} удалена. Вернуть – стрелка ↶ или Ctrl+Z.`);
 }
 $("delBtn").addEventListener("click", () => { if (D() && P.sel >= 0) deleteZone(P.sel); });
-// Правая кнопка мыши по зоне — удалить её
+// Правая кнопка мыши по зоне – удалить её
 cv.addEventListener("contextmenu", e => {
   const d = D();
   if (!d || !d._base || P.mode !== "idle") return;
@@ -2470,7 +2470,7 @@ $("dishes").addEventListener("click", e => {
       P.trash.push({ dish: gone, i, t: Date.now() });
       if (P.trash.length > 10) P.trash.shift();
       markDirty();
-      const text = `Чашка «${gone.name}» удалена. Вернуть — стрелка ↶ или Ctrl+Z.`;
+      const text = `Чашка «${gone.name}» удалена. Вернуть – стрелка ↶ или Ctrl+Z.`;
       if (!P.dishes.length) { P.cur = -1; fillMeta(); renderDishes(); render(); return setMsg(text + " Чашек больше нет: загрузите фото."); }
       await openDish(Math.min(P.cur > i ? P.cur - 1 : P.cur === i ? i : P.cur, P.dishes.length - 1));
       setMsg(text);
@@ -2489,9 +2489,9 @@ async function deleteDishes(idx, what) {
   P.trash.push({ many, t: Date.now() });
   if (P.trash.length > 10) P.trash.shift();
   P.sel = -1; markDirty();
-  const text = `${what}: ${many.length} ${dishWord(many.length)}. Вернуть — стрелка ↶ или Ctrl+Z.`;
+  const text = `${what}: ${many.length} ${dishWord(many.length)}. Вернуть – стрелка ↶ или Ctrl+Z.`;
   if (!P.dishes.length) { P.cur = -1; fillMeta(); renderDishes(); render(); return setMsg(text); }
-  // открытая чашка осталась — остаёмся на ней; удалена — открываем ближайшую
+  // открытая чашка осталась – остаёмся на ней; удалена – открываем ближайшую
   const cur = P.cur, gone = idx.includes(cur);
   await openDish(gone ? Math.min(cur - idx.filter(i => i < cur).length, P.dishes.length - 1) : cur - idx.filter(i => i < cur).length);
   setMsg(text);
@@ -2537,10 +2537,10 @@ for (const id of ["mName", ...Object.keys(metaKeys)]) $(id).addEventListener("in
   if (id === "mName") { d.name = $(id).value; $("metaTitle").textContent = `· ${d.name}`; }
   else d.meta[metaKeys[id]] = $(id).value;
   markDirty(); renderDishes();
-  if (id === "mOrg") refreshCats();   // другой микроорганизм — другие пороги
+  if (id === "mOrg") refreshCats();   // другой микроорганизм – другие пороги
 });
 $("diskMm").addEventListener("input", () => { const d = D(), v = parseFloat($("diskMm").value); if (d && v > 0) { d.diskMm = v; markDirty(); } render(); });
-// Яркость / контраст / насыщенность фото в окне разметки — только для глаз: анализ всегда идёт по исходному фото (_base).
+// Яркость / контраст / насыщенность фото в окне разметки – только для глаз: анализ всегда идёт по исходному фото (_base).
 // Исправленная копия считается один раз и хранится, пока не сменятся чашка или ползунки
 const LOOK_IDS = ["lkBright", "lkContrast", "lkSat"];
 let lookCache = null;
@@ -2568,7 +2568,7 @@ for (const id of LOOK_IDS) {
   $(id).addEventListener("dblclick", () => { $(id).value = 0; lookChanged(); });
 }
 $("lkReset").addEventListener("click", () => { for (const id of LOOK_IDS) $(id).value = 0; lookChanged(); });
-// Число рядом с ползунком: ввод с клавиатуры двигает ползунок (в его пределах), Enter или уход из поля — поправить запись
+// Число рядом с ползунком: ввод с клавиатуры двигает ползунок (в его пределах), Enter или уход из поля – поправить запись
 for (const num of document.querySelectorAll("input.num")) {
   const range = $(num.id.replace(/Out$/, ""));
   const apply = fix => {
@@ -2611,7 +2611,7 @@ for (const id of ["gOn", "gS", "gR"]) $(id).addEventListener("input", () => {
   G.on = $("gOn").checked; G.s = parseFloat($("gS").value) || 0; G.r = parseFloat($("gR").value) || 0;
   $("generalBar").classList.toggle("off", !G.on);
   saveBreaks(); markDirty(); refreshCats();
-  if (G.on && G.s > 0 && G.r > 0 && G.r > G.s) setMsg(`Порог R (${G.r}) больше порога S (${G.s}) — проверьте: должно быть R ≤ S.`, true);
+  if (G.on && G.s > 0 && G.r > 0 && G.r > G.s) setMsg(`Порог R (${G.r}) больше порога S (${G.s}) – проверьте: должно быть R ≤ S.`, true);
 });
 // Пороги: правка на месте, без пересборки таблицы (чтобы курсор оставался в поле)
 $("breaksTable").addEventListener("input", e => {
@@ -2621,7 +2621,7 @@ $("breaksTable").addEventListener("input", e => {
   saveBreaks(); markDirty(); refreshCats();
   const n = P.breaks.filter(x => x.drug && x.s > 0 && x.r > 0).length;
   $("breaksCount").textContent = n ? `· заданы для ${n}` : "· не заданы";
-  if (b.s > 0 && b.r > 0 && b.r > b.s) setMsg(`У «${b.drug}» порог R (${b.r}) больше порога S (${b.s}) — проверьте: должно быть R ≤ S.`, true);
+  if (b.s > 0 && b.r > 0 && b.r > b.s) setMsg(`У «${b.drug}» порог R (${b.r}) больше порога S (${b.s}) – проверьте: должно быть R ≤ S.`, true);
 });
 $("breaksTable").addEventListener("click", e => {
   const x = e.target.closest("[data-bdel]");
@@ -2653,7 +2653,7 @@ $("copyBtn").addEventListener("click", async () => {
   const text = tableRows().map(r => r.map(v => typeof v === "number" ? String(v).replace(".", ",") : v).join("\t")).join("\n");
   const done = () => setMsg("Таблица всех чашек скопирована. Вставьте её в Excel или Word (Ctrl+V).");
   try { await navigator.clipboard.writeText(text); return done(); } catch {}
-  // запасной способ: старое копирование через скрытое поле — работает там, где новое запрещено
+  // запасной способ: старое копирование через скрытое поле – работает там, где новое запрещено
   const ta = document.createElement("textarea");
   ta.value = text; ta.style.cssText = "position:fixed;top:0;left:0;opacity:0";
   document.body.append(ta); ta.select();
@@ -2661,7 +2661,7 @@ $("copyBtn").addEventListener("click", async () => {
   try { ok = document.execCommand("copy"); } catch {}
   ta.remove();
   if (ok) return done();
-  setMsg("Браузер не дал скопировать. Откройте сайт файлом index.html на своём компьютере — там работают и копирование, и скачивание.", true);
+  setMsg("Браузер не дал скопировать. Откройте сайт файлом index.html на своём компьютере – там работают и копирование, и скачивание.", true);
 });
 
 document.addEventListener("keydown", e => {
@@ -2674,16 +2674,16 @@ document.addEventListener("keydown", e => {
   else if (ctrl && (key === "y" || key === "н" || ((key === "z" || key === "я") && e.shiftKey))) { e.preventDefault(); redo(); }
   else if ((e.key === "Delete" || e.key === "Backspace") && P.sel >= 0) { e.preventDefault(); $("delBtn").click(); }
   else if ((e.key === "ArrowLeft" || e.key === "ArrowRight") && !ctrl && !e.altKey && P.mode === "idle") {
-    e.preventDefault(); stepDish(e.key === "ArrowLeft" ? -1 : 1);       // ← → — предыдущее / следующее фото
+    e.preventDefault(); stepDish(e.key === "ArrowLeft" ? -1 : 1);       // ← → – предыдущее / следующее фото
   }
   else if (e.key === "Escape") {
-    // Esc сначала отменяет режим (добавление зоны, масштаб), а если ничего не было — выходит из «Во весь экран»
+    // Esc сначала отменяет режим (добавление зоны, масштаб), а если ничего не было – выходит из «Во весь экран»
     if (P.mode === "idle" && $("ask").hidden && document.body.classList.contains("focus")) return setFocus(false);
     P.calib = null; hideAsk(); setMode("idle"); render();
   }
 });
 window.addEventListener("beforeunload", e => { if (P.dirty) { e.preventDefault(); e.returnValue = ""; } });
-// ушли со вкладки (свернули, переключились, закрывают телефоном) — сохраняем сразу, не дожидаясь 2 с
+// ушли со вкладки (свернули, переключились, закрывают телефоном) – сохраняем сразу, не дожидаясь 2 с
 document.addEventListener("visibilitychange", () => { if (document.hidden && P.dirty && !P.saveFailed) saveBrowser(true); });
 const stage = $("stage");
 stage.addEventListener("dragover", e => { e.preventDefault(); stage.classList.add("drop"); });
@@ -2704,13 +2704,13 @@ document.addEventListener("paste", e => {
   addFiles(files);
 });
 // Окно разметки постоянного размера; фото вписывается в него целиком, с сохранением пропорций,
-// и увеличивается лупой в P.zoom раз (1 — вписано)
+// и увеличивается лупой в P.zoom раз (1 – вписано)
 function fitCanvas() {
   const v = $("view"), k = Math.min(v.clientWidth / cv.width, v.clientHeight / cv.height) * P.zoom;
   cv.style.width = Math.floor(cv.width * k) + "px";
   cv.style.height = Math.floor(cv.height * k) + "px";
 }
-// Лупа: точка фото под (cx, cy) остаётся на месте; без точки — приближаем к центру окна
+// Лупа: точка фото под (cx, cy) остаётся на месте; без точки – приближаем к центру окна
 function setZoom(z, cx, cy) {
   const v = $("view"), was = cv.getBoundingClientRect();
   if (cx === undefined) { const r = v.getBoundingClientRect(); cx = r.left + r.width / 2; cy = r.top + r.height / 2; }
@@ -2727,12 +2727,12 @@ function setZoom(z, cx, cy) {
 }
 window.addEventListener("resize", () => { fitCanvas(); draw(); });
 $("view").addEventListener("scroll", () => draw(), { passive: true });
-$("view").addEventListener("wheel", e => {         // лупа — Shift + колёсико; без Shift страница прокручивается как обычно
+$("view").addEventListener("wheel", e => {         // лупа – Shift + колёсико; без Shift страница прокручивается как обычно
   const d = D();
   if (!d || !d._base || !e.shiftKey) return;
   e.preventDefault();
-  // с Shift браузеры (Safari на Mac) часто отдают прокрутку как горизонтальную — берём ту ось, что не ноль
-  const raw = e.deltaY || e.deltaX, dy = raw * (e.deltaMode === 1 ? 40 : e.deltaMode === 2 ? 400 : 1);   // строки и страницы — в пиксели
+  // с Shift браузеры (Safari на Mac) часто отдают прокрутку как горизонтальную – берём ту ось, что не ноль
+  const raw = e.deltaY || e.deltaX, dy = raw * (e.deltaMode === 1 ? 40 : e.deltaMode === 2 ? 400 : 1);   // строки и страницы – в пиксели
   setZoom(P.zoom * Math.exp(-dy * 0.002), e.clientX, e.clientY);
 }, { passive: false });
 $("zoomPlus").addEventListener("click", () => setZoom(P.zoom * 1.5));
