@@ -198,14 +198,14 @@ body.focus .navcount { top: calc(10px + 100vh - 24px - 20px - 48px - 34px); }
 .tools.folded .zoombar output { min-width: 5ch; font-size: 12px; }
 .tools.folded .wide { grid-column: auto; }
 .tools.folded #calibField:not([hidden]) { flex-basis: 100%; }
-/* свёрнутые инструменты — сетка по картинке «Кнопки.png» (12 узких колонок): «Сохранить» на половину ширины,
+/* свёрнутые инструменты — сетка по картинке «Кнопки.png» (20 узких колонок): «Сохранить» на половину ширины,
    добавить / удалить зону; «Снимок» на всю ширину; контур, скругление, линейка и лупа с «Вписать» */
-.tools.folded .tools-grid { display: grid; grid-template-columns: repeat(12, minmax(0, 1fr)); gap: 6px; align-items: stretch;
+.tools.folded .tools-grid { display: grid; grid-template-columns: repeat(20, minmax(0, 1fr)); gap: 6px 3px; align-items: stretch;
   grid-template-areas:
-    "save save save save save save add add add del del del"
-    "snap snap snap snap snap snap snap snap snap snap snap snap"
-    "axis axis round round calib calib zoom zoom zoom zoom zoom zoom"
-    "cf cf cf cf cf cf cf cf cf cf cf cf"; }
+    "save save save save save save save save save save add add add add add del del del del del"
+    "snap snap snap snap snap snap snap snap snap snap snap snap snap snap snap snap snap snap snap snap"
+    "axis axis axis axis round round round round calib calib calib calib zoom zoom zoom zoom zoom zoom zoom zoom"
+    "cf cf cf cf cf cf cf cf cf cf cf cf cf cf cf cf cf cf cf cf"; }
 .tools.folded .tools-grid > * { min-width: 0; }   /* ни одна кнопка не вылезает за свою клетку */
 /* у «Сохранить» и «Снимок» в свёрнутом виде остаются короткие подписи */
 .tools.folded #saveBtn2 .lbl, .tools.folded #snapEditBtn .lbl-short { display: inline; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
@@ -218,10 +218,10 @@ body.focus .navcount { top: calc(10px + 100vh - 24px - 20px - 48px - 34px); }
 .tools.folded #axisBtn { grid-area: axis; }
 .tools.folded #roundBtn { grid-area: round; }
 .tools.folded #calibBtn { grid-area: calib; }
-.tools.folded .zoombar { grid-area: zoom; justify-content: space-between; gap: 3px; min-width: 0; }
-.tools.folded .zoombar .btn.icon { flex: none; width: 30px; padding: 6px 0; font-size: 16px; justify-content: center; }
-.tools.folded .zoombar output { flex: 1 1 auto; min-width: 0; font-size: 11px; }
-.tools.folded #zoomFit { flex: none; padding: 6px; }
+/* лупа: кнопки той же высоты, что соседние, и без дыры перед ней */
+.tools.folded .zoombar { grid-area: zoom; align-items: stretch; gap: 3px; min-width: 0; margin-left: 3px; }
+.tools.folded .zoombar .btn { flex: none; width: 30px; padding: 0; font-size: 16px; justify-content: center; }
+.tools.folded .zoombar output { flex: 1 1 auto; min-width: 0; font-size: 11px; display: flex; align-items: center; justify-content: center; }
 .tools.folded #calibField { grid-area: cf; }
 @media (min-width: 901px) {
   /* блок инструментов остаётся на экране, пока прокручиваешь фото */
