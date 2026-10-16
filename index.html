@@ -2183,10 +2183,12 @@ cv.addEventListener("pointermove", e => {
   const g = P.drag;
   if (g.what === "pan") {
     const dx = e.clientX - g.sx, dy = e.clientY - g.sy;
+    g.cx = e.clientX; g.cy = e.clientY;              // где сейчас курсор – нужно setZoom, если лупу крутят прямо на ходу
     if (Math.abs(dx) + Math.abs(dy) > 3) g.moved = true;
     $("view").scrollLeft = g.sl - dx; $("view").scrollTop = g.st - dy;
     return;
   }
+  g.cx = e.clientX; g.cy = e.clientY;
   if (!g.moved && Math.hypot(e.clientX - g.sx, e.clientY - g.sy) < 4) return;   // дрожание руки при нажатии – ещё не правка
   const p = pos(e), r = g.r;
   if (g.what === "a") { r.ax = p.x; r.ay = p.y; g.p = p; }
@@ -2809,6 +2811,16 @@ function setZoom(z, cx, cy) {
   const now = cv.getBoundingClientRect();
   v.scrollLeft += now.left + fx * now.width - cx;
   v.scrollTop += now.top + fy * now.height - cy;
+  // фото тащат прямо сейчас: сдвиг дальше считаем от нового места, иначе следующее движение мыши
+  // вернёт прокрутку к расчёту до лупы и фото «телепортируется»
+  const g = P.drag;
+  if (g && g.what === "pan") {
+    if (g.cx !== undefined) { g.sx = g.cx; g.sy = g.cy; }
+    g.sl = v.scrollLeft; g.st = v.scrollTop;
+  } else if (g && g.last && g.cx !== undefined) {   // тащат зону или точку: точка фото под курсором теперь другая
+    const b = cv.getBoundingClientRect();
+    g.last = { x: (g.cx - b.left) * cv.width / b.width, y: (g.cy - b.top) * cv.height / b.height, k: cv.width / b.width };
+  }
   $("zoomOut").textContent = Math.round(P.zoom * 100) + " %";
   $("zoomMinus").disabled = $("zoomFit").disabled = P.zoom <= 1;
   $("zoomPlus").disabled = P.zoom >= 8;
