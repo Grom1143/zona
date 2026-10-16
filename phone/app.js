@@ -776,6 +776,10 @@ try { if (localStorage.getItem("zona-tools-folded") === "1") foldTools(true, tru
 // «Чашка» (паспорт) свёрнута или развёрнута – запоминается в браузере
 // на телефоне паспорт и «Видимость и цвета» по умолчанию свёрнуты: на маленьком экране главное – фото
 const PHONE = matchMedia("(max-width: 700px)").matches;
+// название вкладки – как в шапке: на телефоне «МикроТест Петри», на компьютере «МикроТест Вижн» (меняется и при повороте / изменении окна)
+const phoneMQ = matchMedia("(max-width: 700px)");
+const setTitle = () => { document.title = `МикроТест ${phoneMQ.matches ? "Петри" : "Вижн"} – диско-диффузионный метод`; };
+setTitle(); phoneMQ.addEventListener("change", setTitle);
 try { const v = localStorage.getItem("zona-meta-open"); if (v === "0" || (v === null && PHONE)) $("metaBox").open = false; } catch {}
 $("metaBox").addEventListener("toggle", () => { try { localStorage.setItem("zona-meta-open", $("metaBox").open ? "1" : "0"); } catch {} });
 // треугольник «Видимость и цвета»: свернуть / развернуть, выбор запоминается в браузере
