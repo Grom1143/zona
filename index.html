@@ -199,9 +199,9 @@ body.focus .navcount { top: calc(10px + 100vh - 24px - 20px - 48px - 34px); }
 .tools.folded .wide { grid-column: auto; }
 .tools.folded #calibField:not([hidden]) { flex-basis: 100%; }
 /* свёрнутые инструменты — сетка: слева «Сохранить» и «Снимок» с подписями, рядом маленькие кнопки зон и линейки,
-   «Сохранить» — над снимком, выделяется заливкой; линейка — под контуром, лупа — под снимком */
-.tools.folded .tools-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 6px;
-  grid-template-areas: "save save add del" "snap snap axis round" "zoom zoom calib ." "cf cf cf cf"; }
+   «Сохранить» — над снимком, выделяется заливкой; лупа — строкой ниже */
+.tools.folded .tools-grid { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 6px;
+  grid-template-areas: "save save add del calib" "snap snap axis round ." "zoom zoom zoom zoom zoom" "cf cf cf cf cf"; }
 .tools.folded .tools-grid { align-items: stretch; }   /* кнопки занимают свою клетку целиком: снимок — ровно 2 строки */
 .tools.folded .tools-grid > * { min-width: 0; }   /* ни одна кнопка не вылезает за свою клетку */
 .tools.folded #snapEditBtn { grid-area: snap; }
@@ -216,7 +216,7 @@ body.focus .navcount { top: calc(10px + 100vh - 24px - 20px - 48px - 34px); }
 .tools.folded #roundBtn { grid-area: round; }
 .tools.folded #saveBtn2 { grid-area: save; padding-inline: 8px; overflow: hidden; }
 .tools.folded #snapEditBtn { padding-inline: 8px; overflow: hidden; }
-.tools.folded .zoombar { grid-area: zoom; justify-content: flex-start; }
+.tools.folded .zoombar { grid-area: zoom; justify-content: flex-end; }
 .tools.folded #calibField { grid-area: cf; }
 @media (min-width: 901px) {
   /* блок инструментов остаётся на экране, пока прокручиваешь фото */
