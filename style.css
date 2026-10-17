@@ -356,6 +356,32 @@ input.drug::placeholder { color: var(--muted); font-weight: 400; }
 .breaks input { width: 100%; box-sizing: border-box; font: 500 14px var(--font-body); padding: 6px 8px; border: 1px solid var(--line); border-radius: 6px; background: var(--panel); color: var(--ink); }
 .breaks input[type="number"] { font-family: var(--font-mono); max-width: 90px; }
 .results-head { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 10px; }
+/* датасеты: кнопка с названием в шапке и окно выбора */
+.ds-btn { flex: none; max-width: 260px; display: inline-flex; align-items: center; gap: 6px; height: 34px; padding: 0 12px; border-radius: 17px;
+  border: 1px solid var(--line); background: var(--panel); color: var(--ink); font: 600 14px var(--font-body); cursor: pointer; }
+.ds-btn span:last-child { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ds-btn span:first-child { color: var(--accent); font-size: 16px; }
+.ds-btn:hover { border-color: var(--accent); background: var(--accent-soft); }
+.ds-btn:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.ds { width: min(640px, calc(100vw - 32px)); }
+.ds-list { display: grid; gap: 8px; max-height: calc(100vh - 300px); overflow-y: auto; padding: 2px; }
+.ds-item { display: flex; align-items: center; gap: 6px; border: 1px solid var(--line); border-radius: 10px; padding: 6px; }
+.ds-item.cur { border-color: var(--accent); box-shadow: inset 0 0 0 1px var(--accent); }
+.ds-open { flex: 1; min-width: 0; display: grid; grid-template-columns: 56px 1fr; grid-template-rows: auto auto; column-gap: 12px; align-items: center;
+  text-align: left; border: 0; background: none; color: var(--ink); padding: 2px; border-radius: 6px; cursor: pointer; font: inherit; }
+.ds-open:hover .ds-nm { color: var(--accent); }
+.ds-open:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.ds-open img, .ds-noimg { grid-row: span 2; width: 56px; height: 56px; object-fit: cover; border-radius: 6px; background: var(--stage); }
+.ds-noimg { display: grid; place-items: center; color: var(--muted); font-size: 22px; }
+.ds-nm { font: 700 16px var(--font-display); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; align-self: end; }
+.ds-ct { font-size: 13px; color: var(--muted); align-self: start; }
+.ds-ct b { color: var(--accent); font-weight: 600; }
+.ds-rename { flex: 1; min-width: 0; font: 600 15px var(--font-body); padding: 8px 10px; border: 1px solid var(--accent); border-radius: 6px; background: var(--panel); color: var(--ink); }
+.ds-del.arm { background: var(--warn); color: var(--warn-ink); border-color: var(--warn); font-size: 13px; white-space: nowrap; }
+.ds-new { display: flex; gap: 8px; }
+.ds-new input { flex: 1; min-width: 0; font: 15px var(--font-body); padding: 9px 12px; border: 1px solid var(--line); border-radius: 8px; background: var(--panel); color: var(--ink); }
+.ds-new input:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+@media (max-width: 560px) { .ds-btn { width: 34px; padding: 0; justify-content: center; } .ds-btn span:last-child { display: none; } .ds-new { flex-direction: column; } }
 /* справка – окно поверх страницы по кнопке «?» */
 .how { color: var(--ink); background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 18px; gap: 12px;
   width: min(820px, calc(100vw - 32px)); max-height: calc(100vh - 48px); overflow-y: auto; box-sizing: border-box; }

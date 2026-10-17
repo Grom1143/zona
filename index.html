@@ -33,6 +33,8 @@
 </svg></span>
     <div class="title-row">
       <h1>МикроТест Вижн <small>диско-диффузионный метод</small></h1>
+      <!-- датасет – отдельный набор чашек (например, для каждой лаборатории): сменить или создать -->
+      <button class="ds-btn" id="dsBtn" type="button" aria-haspopup="dialog"><span aria-hidden="true">▤</span> <span id="dsBtnName">Мой датасет</span></button>
       <button class="help-btn" id="helpBtn" type="button" title="Как это работает" aria-label="Справка: как это работает" aria-haspopup="dialog">?</button>
       <button class="help-btn theme-btn" id="themeBtn" type="button"></button>
     </div>
@@ -282,6 +284,19 @@
   </dialog>
 
   <!-- выбор чашек для удаления галочками -->
+  <dialog class="how ds" id="dsBox" aria-labelledby="dsTitle">
+    <div class="how-head">
+      <h2 id="dsTitle">С каким датасетом работаем?</h2>
+      <button class="btn icon" id="dsClose" type="button" aria-label="Закрыть">×</button>
+    </div>
+    <p class="crop-hint">Датасет – отдельный набор чашек со своей разметкой, например для каждой лаборатории. Каждый сохраняется в этом браузере отдельно.</p>
+    <div class="ds-list" id="dsList"></div>
+    <form class="ds-new" id="dsNew">
+      <input id="dsName" maxlength="60" placeholder="Название, например «Лаборатория 2»" aria-label="Название нового датасета">
+      <button class="btn primary" type="submit">+ Создать</button>
+    </form>
+  </dialog>
+
   <dialog class="how" id="pickBox" aria-labelledby="pickTitle">
     <div class="how-head">
       <h2 id="pickTitle">Какие чашки удалить?</h2>

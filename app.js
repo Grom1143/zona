@@ -414,12 +414,16 @@ async function saveBrowser(auto) {
   clearTimeout(saveTimer);
   if (saving) { saveTimer = setTimeout(() => saveBrowser(auto), 500); return; }   // прошлая запись ещё идёт
   saving = true;
-  const v = P.ver;
+  const v = P.ver, id = DS.cur;
   try {
     // фото храним байтами, а не Blob: в Safari Blob из IndexedDB после перезагрузки иногда не читается
     const dishes = [];
     for (const d of P.dishes) dishes.push({ ...pick(d, true), img: await d.img.arrayBuffer(), imgType: d.img.type || "image/jpeg" });
-    await idbDo("readwrite", s => s.put({ v: 5, cur: P.cur, savedAt: Date.now(), dishes, breaks: P.breaks, general: P.general }, "project"));
+    const now = Date.now(), e = { id, name: dsName(), count: dishes.length, savedAt: now, thumb: dishes.length ? dishes[0].thumb : "" };
+    const k = DS.list.findIndex(x => x.id === id);
+    k >= 0 ? (DS.list[k] = e) : DS.list.push(e);
+    await idbDo("readwrite", s => { s.put(DS.list, "datasets"); return s.put({ v: 5, cur: P.cur, savedAt: now, dishes, breaks: P.breaks, general: P.general }, dsKey(id)); });
+    renderDsBtn();
     if (P.ver === v) P.dirty = false;
     P.saveFailed = false; P.savedAt = new Date(); renderSaveState();
     if (!auto) setMsg(`Сохранено: чашек ${P.dishes.length}.`);
@@ -429,9 +433,9 @@ async function saveBrowser(auto) {
     P.saveFailed = true; renderSaveState();
   } finally { saving = false; }
 }
-async function loadBrowser() {
+async function loadBrowser(id = DS.cur) {
   try {
-    const o = await idbDo("readonly", s => s.get("project"));
+    const o = await idbDo("readonly", s => s.get(dsKey(id)));
     if (!o || !Array.isArray(o.dishes) || !o.dishes.length) return false;
     P.dishes = o.dishes.map(hydrate);
     if (Array.isArray(o.breaks) && o.breaks.length) P.breaks = o.breaks;
@@ -439,10 +443,153 @@ async function loadBrowser() {
     saveBreaks(); renderBreaks(); renderGeneral();
     P.savedAt = o.savedAt ? new Date(o.savedAt) : null; P.dirty = false; renderSaveState();
     await openDish(Math.min(Math.max(0, o.cur | 0), P.dishes.length - 1));
-    setMsg(`Открыта сохранённая работа: чашек ${P.dishes.length}. ` + summary(D()), !D().items.length);
+    setMsg(`${DS.list.length > 1 ? `Датасет «${dsName()}»` : "Открыта сохранённая работа"}: чашек ${P.dishes.length}. ` + summary(D()), !D().items.length);
     return true;
   } catch { return false; }
 }
+
+// ----- датасеты: отдельные наборы чашек (например, своя лаборатория – свой датасет) -----
+// Каждый датасет – отдельная запись в IndexedDB: самый первый – «project» (его же открывает телефонная версия и APK),
+// новые – «project:<id>». Список (название, сколько чашек, когда сохранён, миниатюра) – запись «datasets».
+// При входе на сайт, если датасетов больше одного, – окно выбора; сменить или создать – кнопка с названием в шапке
+const DS = { list: [], cur: "project", start: false };
+const dsKey = id => id === "project" ? "project" : "project:" + id;
+const dsName = () => (DS.list.find(x => x.id === DS.cur) || {}).name || "Мой датасет";
+function renderDsBtn() {
+  $("dsBtnName").textContent = dsName();
+  $("dsBtn").setAttribute("aria-label", `Датасет «${dsName()}» – сменить или создать`);
+  $("dsBtn").title = `Датасет «${dsName()}» – сменить или создать новый`;
+}
+async function dsLoadList() {
+  let list = await idbDo("readonly", s => s.get("datasets")).catch(() => null);
+  if (!Array.isArray(list)) {        // сохранение из времён до датасетов становится первым датасетом
+    list = [];
+    const o = await idbDo("readonly", s => s.get("project")).catch(() => null);
+    if (o && Array.isArray(o.dishes) && o.dishes.length)
+      list.push({ id: "project", name: "Мой датасет", count: o.dishes.length, savedAt: o.savedAt || Date.now(), thumb: o.dishes[0].thumb || "" });
+  }
+  DS.list = list.filter(x => x && typeof x.id === "string");
+}
+// дождаться текущей записи и сохранить несохранённое – перед сменой датасета
+async function dsFlush() {
+  for (let i = 0; i < 100 && saving; i++) await new Promise(r => setTimeout(r, 50));
+  if (P.dirty) await saveBrowser(true);
+}
+async function dsOpen(id) {
+  await dsFlush();
+  DS.cur = id;
+  try { localStorage.setItem("zona-dataset", id); } catch {}
+  clearTimeout(saveTimer);
+  P.dishes = []; P.cur = -1; P.sel = -1; P.trash = []; P.drag = null; P.calib = null; P.dirty = false; P.savedAt = null;
+  setMode("idle"); renderDsBtn();
+  if (!(await loadBrowser(id))) {
+    renderSaveState(); fillMeta(); renderDishes(); render();
+    setMsg(`Датасет «${dsName()}»: чашек пока нет – добавьте фото плиткой «+ Добавить фото» или перетащите их на окно.`);
+  }
+}
+const dsWhen = t => new Date(t).toLocaleString("ru-RU", { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" }).replace(",", "");
+function renderDsList() {
+  const cur = DS.list.some(x => x.id === DS.cur) ? DS.cur : null;
+  $("dsList").innerHTML = DS.list.length ? DS.list.map(x =>
+    `<div class="ds-item${x.id === cur ? " cur" : ""}" data-id="${esc(x.id)}">` +
+      `<button class="ds-open" type="button" data-open="${esc(x.id)}" aria-label="Открыть датасет ${esc(x.name)}">` +
+        (x.thumb ? `<img src="${x.thumb}" alt="">` : `<span class="ds-noimg" aria-hidden="true">◎</span>`) +
+        `<span class="ds-nm">${esc(x.name)}</span>` +
+        `<span class="ds-ct">${x.count} ${dishWord(x.count)} · ${dsWhen(x.savedAt)}${x.id === cur ? " · <b>открыт</b>" : ""}</span>` +
+      `</button>` +
+      `<button class="btn icon" type="button" data-ren="${esc(x.id)}" title="Переименовать" aria-label="Переименовать ${esc(x.name)}">✎</button>` +
+      `<button class="btn icon ds-del" type="button" data-del="${esc(x.id)}" title="Удалить датасет" aria-label="Удалить датасет ${esc(x.name)}">×</button>` +
+    `</div>`).join("") : `<p class="crop-hint">Сохранённых датасетов пока нет.</p>`;
+}
+function dsShow(start) {
+  DS.start = !!start;
+  renderDsList();
+  $("dsName").value = "";
+  $("dsClose").hidden = false;
+  if (!$("dsBox").open) $("dsBox").showModal();
+  const c = $("dsList").querySelector(".ds-item.cur .ds-open") || $("dsList").querySelector(".ds-open");
+  if (c) c.focus();
+}
+async function dsStart() {
+  await dsLoadList();
+  let last = null;
+  try { last = localStorage.getItem("zona-dataset"); } catch {}
+  DS.cur = DS.list.some(x => x.id === last) ? last : DS.list.length ? DS.list[0].id : "project";
+  renderDsBtn();
+  if (DS.list.length > 1) return dsShow(true);          // несколько датасетов – выбрать, с каким работать
+  if (!(await loadBrowser())) loadSample();             // один или ни одного – сразу работа (новый – из шапки)
+}
+$("dsBtn").addEventListener("click", async () => { await dsFlush(); dsShow(false); });
+$("dsClose").addEventListener("click", () => $("dsBox").close());
+// закрыли окно при входе, ничего не выбрав, – открывается последний датасет
+$("dsBox").addEventListener("close", () => { if (DS.start) { DS.start = false; dsOpen(DS.cur); } });
+$("dsBox").addEventListener("click", e => {
+  const b = $("dsBox").getBoundingClientRect();
+  if (e.target === $("dsBox") && (e.clientX < b.left || e.clientX > b.right || e.clientY < b.top || e.clientY > b.bottom)) return $("dsBox").close();
+  const open = e.target.closest("[data-open]");
+  if (open) {
+    const id = open.dataset.open, start = DS.start;
+    DS.start = false; $("dsBox").close();
+    if (start || id !== DS.cur) dsOpen(id);
+    return;
+  }
+  const ren = e.target.closest("[data-ren]");
+  if (ren) {
+    const item = ren.closest(".ds-item"), x = DS.list.find(d => d.id === ren.dataset.ren), nm = item.querySelector(".ds-nm");
+    const inp = document.createElement("input");
+    inp.className = "ds-rename"; inp.value = x.name; inp.maxLength = 60; inp.setAttribute("aria-label", "Новое название");
+    nm.replaceWith(inp); inp.focus(); inp.select();
+    let done = false;
+    const finish = async ok => {
+      if (done) return;
+      done = true;
+      const v = inp.value.trim();
+      if (ok && v && v !== x.name) {
+        x.name = v;
+        try { await idbDo("readwrite", s => s.put(DS.list, "datasets")); } catch {}
+        renderDsBtn();
+      }
+      renderDsList();
+    };
+    inp.addEventListener("keydown", ev => {
+      if (ev.key === "Enter") { ev.preventDefault(); finish(true); }
+      if (ev.key === "Escape") { ev.preventDefault(); ev.stopPropagation(); finish(false); }
+    });
+    inp.addEventListener("blur", () => finish(true));
+    return;
+  }
+  const del = e.target.closest("[data-del]");
+  if (del) {
+    const x = DS.list.find(d => d.id === del.dataset.del);
+    if (!del.classList.contains("arm")) {         // первое нажатие: × → «Удалить?»; 3 с без нажатия – снова ×
+      for (const b of $("dsList").querySelectorAll(".ds-del.arm")) { b.classList.remove("arm"); b.textContent = "×"; }
+      del.classList.add("arm"); del.textContent = "Удалить навсегда?";
+      del.title = `Нажмите ещё раз: датасет «${x.name}» (${x.count} ${dishWord(x.count)}) удалится из браузера без возврата`;
+      setTimeout(() => { if (del.isConnected) { del.classList.remove("arm"); del.textContent = "×"; del.title = "Удалить датасет"; } }, 3000);
+      return;
+    }
+    (async () => {
+      DS.list = DS.list.filter(d => d.id !== x.id);
+      try { await idbDo("readwrite", s => { s.put(DS.list, "datasets"); return s.delete(dsKey(x.id)); }); } catch {}
+      if (x.id === DS.cur) {                         // удалили открытый – открываем другой (или пустой новый)
+        P.dirty = false; clearTimeout(saveTimer);
+        await dsOpen(DS.list.length ? DS.list[0].id : "project");
+      }
+      setMsg(`Датасет «${x.name}» удалён.`);
+      renderDsList();
+    })();
+  }
+});
+$("dsNew").addEventListener("submit", async e => {
+  e.preventDefault();
+  const name = $("dsName").value.trim() || `Датасет ${DS.list.length + 1}`;
+  await dsFlush();
+  const id = newId();
+  DS.list.push({ id, name, count: 0, savedAt: Date.now(), thumb: "" });
+  try { await idbDo("readwrite", s => s.put(DS.list, "datasets")); } catch {}
+  DS.start = false; $("dsBox").close();
+  await dsOpen(id);
+});
 
 // Скачивание файла: в окне Claude – через разрешение «downloads», в обычном браузере – ссылкой
 const dlP = window.claude && window.claude.use ? window.claude.use("downloads").catch(() => null) : Promise.resolve(null);
@@ -484,7 +631,7 @@ async function saveProject() {
   const dishes = [];
   for (const d of P.dishes) dishes.push({ ...pick(d), img: await blobToDataURL(d.img) });
   const json = JSON.stringify({ app: "zona-ingibirovaniya", v: 5, cur: P.cur, dishes, breaks: P.breaks, general: P.general });
-  if (await saveFile(`Зоны ингибирования ${today()}.json`, new Blob([json], { type: "application/json" })))
+  if (await saveFile(`${DS.list.length > 1 ? dsName().replace(/[\\/:*?"<>|]/g, "-") : "Зоны ингибирования"} ${today()}.json`, new Blob([json], { type: "application/json" })))
     setMsg(`Файл проекта готов: чашек ${dishes.length}.`);
 }
 async function openProject(f) {
@@ -1940,7 +2087,7 @@ try { const g = JSON.parse(localStorage.getItem("zona-general")); if (g && typeo
 try { localStorage.removeItem("zona-templates"); } catch {}     // примеры дисков от убранного автоузнавания больше не нужны
 renderBreaks(); renderGeneral();
 renderSaveState(); fillMeta(); renderDishes(); fitCanvas(); render();
-loadBrowser().then(ok => { if (!ok) loadSample(); });
+dsStart();
 
 // ----- Анимация иконки прямо в шапке (нажатие на логотип) -----
 // Иконка в шапке – векторная, из отдельных групп (как «Новая иконка\MicroTest Vision – иконка.svg», id с приставкой ia-).
