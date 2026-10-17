@@ -55,42 +55,53 @@ if (!/[#&]ds=/.test(location.hash)) document.body.classList.add("at-home");</scr
       <div class="home-grid" id="homeList"></div>
       <!-- неподвижная панель справа: новый датасет, видимость разметки на фото, что значат цвета -->
       <aside class="home-side" aria-label="Панель датасетов">
-        <form class="home-new" id="homeNew">
-          <h3>Новый датасет</h3>
-          <input id="homeName" maxlength="60" placeholder="Название: «Лаборатория 2»" aria-label="Название нового датасета">
-          <textarea id="homeDesc" maxlength="1000" rows="2" placeholder="Описание – необязательно: где, кто, какие культуры" aria-label="Описание нового датасета"></textarea>
-          <button class="btn primary" type="submit">+ Создать</button>
-        </form>
         <div class="home-cats">
-          <h3>Категории и фильтр</h3>
-          <p class="cat-hint">Нажмите на категорию – останутся датасеты с ней. Кружок слева – свой цвет. Поставить категорию датасету – «+ категория» в его карточке.</p>
+          <div class="side-head"><h3>Категории</h3><button class="linkbtn" type="button" id="catReset" hidden>Показать все</button></div>
           <ul class="cat-list" id="catList"></ul>
-          <p class="cat-state" id="catState" aria-live="polite"></p>
-          <button class="btn" type="button" id="catReset" hidden>Показать все</button>
           <form class="cat-new" id="catNew">
-            <label class="cat-color" title="Цвет новой категории – нажмите и выберите любой"><input type="color" id="catColor" value="#3fa9f5" aria-label="Цвет новой категории"></label>
+            <button class="cat-color" type="button" id="catColor" aria-label="Цвет новой категории" title="Цвет новой категории"></button>
             <input id="catName" maxlength="40" placeholder="Новая категория" aria-label="Название новой категории">
-            <button class="btn primary" type="submit" title="Добавить категорию">+</button>
+            <button class="btn primary" type="submit" title="Добавить категорию" aria-label="Добавить категорию">+</button>
           </form>
         </div>
+        <form class="home-new" id="homeNew">
+          <h3>Новый датасет</h3>
+          <div class="hn-row">
+            <input id="homeName" maxlength="60" placeholder="Название" aria-label="Название нового датасета">
+            <button class="btn primary" type="submit" title="Создать датасет" aria-label="Создать датасет">+</button>
+          </div>
+          <details class="hn-desc"><summary>+ описание</summary>
+            <textarea id="homeDesc" maxlength="1000" rows="2" placeholder="Где, кто, какие культуры" aria-label="Описание нового датасета"></textarea>
+          </details>
+        </form>
         <div class="home-vis">
           <h3>Разметка на фото</h3>
           <label class="hv-row" for="homeVis">Видимость <input type="range" id="homeVis" min="0" max="100" step="5" value="100" title="Вправо – ярче, влево – бледнее; 0 % – видно только фото"><output id="homeVisOut" for="homeVis">100 %</output></label>
-          <ul class="home-legend">
-            <li><i class="lg-z" style="--c:#ff9a62"></i>надо проверить</li>
-            <li><i class="lg-z dash" style="--c:#3ff0cf"></i>найдено программой</li>
-            <li><i class="lg-z" style="--c:#ffc845"></i>поправлено вручную</li>
-            <li><i class="lg-z" style="--c:#b8c4cc"></i>диск без зоны</li>
-          </ul>
-          <ul class="home-legend bars">
-            <li><i class="lg-b" style="--c:#3ccf7e"></i>фото готово</li>
-            <li><i class="lg-b" style="--c:#ff9a62"></i>есть что проверить</li>
-            <li><i class="lg-b" style="--c:#c9d3da"></i>без разметки</li>
-          </ul>
+          <details class="hv-legend"><summary>Что значат цвета</summary>
+            <ul class="home-legend">
+              <li><i class="lg-z" style="--c:#ff9a62"></i>надо проверить</li>
+              <li><i class="lg-z dash" style="--c:#3ff0cf"></i>найдено программой</li>
+              <li><i class="lg-z" style="--c:#ffc845"></i>поправлено вручную</li>
+              <li><i class="lg-z" style="--c:#b8c4cc"></i>диск без зоны</li>
+            </ul>
+            <ul class="home-legend bars">
+              <li><i class="lg-b" style="--c:#3ccf7e"></i>фото готово</li>
+              <li><i class="lg-b" style="--c:#ff9a62"></i>есть что проверить</li>
+              <li><i class="lg-b" style="--c:#c9d3da"></i>без разметки</li>
+            </ul>
+          </details>
         </div>
       </aside>
     </div>
   </section>
+
+  <!-- своя палитра цвета: всплывает у кружка категории; щелчок мимо – закрыть и оставить выбранный цвет -->
+  <div class="cpick" id="cpick" hidden role="dialog" aria-label="Свой цвет категории">
+    <div class="cp-sv" id="cpSV" tabindex="0" role="slider" aria-label="Насыщенность и яркость: стрелки"><i class="cp-dot" id="cpDot"></i></div>
+    <div class="cp-hue" id="cpHue" tabindex="0" role="slider" aria-label="Оттенок: стрелки"><i class="cp-knob" id="cpKnob"></i></div>
+    <div class="cp-row"><span class="cp-prev" id="cpPrev"></span><input id="cpHex" maxlength="7" spellcheck="false" autocomplete="off" aria-label="Код цвета"></div>
+    <p class="cp-warn" id="cpWarn" hidden></p>
+  </div>
 
   <input type="file" id="file" accept="image/*" multiple>
   <span class="savestate" id="saveState" aria-live="polite" hidden></span>

@@ -771,36 +771,56 @@ function renderCats() {
   const on = DS.filter.filter(catOf), cnt = id => DS.list.filter(x => dsCats(x).includes(id)).length;
   $("catList").innerHTML = DS.cats.length ? DS.cats.map(c =>
     `<li class="cat-row${on.includes(c.id) ? " on" : ""}" data-cid="${esc(c.id)}">` +
-      `<label class="cat-color" title="Свой цвет – нажмите и выберите любой"><input type="color" value="${esc(c.color)}" data-color="${esc(c.id)}" aria-label="Цвет категории ${esc(c.name)}"></label>` +
+      `<button class="cat-color" type="button" data-color="${esc(c.id)}" style="--cc:${esc(c.color)}" title="Свой цвет" aria-label="Цвет категории ${esc(c.name)}"></button>` +
       `<button class="cat-filter" type="button" data-filter="${esc(c.id)}" aria-pressed="${on.includes(c.id)}" title="${on.includes(c.id) ? "Убрать из фильтра" : "Показать только датасеты с этой категорией"}">` +
         `${chip(c)}<span class="cat-n">${cnt(c.id)}</span></button>` +
       `<button class="btn icon" type="button" data-cren="${esc(c.id)}" title="Переименовать" aria-label="Переименовать категорию ${esc(c.name)}">✎</button>` +
       `<button class="btn icon cat-del" type="button" data-cdel="${esc(c.id)}" title="Удалить категорию" aria-label="Удалить категорию ${esc(c.name)}">×</button></li>`).join("") :
-    `<li class="cat-hint">Пока нет. Создайте первую ниже: название и свой цвет.</li>`;
+    `<li class="cat-hint">Категорий пока нет</li>`;
   $("catReset").hidden = !on.length;
-  $("catState").textContent = on.length ? `Показаны датасеты с категорией: ${on.map(id => catOf(id).name).join(" или ")}` : "";
-  if (!$("catColor").dataset.touched) $("catColor").value = $("catColor").dataset.next || ($("catColor").dataset.next = randColor());
+  if (!$("catColor").dataset.value) setNewColor(freeColor());
 }
+function setNewColor(c) { $("catColor").dataset.value = c; $("catColor").style.setProperty("--cc", c); }
+// цвета не повторяются: «похожий» – ближе 60 по расстоянию в RGB
+const rgbOf = hex => { const n = parseInt(String(hex).slice(1), 16); return [n >> 16 & 255, n >> 8 & 255, n & 255]; };
+const colorDist = (a, b) => { const p = rgbOf(a), q = rgbOf(b); return Math.hypot(p[0] - q[0], p[1] - q[1], p[2] - q[2]); };
+const colorTaken = (hex, skipId) => DS.cats.find(c => c.id !== skipId && colorDist(c.color, hex) < 60);
+function freeColor() { let c = randColor(); for (let i = 0; i < 40 && colorTaken(c); i++) c = randColor(); return c; }
+const catText = c => `${c.name} (${DS.list.filter(x => dsCats(x).includes(c.id)).length})`;
 $("catNew").addEventListener("submit", async e => {
   e.preventDefault();
-  const name = $("catName").value.trim();
+  const name = $("catName").value.trim(), color = $("catColor").dataset.value;
   if (!name) return $("catName").focus();
-  DS.cats.push({ id: newId(), name, color: $("catColor").value });
+  if (DS.cats.some(c => c.name.toLowerCase() === name.toLowerCase())) return catNote(`Категория «${name}» уже есть`);
+  const same = colorTaken(color);
+  if (same) return catNote(`Цвет похож на «${same.name}» – выберите другой`);
+  DS.cats.push({ id: newId(), name, color });
   await catsPut();
-  $("catName").value = ""; delete $("catColor").dataset.touched; delete $("catColor").dataset.next;
+  $("catName").value = ""; delete $("catColor").dataset.value;
   renderHome();
 });
-$("catColor").addEventListener("input", () => { $("catColor").dataset.touched = "1"; });
+// короткая подсказка под строкой новой категории (сама исчезает)
+let catNoteT = 0;
+function catNote(t) {
+  let p = $("catNew").nextElementSibling;
+  if (!p || !p.classList.contains("cat-note")) { p = document.createElement("p"); p.className = "cat-note"; $("catNew").after(p); }
+  p.textContent = t; clearTimeout(catNoteT); catNoteT = setTimeout(() => p.remove(), 3500);
+}
+$("catColor").addEventListener("click", () => cpOpen($("catColor"), $("catColor").dataset.value, null,
+  c => $("catColor").style.setProperty("--cc", c), c => setNewColor(c)));
 $("catReset").addEventListener("click", () => { DS.filter = []; saveFilter(); renderHome(); });
-// цвет категории: пока тянут по палитре – меняется сразу везде, сохраняется по отпусканию
-$("catList").addEventListener("input", e => {
-  const inp = e.target.closest("[data-color]"), c = inp && catOf(inp.dataset.color);
-  if (!c) return;
-  c.color = inp.value;
-  for (const el of document.querySelectorAll(".cat-chip")) if (el.textContent === c.name) { el.style.setProperty("--cc", c.color); el.style.setProperty("--ci", inkOn(c.color)); }
-});
-$("catList").addEventListener("change", async e => { if (e.target.closest("[data-color]")) { await catsPut(); renderHome(); } });
+// цвет категории: пока настраивают в палитре – меняется сразу на всех метках; закрыли палитру – сохраняется
+function paintCat(c, color) {
+  for (const el of document.querySelectorAll(".cat-chip")) if (el.textContent === c.name) { el.style.setProperty("--cc", color); el.style.setProperty("--ci", inkOn(color)); }
+  const sw = $("catList").querySelector(`[data-color="${CSS.escape(c.id)}"]`);
+  if (sw) sw.style.setProperty("--cc", color);
+}
 $("catList").addEventListener("click", async e => {
+  const sw = e.target.closest("[data-color]");
+  if (sw) {
+    const c = catOf(sw.dataset.color);
+    return cpOpen(sw, c.color, c.id, col => paintCat(c, col), async col => { c.color = col; await catsPut(); renderHome(); }, () => paintCat(c, c.color));
+  }
   const fl = e.target.closest("[data-filter]");
   if (fl) {
     const id = fl.dataset.filter;
@@ -862,6 +882,89 @@ document.addEventListener("click", e => {
     if (DS.filter.filter(catOf).length) renderHome();
   }
 });
+// ----- своя палитра цвета (вместо системного окна): квадрат «насыщенность × яркость», полоска оттенка, код цвета -----
+// Всплывает у нажатого кружка; щелчок мимо или Enter – закрыть и оставить цвет; Esc – отменить.
+// Цвет, похожий на цвет другой категории, не сохраняется: в палитре – предупреждение, при закрытии остаётся прежний
+const CP = { h: 0, s: 1, v: 1, start: "", anchor: null, skip: null, onInput: null, onDone: null, onCancel: null };
+function hsvToHex(h, s, v) {
+  const f = n => { const k = (n + h / 60) % 6; return v - v * s * Math.max(0, Math.min(k, 4 - k, 1)); };
+  return "#" + [f(5), f(3), f(1)].map(x => Math.round(x * 255).toString(16).padStart(2, "0")).join("");
+}
+function hexToHsv(hex) {
+  const [r, g, b] = rgbOf(hex).map(x => x / 255), mx = Math.max(r, g, b), mn = Math.min(r, g, b), d = mx - mn;
+  let h = 0;
+  if (d) h = mx === r ? ((g - b) / d) % 6 : mx === g ? (b - r) / d + 2 : (r - g) / d + 4;
+  return { h: (h * 60 + 360) % 360, s: mx ? d / mx : 0, v: mx };
+}
+const cpHex = () => hsvToHex(CP.h, CP.s, CP.v);
+function cpPaint(fromHex) {
+  const c = cpHex();
+  $("cpSV").style.background = `linear-gradient(to top, #000, transparent), linear-gradient(to right, #fff, transparent), hsl(${CP.h} 100% 50%)`;
+  $("cpDot").style.left = CP.s * 100 + "%"; $("cpDot").style.top = (1 - CP.v) * 100 + "%"; $("cpDot").style.background = c;
+  $("cpKnob").style.left = CP.h / 360 * 100 + "%";
+  $("cpPrev").style.background = c;
+  if (!fromHex) $("cpHex").value = c;
+  const same = colorTaken(c, CP.skip);
+  $("cpWarn").hidden = !same; $("cpWarn").textContent = same ? `Похож на «${same.name}» – выберите другой` : "";
+  $("cpick").classList.toggle("bad", !!same);
+  if (CP.onInput) CP.onInput(c);
+}
+function cpPlace() {
+  const a = CP.anchor.getBoundingClientRect(), el = $("cpick"), w = el.offsetWidth, hh = el.offsetHeight;
+  let x = a.left + a.width / 2 - w / 2, y = a.bottom + 8;
+  if (y + hh > innerHeight - 8) y = a.top - hh - 8;              // внизу не помещается – над кружком
+  x = Math.max(8, Math.min(innerWidth - w - 8, x)); y = Math.max(8, y);
+  el.style.left = x + "px"; el.style.top = y + "px";
+}
+function cpOpen(anchor, color, skip, onInput, onDone, onCancel) {
+  if (!$("cpick").hidden) cpClose(true);
+  Object.assign(CP, hexToHsv(color), { start: color, anchor, skip, onInput, onDone, onCancel });
+  $("cpick").hidden = false; anchor.classList.add("picking");
+  cpPaint(); cpPlace(); $("cpSV").focus({ preventScroll: true });
+}
+function cpClose(keep) {
+  if ($("cpick").hidden) return;
+  const c = cpHex(), ok = keep && !colorTaken(c, CP.skip);
+  $("cpick").hidden = true; CP.anchor.classList.remove("picking");
+  if (ok && c !== CP.start) CP.onDone && CP.onDone(c);
+  else { if (CP.onInput) CP.onInput(CP.start); if (CP.onCancel) CP.onCancel(); if (keep && c !== CP.start) catNote("Такой цвет уже занят – оставлен прежний"); }
+}
+// тянуть по квадрату и полоске (мышь и палец)
+function cpDrag(el, fn) {
+  el.addEventListener("pointerdown", e => {
+    e.preventDefault(); el.setPointerCapture(e.pointerId); fn(e);
+    const mv = ev => fn(ev), up = () => { el.removeEventListener("pointermove", mv); el.removeEventListener("pointerup", up); };
+    el.addEventListener("pointermove", mv); el.addEventListener("pointerup", up);
+  });
+}
+const clamp01 = x => Math.max(0, Math.min(1, x));
+cpDrag($("cpSV"), e => { const r = $("cpSV").getBoundingClientRect(); CP.s = clamp01((e.clientX - r.left) / r.width); CP.v = 1 - clamp01((e.clientY - r.top) / r.height); cpPaint(); });
+cpDrag($("cpHue"), e => { const r = $("cpHue").getBoundingClientRect(); CP.h = clamp01((e.clientX - r.left) / r.width) * 359.9; cpPaint(); });
+$("cpSV").addEventListener("keydown", e => {
+  const k = { ArrowLeft: [-.04, 0], ArrowRight: [.04, 0], ArrowUp: [0, .04], ArrowDown: [0, -.04] }[e.key];
+  if (k) { e.preventDefault(); CP.s = clamp01(CP.s + k[0]); CP.v = clamp01(CP.v + k[1]); cpPaint(); }
+});
+$("cpHue").addEventListener("keydown", e => {
+  const k = { ArrowLeft: -6, ArrowRight: 6 }[e.key];
+  if (k) { e.preventDefault(); CP.h = (CP.h + k + 360) % 360; cpPaint(); }
+});
+$("cpHex").addEventListener("input", () => {
+  const v = $("cpHex").value.trim(), m = /^#?([0-9a-f]{6})$/i.exec(v);
+  if (m) { Object.assign(CP, hexToHsv("#" + m[1].toLowerCase())); cpPaint(true); }
+});
+$("cpick").addEventListener("keydown", e => {
+  if (e.key === "Escape") { e.preventDefault(); cpClose(false); CP.anchor.focus(); }
+  if (e.key === "Enter") { e.preventDefault(); cpClose(true); CP.anchor.focus(); }
+});
+// щелчок мимо палитры – закрыть, цвет остаётся (нажатие на тот же кружок тоже просто закрывает)
+document.addEventListener("pointerdown", e => {
+  if ($("cpick").hidden || $("cpick").contains(e.target)) return;
+  if (CP.anchor.contains(e.target)) { e.preventDefault(); cpClose(true); CP.justClosed = Date.now(); return; }
+  cpClose(true);
+}, true);
+document.addEventListener("click", e => { if (CP.justClosed && Date.now() - CP.justClosed < 400 && CP.anchor && CP.anchor.contains(e.target)) { e.stopImmediatePropagation(); e.preventDefault(); CP.justClosed = 0; } }, true);
+addEventListener("resize", () => { if (!$("cpick").hidden) cpPlace(); });
+addEventListener("scroll", () => { if (!$("cpick").hidden) cpPlace(); }, true);
 $("homeNew").addEventListener("submit", async e => {
   e.preventDefault();
   const name = $("homeName").value.trim() || `Датасет ${DS.list.length + 1}`, desc = $("homeDesc").value.trim();
@@ -870,7 +973,7 @@ $("homeNew").addEventListener("submit", async e => {
   const cats = DS.filter.filter(catOf);
   DS.list.push({ id, name, ...(desc ? { desc } : {}), ...(cats.length ? { cats } : {}), count: 0, savedAt: Date.now(), thumbs: [] });
   await dsPut();
-  $("homeName").value = $("homeDesc").value = "";
+  $("homeName").value = $("homeDesc").value = ""; document.querySelector(".hn-desc").open = false;
   await dsOpen(id);
 });
 // Скачивание файла: в окне Claude – через разрешение «downloads», в обычном браузере – ссылкой
