@@ -524,6 +524,30 @@ body.at-home .ds-btn, body.at-home .main, body.at-home .projbar, body.at-home .r
 .cat-new { display: flex; align-items: center; gap: 6px; padding-top: 6px; border-top: 1px solid var(--line); }
 .cat-new input { flex: 1 1 0; width: 0; min-width: 0;   /* width: 0 – поле не диктует ширину строки (его «естественная» ширина зависит от шрифтов системы) */
   font: 14px var(--font-body); padding: 6px 10px; border: 1px solid var(--line); border-radius: 8px; background: var(--panel); color: var(--ink); }
+/* первая страница – блоки программы F:1 – F:3 (по наброску заказчицы: три высокие бирюзовые плитки) */
+.methods { display: none; gap: 14px; }
+body.at-methods .methods { display: grid; }
+body.at-methods .home { display: none; }
+body.at-methods header h1 small, body.at-methods header > p { display: none; }
+.methods h2 { margin: 0; font: 700 22px var(--font-display); text-align: center; }
+.m-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 18px; max-width: 980px; width: 100%; margin: 0 auto; }
+.m-tile { display: grid; grid-template-rows: auto auto 1fr auto; align-items: start; gap: 10px; min-height: 320px; padding: 22px 20px; text-align: left;
+  border: 0; border-radius: 18px; background: var(--accent); color: var(--accent-ink); cursor: pointer; font: inherit;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, .18); transition: transform .15s, box-shadow .15s; }
+.m-tile:hover { transform: translateY(-4px); box-shadow: 0 14px 34px rgba(0, 0, 0, .26); }
+.m-tile:focus-visible { outline: 3px solid var(--ink); outline-offset: 3px; }
+.m-n { font: 700 40px/1 var(--font-display); letter-spacing: .02em; }
+.m-name { font: 700 20px/1.25 var(--font-display); hyphens: auto; overflow-wrap: anywhere; }   /* «Антибиотикорезистентность» – длинное слово, переносится по слогам */
+.m-sub { font-size: 14px; line-height: 1.4; opacity: .85; }
+.m-foot { font: 600 13px var(--font-mono); opacity: .8; }
+.m-tile.soon { background: var(--panel); color: var(--muted); border: 2px dashed var(--line); box-shadow: none; cursor: default; }
+.m-tile.soon:hover { transform: none; }
+.m-tile.soon .m-n { color: var(--accent); }
+.m-tile.soon .m-foot { justify-self: start; padding: 3px 10px; border-radius: 999px; background: var(--accent-soft); color: var(--accent); opacity: 1; }
+.crumb { font-size: 13px; color: var(--muted); margin-bottom: 4px; }
+.crumb span { color: var(--muted); font-weight: 500; }
+.crumb:hover { color: var(--accent); }
+@media (max-width: 760px) { .m-grid { grid-template-columns: 1fr; } .m-tile { min-height: 0; } }
 /* справка – окно поверх страницы по кнопке «?» */
 .how { color: var(--ink); background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 18px; gap: 12px;
   width: min(820px, calc(100vw - 32px)); max-height: calc(100vh - 48px); overflow-y: auto; box-sizing: border-box; }

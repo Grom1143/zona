@@ -513,22 +513,27 @@ async function dsFlush() {
 // Адрес страницы показывает, где мы: …/zona/ – выбор датасетов, …/zona/#ds=<id>&c=<номер чашки> – открыт датасет.
 // Часть после # остаётся в браузере (сервер её не видит), поэтому страница та же, а F5, закладка, ссылка
 // и кнопки браузера «Назад/Вперёд» сами попадают туда, где были
+// Три уровня: …/zona/ – блоки F:1–F:3; …/zona/#m=ab – датасеты блока «Антибиотикорезистентность»; #ds=… – открыт датасет
 function routeOf() {
-  const h = location.hash, m = /[#&]ds=([^&]+)/.exec(h), c = /[#&]c=(\d+)/.exec(h);
+  const h = location.hash, m = /[#&]ds=([^&#]+)/.exec(h), c = /[#&]c=(\d+)/.exec(h), b = /[#&]m=([^&#]+)/.exec(h);
   let id = null;
   try { id = m ? decodeURIComponent(m[1]) : null; } catch {}
-  return { id, dish: c ? +c[1] - 1 : -1 };
+  return { id, dish: c ? +c[1] - 1 : -1, m: b ? b[1] : null };
 }
+// id – датасет; null – список датасетов (#m=ab); "methods" – выбор блока (адрес без #)
 function setRoute(id, dish, push) {
-  const base = location.pathname + location.search, url = base + (id ? `#ds=${encodeURIComponent(id)}${dish >= 0 ? `&c=${dish + 1}` : ""}` : "");
+  const base = location.pathname + location.search,
+    url = base + (id === "methods" ? "" : id ? `#ds=${encodeURIComponent(id)}${dish >= 0 ? `&c=${dish + 1}` : ""}` : "#m=ab");
   if (url === base + location.hash) return;
   try { history[push ? "pushState" : "replaceState"](null, "", url); } catch {}   // в песочнице (artifact) история может быть запрещена
 }
 const dsKnown = id => !!id && (id === "project" || DS.list.some(x => x.id === id));
+const atMethods = () => document.body.classList.contains("at-methods");
 window.addEventListener("popstate", () => {
   const r = routeOf();
   if (dsKnown(r.id)) { if (atHome() || r.id !== DS.cur) dsOpen(r.id, r.dish, true); else if (r.dish >= 0 && r.dish !== P.cur && r.dish < P.dishes.length) openDish(r.dish); }
-  else if (!atHome()) showHome(true);
+  else if (r.m || r.id) { if (r.id) setRoute(null, -1, false); if (!atHome() || atMethods()) showHome(true); }   // неизвестный датасет – адрес на список
+  else if (!atMethods()) showMethods(true);
 });
 // открыть датасет (dish – номер чашки, если нажали на её фото; fromRoute – пришли по адресу, адрес уже верный)
 async function dsOpen(id, dish = -1, fromRoute = false) {
@@ -538,7 +543,7 @@ async function dsOpen(id, dish = -1, fromRoute = false) {
   try { localStorage.setItem("zona-dataset", id); } catch {}
   clearTimeout(saveTimer);
   P.dishes = []; P.cur = -1; P.sel = -1; P.trash = []; P.drag = null; P.calib = null; P.dirty = false; P.savedAt = null;
-  document.body.classList.remove("at-home"); $("home").hidden = true;
+  document.body.classList.remove("at-home", "at-methods"); $("home").hidden = true;
   setMode("idle"); renderDsBtn(); fitCanvas();
   if (!(await loadBrowser(id, dish))) {
     renderSaveState(); fillMeta(); renderDishes(); render();
@@ -550,9 +555,37 @@ async function showHome(fromRoute = false) {
   await dsFlush();
   if (!fromRoute) setRoute(null, -1, true);
   await dsLoadList();
-  document.body.classList.add("at-home"); $("home").hidden = false;
+  document.body.classList.remove("at-methods"); document.body.classList.add("at-home"); $("home").hidden = false;
   renderHome(); window.scrollTo(0, 0);
 }
+// ----- блоки программы (первая страница): F:1 работает, F:2 и F:3 – «Скоро» -----
+// Названия – от заказчицы (17.10.2026); переименовать – здесь
+const METHODS = [
+  { id: "ab", n: 1, name: "Антибиотикорезистентность", sub: "Диско-диффузионный метод: зоны подавления роста вокруг дисков с антибиотиками", ready: true },
+  { id: "col", n: 2, name: "Подсчёт колоний на чашках Петри", sub: "Сколько колоний выросло на чашке", ready: false },
+  { id: "area", n: 3, name: "Определение площади культур", sub: "Какую часть чашки занимает рост культуры", ready: false },
+];
+function renderMethods() {
+  const dishes = DS.list.reduce((t, x) => t + (x.count || 0), 0);
+  $("methodList").innerHTML = METHODS.map(m =>
+    `<button class="m-tile${m.ready ? "" : " soon"}" type="button" data-m="${m.id}"${m.ready ? "" : ` aria-disabled="true" title="Блок в разработке"`}>` +
+      `<span class="m-n">F:${m.n}</span><span class="m-name">${esc(m.name)}</span><span class="m-sub">${esc(m.sub)}</span>` +
+      `<span class="m-foot">${m.ready ? `${DS.list.length} ${dsWord(DS.list.length)} · ${dishes} ${dishWord(dishes)}` : "Скоро"}</span>` +
+    `</button>`).join("");
+}
+const dsWord = n => n % 10 === 1 && n % 100 !== 11 ? "датасет" : [2, 3, 4].includes(n % 10) && ![12, 13, 14].includes(n % 100) ? "датасета" : "датасетов";
+async function showMethods(fromRoute = false) {
+  await dsFlush();
+  if (!fromRoute) setRoute("methods", -1, true);
+  await dsLoadList();
+  document.body.classList.add("at-home", "at-methods"); $("home").hidden = false;
+  renderMethods(); window.scrollTo(0, 0);
+}
+$("methodList").addEventListener("click", e => {
+  const t = e.target.closest("[data-m]");
+  if (t && t.dataset.m === "ab") showHome();
+});
+$("toMethods").addEventListener("click", () => showMethods());
 const dsWhen = t => new Date(t).toLocaleString("ru-RU", { day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit" }).replace(",", "");
 let dsLast = null;
 try { dsLast = localStorage.getItem("zona-dataset"); } catch {}
@@ -677,11 +710,12 @@ async function dsStart() {
   await dsLoadList();
   DS.cur = DS.list.some(x => x.id === dsLast) ? dsLast : DS.list.length ? DS.list[0].id : "project";
   renderDsBtn();
-  // в адресе есть датасет (F5, закладка, ссылка) – сразу он; нет или такого уже нет – выбор
+  // в адресе есть датасет (F5, закладка, ссылка) – сразу он; #m=ab или неизвестный датасет – список датасетов; пусто – блоки
   const r = routeOf();
   if (dsKnown(r.id)) return dsOpen(r.id, r.dish, true);
   if (r.id) setRoute(null, -1, false);
-  await showHome(true);
+  if (r.m || r.id) return showHome(true);
+  await showMethods(true);
 }
 $("dsBtn").addEventListener("click", () => showHome());   // браузерная «Назад» делает то же самое
 // редактор прямо в карточке: название (одна строка) или описание (несколько строк)

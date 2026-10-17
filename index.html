@@ -20,8 +20,9 @@
 <link rel="stylesheet" href="style.css">
 
 <div class="wrap">
-<script>/* …/zona/ – выбор датасета (рабочая часть скрыта сразу, без мигания); …/zona/#ds=… – сразу открытый датасет */
-if (!/[#&]ds=/.test(location.hash)) document.body.classList.add("at-home");</script>
+<script>/* …/zona/ – выбор блока (F:1–F:3); …/zona/#m=ab – датасеты блока; …/zona/#ds=… – открытый датасет.
+   Нужная страница видна сразу, без мигания */
+if (!/[#&]ds=/.test(location.hash)) { document.body.classList.add("at-home"); if (!/[#&]m=/.test(location.hash)) document.body.classList.add("at-methods"); }</script>
   <header>
     <!-- логотип – векторная иконка из отдельных групп: по нажатию оживает на месте (app.js, playIconAnim) -->
     <span class="brand-logo" role="button" tabindex="0" title="MicroTest Vision" aria-label="Логотип MicroTest Vision – нажмите, чтобы оживить"><svg xmlns="http://www.w3.org/2000/svg" viewBox="96 96 832 832" width="100%" height="100%" aria-hidden="true">
@@ -45,9 +46,16 @@ if (!/[#&]ds=/.test(location.hash)) document.body.classList.add("at-home");</scr
 
   <!-- фото добавляются плиткой «+ Добавить фото» в ряду чашек, перетаскиванием на окно с фото или Ctrl+V;
        «Сохранено в …» показывает кнопка «Сохранить» в инструментах -->
-  <!-- стартовая страница: выбор датасета (отдельный набор чашек, например для каждой лаборатории) -->
+  <!-- самая первая страница: блоки программы (F:1 – F:3) -->
+  <section class="methods" id="methods" aria-labelledby="methodsTitle">
+    <h2 id="methodsTitle">Выберите блок</h2>
+    <div class="m-grid" id="methodList"></div>
+  </section>
+
+  <!-- страница блока «Антибиотикорезистентность»: выбор датасета (отдельный набор чашек, например для каждой лаборатории) -->
   <section class="home" id="home" aria-labelledby="homeTitle">
     <div class="home-head">
+      <button class="linkbtn crumb" type="button" id="toMethods" title="К выбору блока: F:1 – F:3">‹ Все блоки <span>/ F:1 · Антибиотикорезистентность</span></button>
       <div class="hh-row"><h2 id="homeTitle">Датасеты</h2>
         <button class="btn" type="button" id="homeEdit" aria-pressed="false" title="Поменять датасеты местами: номер или перетаскивание">⇅ Порядок</button></div>
       <p>Датасет – отдельный набор чашек со своей разметкой, например для каждой лаборатории. Выберите, с каким работать, или создайте новый. Хранятся в этом браузере.</p>
