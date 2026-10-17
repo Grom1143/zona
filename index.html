@@ -48,22 +48,14 @@ if (!/[#&]ds=/.test(location.hash)) document.body.classList.add("at-home");</scr
   <!-- стартовая страница: выбор датасета (отдельный набор чашек, например для каждой лаборатории) -->
   <section class="home" id="home" aria-labelledby="homeTitle">
     <div class="home-head">
-      <h2 id="homeTitle">Датасеты</h2>
+      <div class="hh-row"><h2 id="homeTitle">Датасеты</h2>
+        <button class="btn" type="button" id="homeEdit" aria-pressed="false" title="Поменять датасеты местами: номер или перетаскивание">⇅ Порядок</button></div>
       <p>Датасет – отдельный набор чашек со своей разметкой, например для каждой лаборатории. Выберите, с каким работать, или создайте новый. Хранятся в этом браузере.</p>
     </div>
     <div class="home-body">
       <div class="home-grid" id="homeList"></div>
       <!-- неподвижная панель справа: новый датасет, видимость разметки на фото, что значат цвета -->
       <aside class="home-side" aria-label="Панель датасетов">
-        <div class="home-cats">
-          <div class="side-head"><h3>Категории</h3><button class="linkbtn" type="button" id="catReset" hidden>Показать все</button></div>
-          <ul class="cat-list" id="catList"></ul>
-          <form class="cat-new" id="catNew">
-            <button class="cat-color" type="button" id="catColor" aria-label="Цвет новой категории" title="Цвет новой категории"></button>
-            <input id="catName" maxlength="40" placeholder="Новая категория" aria-label="Название новой категории">
-            <button class="btn primary" type="submit" title="Добавить категорию" aria-label="Добавить категорию">+</button>
-          </form>
-        </div>
         <form class="home-new" id="homeNew">
           <h3>Новый датасет</h3>
           <div class="hn-row">
@@ -74,6 +66,15 @@ if (!/[#&]ds=/.test(location.hash)) document.body.classList.add("at-home");</scr
             <textarea id="homeDesc" maxlength="1000" rows="2" placeholder="Где, кто, какие культуры" aria-label="Описание нового датасета"></textarea>
           </details>
         </form>
+        <div class="home-cats">
+          <div class="side-head"><h3>Категории</h3><button class="linkbtn" type="button" id="catReset" hidden>Показать все</button></div>
+          <ul class="cat-list" id="catList"></ul>
+          <form class="cat-new" id="catNew">
+            <button class="cat-color" type="button" id="catColor" aria-label="Цвет новой категории" title="Цвет новой категории"></button>
+            <input id="catName" maxlength="40" placeholder="Новая категория" aria-label="Название новой категории">
+            <button class="btn primary" type="submit" title="Добавить категорию" aria-label="Добавить категорию">+</button>
+          </form>
+        </div>
         <div class="home-vis">
           <h3>Разметка на фото</h3>
           <label class="hv-row" for="homeVis">Видимость <input type="range" id="homeVis" min="0" max="100" step="5" value="100" title="Вправо – ярче, влево – бледнее; 0 % – видно только фото"><output id="homeVisOut" for="homeVis">100 %</output></label>

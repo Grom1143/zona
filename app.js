@@ -584,7 +584,10 @@ function renderHome() {
       `<button class="btn icon" type="button" data-ren="${esc(x.id)}" title="Переименовать" aria-label="Переименовать ${esc(x.name)}">✎</button>` +
       `<button class="btn icon ds-del" type="button" data-del="${esc(x.id)}" title="Удалить датасет" aria-label="Удалить датасет ${esc(x.name)}">×</button></div>` +
       `${catsRow(x)}${photos}${work}${desc}` +
-      `<button class="btn primary ds-go" type="button" data-open="${esc(x.id)}">Открыть</button></article>`;
+      `<button class="btn primary ds-go" type="button" data-open="${esc(x.id)}"${DS.edit ? " disabled" : ""}>Открыть</button>` +
+      // номер датасета: обычно – мелко и серым; в режиме «Порядок» – поле, вписал 5 – датасет встал пятым
+      (DS.edit ? `<label class="ds-no">№ <input type="number" min="1" max="${L.length}" value="${L.indexOf(x) + 1}" data-num="${esc(x.id)}" aria-label="Номер датасета ${esc(x.name)}"></label>` :
+        `<span class="ds-no">№ ${L.indexOf(x) + 1}</span>`) + `</article>`;
   }).join("") : `<div class="ds-none"><p>Датасетов пока нет. Создайте первый на панели «Новый датасет» – или посмотрите, как работает программа, на искусственной чашке.</p>` +
     `<button class="btn" type="button" id="homeSample">◎ Открыть пример</button></div>`;
   if (L.length && !F.length) $("homeList").innerHTML = `<div class="ds-none"><p>Нет датасетов с выбранными категориями.</p>` +
@@ -713,7 +716,7 @@ $("homeList").addEventListener("click", e => {
   if (e.target.closest("#homeSample")) return dsOpen("project").then(loadSample);
   if (e.target.closest("#homeAll")) { DS.filter = []; saveFilter(); return renderHome(); }
   const open = e.target.closest("[data-open]");
-  if (open) return dsOpen(open.dataset.open, open.dataset.dish ? +open.dataset.dish : -1);
+  if (open) return DS.edit ? undefined : dsOpen(open.dataset.open, open.dataset.dish ? +open.dataset.dish : -1);   // в режиме «Порядок» не открываем
   const card = e.target.closest(".ds-card");
   const x = card && DS.list.find(d => d.id === card.dataset.id);
   if (!x) return;
@@ -965,6 +968,95 @@ document.addEventListener("pointerdown", e => {
 document.addEventListener("click", e => { if (CP.justClosed && Date.now() - CP.justClosed < 400 && CP.anchor && CP.anchor.contains(e.target)) { e.stopImmediatePropagation(); e.preventDefault(); CP.justClosed = 0; } }, true);
 addEventListener("resize", () => { if (!$("cpick").hidden) cpPlace(); });
 addEventListener("scroll", () => { if (!$("cpick").hidden) cpPlace(); }, true);
+// ----- порядок датасетов: режим «Порядок» – номер в поле или перетаскивание карточек -----
+DS.edit = false;
+function dsMove(id, to) {                         // to – новое место, с 0
+  const from = DS.list.findIndex(x => x.id === id);
+  to = Math.max(0, Math.min(DS.list.length - 1, to));
+  if (from < 0 || from === to) return renderHome();
+  DS.list.splice(to, 0, DS.list.splice(from, 1)[0]);
+  dsPut(); renderHome();
+  const inp = $("homeList").querySelector(`[data-num="${CSS.escape(id)}"]`);
+  if (inp) { inp.closest(".ds-card").classList.add("moved"); inp.focus(); inp.select(); }
+}
+$("homeEdit").addEventListener("click", () => {
+  DS.edit = !DS.edit;
+  $("homeEdit").setAttribute("aria-pressed", DS.edit);
+  $("homeEdit").textContent = DS.edit ? "✓ Готово" : "⇅ Порядок";
+  $("home").classList.toggle("editing", DS.edit);
+  renderHome();
+});
+// номер: Enter или ушли из поля – переставить
+$("homeList").addEventListener("change", e => {
+  const inp = e.target.closest("[data-num]");
+  if (inp) { const v = parseInt(inp.value, 10); if (v >= 1) dsMove(inp.dataset.num, v - 1); else renderHome(); }
+});
+$("homeList").addEventListener("keydown", e => {
+  const inp = e.target.closest("[data-num]");
+  if (inp && e.key === "Enter") { e.preventDefault(); inp.dispatchEvent(new Event("change", { bubbles: true })); }
+});
+// перетаскивание карточки (только в режиме «Порядок»): карточка едет за курсором, остальные расступаются;
+// отпустили – порядок из страницы переносится в список (при фильтре – только среди видимых, на их места)
+const cd = { t: null };
+$("homeList").addEventListener("pointerdown", e => {
+  if (!DS.edit || e.button !== 0) return;
+  const card = e.target.closest(".ds-card");
+  if (!card || e.target.closest("input, summary, label, details, button:not(.ds-cover)")) return;   // за фото тоже можно тянуть
+  const r = card.getBoundingClientRect();
+  cd.t = { card, id: e.pointerId, gx: e.clientX - r.left, gy: e.clientY - r.top, x: e.clientX, y: e.clientY, x0: e.clientX, y0: e.clientY, on: false };
+});
+function cardPlace() {
+  const t = cd.t, card = t.card;
+  card.style.transform = "";
+  const under = document.elementsFromPoint(t.x, t.y).map(el => el.closest && el.closest(".ds-card")).find(c => c && c !== card);
+  if (under) {
+    const u = under.getBoundingClientRect(), after = t.x > u.left + u.width / 2;
+    const ref = after ? under.nextElementSibling : under;
+    if (ref !== card && card.nextElementSibling !== ref) {
+      const others = [...$("homeList").querySelectorAll(".ds-card")].filter(c => c !== card);
+      const old = new Map(others.map(c => { const b = c.getBoundingClientRect(); return [c, [b.left, b.top]]; }));
+      $("homeList").insertBefore(card, ref);
+      for (const c of others) {
+        const b = c.getBoundingClientRect(), [l, tp] = old.get(c);
+        if (l !== b.left || tp !== b.top) c.animate([{ transform: `translate(${l - b.left}px, ${tp - b.top}px)` }, { transform: "none" }], { duration: 180, easing: "ease-out" });
+      }
+    }
+  }
+  const r = card.getBoundingClientRect();
+  card.style.transform = `translate(${t.x - t.gx - r.left}px, ${t.y - t.gy - r.top}px) scale(1.02)`;
+}
+$("homeList").addEventListener("pointermove", e => {
+  const t = cd.t;
+  if (!t || e.pointerId !== t.id) return;
+  t.x = e.clientX; t.y = e.clientY;
+  if (!t.on) {
+    if (Math.hypot(t.x - t.x0, t.y - t.y0) < 6) return;
+    t.on = true; t.card.classList.add("lift"); $("homeList").classList.add("sorting");
+    try { $("homeList").setPointerCapture(t.id); } catch (_) {}
+    // у верхнего / нижнего края окна страница прокручивается сама – можно утащить карточку далеко
+    const loop = () => {
+      if (cd.t !== t) return;
+      const v = t.y < 70 ? -16 : t.y > innerHeight - 70 ? 16 : 0;
+      if (v) { const y0 = scrollY; scrollBy(0, v); if (scrollY !== y0) cardPlace(); }
+      requestAnimationFrame(loop);
+    };
+    requestAnimationFrame(loop);
+  }
+  cardPlace();
+});
+function cardDrop() {
+  const t = cd.t;
+  cd.t = null;
+  if (!t || !t.on) return;
+  t.card.classList.remove("lift"); t.card.style.transform = ""; $("homeList").classList.remove("sorting");
+  const ids = [...$("homeList").querySelectorAll(".ds-card")].map(c => c.dataset.id);
+  const slots = DS.list.map((x, i) => ids.includes(x.id) ? i : -1).filter(i => i >= 0);
+  const by = new Map(DS.list.map(x => [x.id, x]));
+  slots.forEach((slot, k) => { DS.list[slot] = by.get(ids[k]); });
+  dsPut(); renderHome();
+}
+$("homeList").addEventListener("pointerup", cardDrop);
+$("homeList").addEventListener("pointercancel", cardDrop);
 $("homeNew").addEventListener("submit", async e => {
   e.preventDefault();
   const name = $("homeName").value.trim() || `Датасет ${DS.list.length + 1}`, desc = $("homeDesc").value.trim();
