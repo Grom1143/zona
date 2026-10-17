@@ -51,13 +51,33 @@ if (!/[#&]ds=/.test(location.hash)) document.body.classList.add("at-home");</scr
       <h2 id="homeTitle">Датасеты</h2>
       <p>Датасет – отдельный набор чашек со своей разметкой, например для каждой лаборатории. Выберите, с каким работать, или создайте новый. Хранятся в этом браузере.</p>
     </div>
-    <div class="home-grid" id="homeList"></div>
-    <form class="home-new" id="homeNew">
-      <h3>Новый датасет</h3>
-      <input id="homeName" maxlength="60" placeholder="Название, например «Лаборатория 2»" aria-label="Название нового датасета">
-      <textarea id="homeDesc" maxlength="1000" rows="2" placeholder="Описание – необязательно: где, кто, какие культуры" aria-label="Описание нового датасета"></textarea>
-      <button class="btn primary" type="submit">+ Создать</button>
-    </form>
+    <div class="home-body">
+      <div class="home-grid" id="homeList"></div>
+      <!-- неподвижная панель справа: новый датасет, видимость разметки на фото, что значат цвета -->
+      <aside class="home-side" aria-label="Панель датасетов">
+        <form class="home-new" id="homeNew">
+          <h3>Новый датасет</h3>
+          <input id="homeName" maxlength="60" placeholder="Название: «Лаборатория 2»" aria-label="Название нового датасета">
+          <textarea id="homeDesc" maxlength="1000" rows="2" placeholder="Описание – необязательно: где, кто, какие культуры" aria-label="Описание нового датасета"></textarea>
+          <button class="btn primary" type="submit">+ Создать</button>
+        </form>
+        <div class="home-vis">
+          <h3>Разметка на фото</h3>
+          <label class="hv-row" for="homeVis">Видимость <input type="range" id="homeVis" min="0" max="100" step="5" value="100" title="Вправо – ярче, влево – бледнее; 0 % – видно только фото"><output id="homeVisOut" for="homeVis">100 %</output></label>
+          <ul class="home-legend">
+            <li><i class="lg-z" style="--c:#ff9a62"></i>надо проверить</li>
+            <li><i class="lg-z dash" style="--c:#3ff0cf"></i>найдено программой</li>
+            <li><i class="lg-z" style="--c:#ffc845"></i>поправлено вручную</li>
+            <li><i class="lg-z" style="--c:#b8c4cc"></i>диск без зоны</li>
+          </ul>
+          <ul class="home-legend bars">
+            <li><i class="lg-b" style="--c:#3ccf7e"></i>фото готово</li>
+            <li><i class="lg-b" style="--c:#ff9a62"></i>есть что проверить</li>
+            <li><i class="lg-b" style="--c:#c9d3da"></i>без разметки</li>
+          </ul>
+        </div>
+      </aside>
+    </div>
   </section>
 
   <input type="file" id="file" accept="image/*" multiple>

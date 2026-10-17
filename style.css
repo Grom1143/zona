@@ -368,7 +368,22 @@ body.at-home .ds-btn, body.at-home .main, body.at-home .projbar, body.at-home .r
 .home[hidden], body:not(.at-home) .home { display: none; }
 .home-head h2 { margin: 0 0 4px; font: 700 24px var(--font-display); }
 .home-head p { margin: 0; color: var(--muted); max-width: 80ch; }
-.home-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(340px, 1fr)); gap: 14px; align-items: start; }
+.home-body { display: grid; grid-template-columns: minmax(0, 1fr) 300px; gap: 16px; align-items: start; }
+.home-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 14px; align-items: start; }
+/* панель справа не уезжает при прокрутке списка */
+.home-side { position: sticky; top: 16px; display: grid; gap: 12px; max-height: calc(100vh - 32px); overflow-y: auto; background: none; border: 0; border-radius: 0; padding: 0; }
+.home-side > * { background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 14px; }
+.home-vis { display: grid; gap: 10px; }
+.home-vis h3 { margin: 0; font: 700 16px var(--font-display); }
+.hv-row { display: grid; grid-template-columns: auto minmax(0, 1fr) 5ch; align-items: center; gap: 10px; font-size: 14px; }
+.hv-row input { width: 100%; accent-color: var(--accent); }
+.hv-row output { font: 600 13px var(--font-mono); text-align: right; }
+.home-legend { list-style: none; margin: 0; padding: 0; display: grid; gap: 5px; font-size: 13px; color: var(--muted); }
+.home-legend li { display: flex; align-items: center; gap: 8px; }
+.home-legend.bars { padding-top: 8px; border-top: 1px solid var(--line); }
+.lg-z { width: 14px; height: 14px; border-radius: 50%; border: 2px solid var(--c); box-shadow: 0 0 0 1px rgba(0, 0, 0, .35); flex: none; }
+.lg-z.dash { border-style: dashed; }
+.lg-b { width: 18px; height: 6px; border-radius: 3px; background: var(--c); box-shadow: 0 0 0 1px rgba(0, 0, 0, .3); flex: none; }
 .ds-card { display: grid; gap: 10px; background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 14px; }
 .ds-card.recent { border-color: var(--accent); box-shadow: inset 0 0 0 1px var(--accent); }
 .ds-top { display: flex; align-items: flex-start; gap: 6px; }
@@ -384,11 +399,24 @@ body.at-home .ds-btn, body.at-home .main, body.at-home .projbar, body.at-home .r
 .ds-cover:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 /* полоски внизу: сколько фото и какое показано */
 .ds-bars { position: absolute; left: 8px; right: 8px; bottom: 8px; display: flex; gap: 3px; pointer-events: none; }
-.ds-bars i { flex: 1; height: 4px; border-radius: 2px; background: rgba(255, 255, 255, .45); box-shadow: 0 0 2px rgba(0, 0, 0, .5); }
-.ds-bars i.on { background: #fff; }
+.ds-marks { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; opacity: var(--mk-op, 1); }
+/* полоски: цвет – состояние фото (зелёная – готово, оранжевая – есть что проверить, серая – без разметки), выбранная – выше и с рамкой */
+.ds-bars i { flex: 1; height: 5px; border-radius: 3px; background: rgba(255, 255, 255, .5); box-shadow: 0 0 0 1px rgba(0, 0, 0, .45); transition: height .1s; }
+.ds-bars i.b-done { background: #3ccf7e; } .ds-bars i.b-chk { background: #ff9a62; } .ds-bars i.b-empty { background: rgba(255, 255, 255, .55); }
+.ds-bars i.on { height: 9px; box-shadow: 0 0 0 2px #fff; }
+.ds-bars { align-items: flex-end; }
 .ds-cap { position: absolute; left: 8px; top: 8px; max-width: calc(100% - 16px); padding: 3px 8px; border-radius: 6px; background: rgba(10, 14, 17, .62); color: #fff;
   font-size: 12px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; pointer-events: none; text-align: left; }
 .ds-cap b { font-family: var(--font-mono); font-weight: 600; margin-right: 4px; }
+.ds-cap em { font-style: normal; font-weight: 600; margin-left: 4px; }
+.ds-cap .st-done { color: #6fe3a4; } .ds-cap .st-chk { color: #ffb38a; } .ds-cap .st-empty { color: #c9d3da; }
+/* объём работы под обложкой */
+.ds-work { display: grid; gap: 6px; font-size: 13px; color: var(--muted); }
+.ds-work b { color: var(--ink); font-weight: 600; }
+.ds-work em { font-style: normal; font-weight: 600; }
+.ds-work .st-chk { color: #e2732f; } .ds-work .st-done { color: #22a35e; } .ds-work .st-empty { color: var(--muted); }
+.ds-prog { display: flex; height: 8px; border-radius: 4px; overflow: hidden; background: var(--line); }
+.ds-prog i { display: block; height: 100%; } .ds-prog .p-done { background: #3ccf7e; } .ds-prog .p-chk { background: #ff9a62; }
 .ds-empty { margin: 0; padding: 18px; text-align: center; color: var(--muted); font-size: 14px; border: 1px dashed var(--line); border-radius: 8px; aspect-ratio: 4 / 3; display: grid; place-items: center; }
 .ds-desc summary { cursor: pointer; font-weight: 600; color: var(--accent); }
 .ds-desc p { margin: 8px 0; white-space: pre-wrap; overflow-wrap: anywhere; font-size: 14px; }
@@ -400,11 +428,15 @@ body.at-home .ds-btn, body.at-home .main, body.at-home .projbar, body.at-home .r
 .ds-rename, .ds-desc-edit, .home-new input, .home-new textarea { width: 100%; box-sizing: border-box; font: 15px var(--font-body); padding: 9px 12px;
   border: 1px solid var(--line); border-radius: 8px; background: var(--panel); color: var(--ink); resize: vertical; }
 .ds-rename:focus-visible, .ds-desc-edit:focus-visible, .home-new input:focus-visible, .home-new textarea:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
-.home-new { display: grid; gap: 8px; max-width: 560px; padding: 14px; border: 1px dashed var(--line); border-radius: 12px; }
+.home-new { display: grid; gap: 8px; }
 .home-new h3 { margin: 0; font: 700 16px var(--font-display); }
 .home-new .btn { justify-self: start; }
 .ds-none { display: grid; gap: 10px; justify-items: start; color: var(--muted); }
 .ds-none p { margin: 0; }
+@media (max-width: 900px) {
+  .home-body { grid-template-columns: 1fr; }
+  .home-side { position: static; max-height: none; order: -1; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); }
+}
 @media (max-width: 560px) {
   .ds-btn { width: 34px; padding: 0; justify-content: center; } .ds-btn span:last-child { display: none; }
   .home-grid { grid-template-columns: 1fr; }

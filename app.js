@@ -437,7 +437,7 @@ async function saveBrowser(auto) {
       dishes.push({ ...pick(d, true), img: await d.img.arrayBuffer(), imgType: d.img.type || "image/jpeg" });
     }
     const now = Date.now(), k = DS.list.findIndex(x => x.id === id);
-    const e = { ...(k >= 0 ? DS.list[k] : {}), id, name: dsName(), count: dishes.length, savedAt: now, v: 2, thumbs: dishes.map(d => [d.prev || d.thumb, d.name]) };
+    const e = { ...(k >= 0 ? DS.list[k] : {}), id, name: dsName(), count: dishes.length, savedAt: now, v: 3, thumbs: dishes.map(d => [d.prev || d.thumb, d.name, markOf(d)]) };
     delete e.thumb;
     k >= 0 ? (DS.list[k] = e) : DS.list.push(e);
     await idbDo("readwrite", s => { s.put(DS.list, "datasets"); return s.put({ v: 5, cur: P.cur, savedAt: now, dishes, breaks: P.breaks, general: P.general }, dsKey(id)); });
@@ -489,14 +489,17 @@ async function dsLoadList() {
     if (o && Array.isArray(o.dishes) && o.dishes.length) list.push({ id: "project", name: "Мой датасет", count: o.dishes.length, savedAt: o.savedAt || Date.now() });
   }
   DS.list = list.filter(x => x && typeof x.id === "string");
-  // у датасетов, сохранённых до обложек, превью собираем один раз из самих фото
+  // у датасетов, сохранённых до обложек с разметкой, превью и разметку собираем один раз из самой записи
   let fixed = false;
   for (const x of DS.list) {
-    if (x.v === 2) continue;
+    if (x.v === 3) continue;
     const o = await idbDo("readonly", s => s.get(dsKey(x.id))).catch(() => null), th = [];
-    for (const d of o && Array.isArray(o.dishes) ? o.dishes : [])
-      th.push([d.prev || (d.img ? await prevFromBlob(d.img instanceof ArrayBuffer ? new Blob([d.img], { type: d.imgType || "image/jpeg" }) : d.img) : "") || d.thumb || "", d.name || ""]);
-    x.thumbs = th; x.count = th.length; x.v = 2; delete x.thumb; fixed = true;
+    for (const d of o && Array.isArray(o.dishes) ? o.dishes : []) {
+      const old = x.v === 2 && Array.isArray(x.thumbs) ? x.thumbs[th.length] : null;   // превью уже есть – не пересчитываем
+      const prev = old && old[0] || d.prev || (d.img ? await prevFromBlob(d.img instanceof ArrayBuffer ? new Blob([d.img], { type: d.imgType || "image/jpeg" }) : d.img) : "") || d.thumb || "";
+      th.push([prev, d.name || "", markOf(hydrate({ ...d, img: null }))]);
+    }
+    x.thumbs = th; x.count = th.length; x.v = 3; delete x.thumb; fixed = true;
   }
   if (fixed) await dsPut();
 }
@@ -557,10 +560,18 @@ function renderHome() {
     const th = x.thumbs || [], recent = x.id === DS.cur;
     const photos = th.length ?
       `<button class="ds-cover" type="button" data-open="${esc(x.id)}" data-dish="0" aria-label="Открыть датасет ${esc(x.name)}: фото 1 из ${th.length} – ${esc(th[0][1])}">` +
-        `<img src="${th[0][0]}" alt="" draggable="false">` +
-        (th.length > 1 ? `<span class="ds-bars" aria-hidden="true">${th.map((_, i) => `<i${i ? "" : ` class="on"`}></i>`).join("")}</span>` : "") +
-        `<span class="ds-cap" aria-hidden="true"><b>1 / ${th.length}</b> ${esc(th[0][1])}</span>` +
+        `<img src="${th[0][0]}" alt="" draggable="false">` + coverSvg(th[0][2]) +
+        `<span class="ds-bars" aria-hidden="true">${th.map((t, i) => `<i class="b-${workOf(t[2]).st}${i ? "" : " on"}"></i>`).join("")}</span>` +
+        `<span class="ds-cap" aria-hidden="true">${capOf(th, 0)}</span>` +
       `</button>` : `<p class="ds-empty">Фото пока нет</p>`;
+    // объём работы: сколько фото готово, сколько зон ждёт проверки, сколько фото ещё без разметки
+    const W = th.map(t => workOf(t[2])), done = W.filter(w => w.st === "done").length, chk = W.reduce((a, w) => a + w.chk, 0),
+      empty = W.filter(w => w.st === "empty").length, zones = W.reduce((a, w) => a + w.zones, 0);
+    const work = th.length ? `<div class="ds-work"><div class="ds-prog" role="img" aria-label="Готово ${done} из ${th.length} фото">` +
+        `<i class="p-done" style="width:${done / th.length * 100}%"></i><i class="p-chk" style="width:${(th.length - done - empty) / th.length * 100}%"></i></div>` +
+        `<span><b>Готово ${done} из ${th.length} ${photosWord(th.length)}</b> · ${zones} ${zonesWord(zones)}` +
+        (chk ? ` · <em class="st-chk">проверить ${chk}</em>` : "") + (empty ? ` · <em class="st-empty">без разметки ${empty} ${photosWord(empty)}</em>` : "") +
+        (done === th.length ? ` · <em class="st-done">всё готово ✓</em>` : "") + `</span></div>` : "";
     const desc = x.desc ? `<details class="ds-desc"><summary>Описание</summary><p>${esc(x.desc)}</p>` +
       `<button class="linkbtn" type="button" data-desc="${esc(x.id)}">✎ Изменить описание</button></details>` :
       `<button class="linkbtn ds-adddesc" type="button" data-desc="${esc(x.id)}">+ Добавить описание</button>`;
@@ -569,10 +580,49 @@ function renderHome() {
       `<span class="ds-ct">${x.count || 0} ${dishWord(x.count || 0)} · ${dsWhen(x.savedAt)}${recent ? " · <b>открывали последним</b>" : ""}</span></div>` +
       `<button class="btn icon" type="button" data-ren="${esc(x.id)}" title="Переименовать" aria-label="Переименовать ${esc(x.name)}">✎</button>` +
       `<button class="btn icon ds-del" type="button" data-del="${esc(x.id)}" title="Удалить датасет" aria-label="Удалить датасет ${esc(x.name)}">×</button></div>` +
-      `${photos}${desc}` +
+      `${photos}${work}${desc}` +
       `<button class="btn primary ds-go" type="button" data-open="${esc(x.id)}">Открыть</button></article>`;
-  }).join("") : `<div class="ds-none"><p>Датасетов пока нет. Создайте первый ниже – или посмотрите, как работает программа, на искусственной чашке.</p>` +
+  }).join("") : `<div class="ds-none"><p>Датасетов пока нет. Создайте первый на панели «Новый датасет» – или посмотрите, как работает программа, на искусственной чашке.</p>` +
     `<button class="btn" type="button" id="homeSample">◎ Открыть пример</button></div>`;
+}
+// Разметка для обложки: размер фото и зоны – [x, y, R] для круга или [путь SVG] для контура + состояние:
+// chk – надо проверить (оранжевая), auto – найдена программой, man – поправлена вручную, none – диск без зоны.
+// Цвета – как в окне разметки
+const ZCOL = { chk: "#ff9a62", auto: "#3ff0cf", man: "#ffc845", none: "#b8c4cc" };
+const zState = it => needsCheck(it) ? "chk" : it.src === "none" ? "none" : it.src === "auto" ? "auto" : "man";
+function markOf(d) {
+  const z = (d.items || []).map(it => {
+    if (it.pts) {
+      const line = outline(it.pts).filter((_, i) => i % 2 === 0);
+      return ["M" + line.map(q => `${Math.round(q.x)} ${Math.round(q.y)}`).join("L") + "Z", zState(it)];
+    }
+    const c = center(it);
+    return [Math.round(c.x), Math.round(c.y), Math.round(diamPx(it) / 2), zState(it)];
+  });
+  return { w: d.w, h: d.h, z };
+}
+// сколько работы: фото готово – есть зоны и ни одна не ждёт проверки
+function workOf(m) {
+  const z = m && m.z || [], chk = z.filter(q => q[q.length - 1] === "chk").length;
+  return { zones: z.length, chk, st: !z.length ? "empty" : chk ? "chk" : "done" };
+}
+const zonesWord = n => n % 10 === 1 && n % 100 !== 11 ? "зона" : [2, 3, 4].includes(n % 10) && ![12, 13, 14].includes(n % 100) ? "зоны" : "зон";
+const photosWord = n => n % 10 === 1 && n % 100 !== 11 ? "фото" : "фото";
+function coverSvg(m) {
+  if (!m || !m.w || !m.z.length) return "";
+  const sw = Math.max(m.w, m.h) / 160;          // толщина линии ~ одинаковая на любом фото
+  return `<svg class="ds-marks" viewBox="0 0 ${m.w} ${m.h}" preserveAspectRatio="xMidYMid slice" aria-hidden="true">` + m.z.map(q => {
+    const st = q[q.length - 1], col = ZCOL[st] || ZCOL.auto;
+    const shape = q.length === 2 ? `<path d="${q[0]}"` : `<circle cx="${q[0]}" cy="${q[1]}" r="${q[2]}"`;
+    return `${shape} fill="none" stroke="rgba(0,0,0,.55)" stroke-width="${sw * 2}"/>` +
+      `${shape} fill="${st === "chk" ? "rgba(255,154,98,.18)" : "none"}" stroke="${col}" stroke-width="${sw}"${st === "auto" ? ` stroke-dasharray="${sw * 3} ${sw * 2}"` : ""}/>`;
+  }).join("") + `</svg>`;
+}
+function capOf(th, i) {
+  const w = workOf(th[i][2]);
+  const tag = w.st === "empty" ? `<em class="st-empty">без разметки</em>` : w.st === "chk" ? `<em class="st-chk">${w.zones} ${zonesWord(w.zones)} · проверить ${w.chk}</em>` :
+    `<em class="st-done">✓ ${w.zones} ${zonesWord(w.zones)}</em>`;
+  return `<b>${i + 1} / ${th.length}</b> ${esc(th[i][1])} ${tag}`;
 }
 // обложка: показать i-е фото датасета (курсор над левой частью – первые фото, над правой – последние; ← → с клавиатуры)
 function coverShow(cv, i) {
@@ -582,8 +632,11 @@ function coverShow(cv, i) {
   if (+cv.dataset.dish === i) return;
   cv.dataset.dish = i;
   cv.querySelector("img").src = th[i][0];
+  const old = cv.querySelector(".ds-marks"), svg = coverSvg(th[i][2]);
+  if (old) old.remove();
+  if (svg) cv.querySelector("img").insertAdjacentHTML("afterend", svg);
   cv.querySelectorAll(".ds-bars i").forEach((b, k) => b.classList.toggle("on", k === i));
-  cv.querySelector(".ds-cap").innerHTML = `<b>${i + 1} / ${th.length}</b> ${esc(th[i][1])}`;
+  cv.querySelector(".ds-cap").innerHTML = capOf(th, i);
   cv.setAttribute("aria-label", `Открыть датасет ${x.name}: фото ${i + 1} из ${th.length} – ${th[i][1]}`);
 }
 $("homeList").addEventListener("pointermove", e => {
@@ -603,6 +656,15 @@ $("homeList").addEventListener("keydown", e => {
   e.preventDefault();
   coverShow(cv, +cv.dataset.dish + (e.key === "ArrowLeft" ? -1 : 1));
 });
+// видимость разметки на обложках – ползунок на панели; запоминается в этом браузере
+function homeVis(v, keep) {
+  v = Math.max(0, Math.min(100, Math.round(+v || 0)));
+  $("homeVis").value = v; $("homeVisOut").value = v + " %";
+  $("home").style.setProperty("--mk-op", v / 100);
+  if (keep) try { localStorage.setItem("zona-home-vis", v); } catch {}
+}
+$("homeVis").addEventListener("input", () => homeVis($("homeVis").value, true));
+try { const v = parseInt(localStorage.getItem("zona-home-vis"), 10); homeVis(v >= 0 && v <= 100 ? v : 100); } catch { homeVis(100); }
 async function dsStart() {
   await dsLoadList();
   DS.cur = DS.list.some(x => x.id === dsLast) ? dsLast : DS.list.length ? DS.list[0].id : "project";
