@@ -138,7 +138,7 @@ const rgbaOf = d => d._rgba || (d._rgba = d._base.getContext("2d").getImageData(
 const itemsFrom = res => res.disks.map(d => ({
   x: d.x, y: d.y, src: d.none ? "none" : "auto", drug: "", ok: false, doubt: !d.none && !!d.doubt,
   r: rulerAt(d.x, d.y, res.diskPx ? (d.none ? res.diskPx : Math.max(d.zonePx, res.diskPx)) : d.zonePx),
-  shape: d.contour && !d.none ? d.contour : null, colonies: !d.none && !!d.colonies,
+  shape: d.contour && !d.none ? d.contour : null, colonies: !d.none && !!d.colonies, pigment: !d.none && !!d.pigment,
 }));
 
 async function addDish(src, w, h, name, sample) {
@@ -397,7 +397,7 @@ const histOf = a => Array.isArray(a) ? a.filter(e => e && typeof e.s === "string
 function hydrate(o) {
   const meta = { date: "", medium: "", group: "опыт", culture: "", person: "", org: "", dishMm: "", ...(o.meta || {}) };
   const items = (o.items || []).map(it => {
-    const z = { x: it.x, y: it.y, src: it.src || "manual", drug: it.drug || "", ok: !!it.ok, doubt: !!it.doubt, colonies: !!it.colonies, shape: Array.isArray(it.shape) ? it.shape : null };
+    const z = { x: it.x, y: it.y, src: it.src || "manual", drug: it.drug || "", ok: !!it.ok, doubt: !!it.doubt, colonies: !!it.colonies, pigment: !!it.pigment, shape: Array.isArray(it.shape) ? it.shape : null };
     if (Array.isArray(it.pts) && it.pts.length === N_PTS) z.pts = it.pts;
     else if (it.r2) z.pts = ptsFromRulers(it.r, it.r2);   // старая «вторая ось» – уже неровная зона
     else z.r = it.r;
@@ -1226,7 +1226,7 @@ function tableRows() {
       d.name, m.date, m.medium, m.group, m.culture, m.dishMm ? +m.dishMm : "", i + 1, it.drug, drugName(it.drug) || it.drug, drugNameEn(it.drug),
       mpp ? round1(diamPx(it) * mpp) : "",
       (c => c ? c.cat + (c.atu ? " (ЗТН)" : "") : "")(categoryOf(it, d)),
-      it.src === "none" ? (it.ok ? "нет зоны (подтверждено)" : "нет зоны (не проверено)") : needsCheck(it) ? (it.colonies ? "проверить (колонии в зоне?)" : "проверить (найдена неуверенно)") : STATUS(it),
+      it.src === "none" ? (it.ok ? "нет зоны (подтверждено)" : "нет зоны (не проверено)") : needsCheck(it) ? (it.colonies ? "проверить (колонии в зоне?)" : it.pigment ? "проверить (цветной диск – окрашенный агар?)" : "проверить (найдена неуверенно)") : STATUS(it),
     ]));
   }
   return rows;
@@ -1568,6 +1568,7 @@ function renderSide() {
     const none = it.src === "none";
     $("checkText").textContent = none ? `Зона у диска ${P.sel + 1} не найдена. Рост вплотную к диску?`
       : it.colonies ? `Внутри зоны у диска ${P.sel + 1}, похоже, колонии. Мерить по внутреннему краю; колонии до диска – зоны нет.`
+      : it.pigment ? `Диск ${P.sel + 1} цветной: краска из него окрашивает агар вокруг, и край цветного пятна легко принять за край зоны. Мерить по краю прозрачной зоны (где нет роста), а не по краю цвета.`
       : `Край зоны у диска ${P.sel + 1} найден неуверенно: зона сливается с соседней или размыта. Проверьте круг.`;
     $("checkYes").textContent = none ? "Да, зоны нет" : "Всё верно";
     $("checkMark").textContent = none ? "Разметить зону вручную" : it.colonies ? "Зоны нет" : "Гибкий контур";

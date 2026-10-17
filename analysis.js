@@ -239,6 +239,35 @@ function markColonies(Z, w, h, disks, diskPx) {
   }
 }
 
+// Цветной диск (жёлтый, оранжевый антибиотик): краска из него окрашивает агар вокруг, и край окрашенного пятна
+// программа принимает за край зоны – зона выходит больше настоящей (тест: зона 11 на «disko_diffuzionnyj…» – 21,6 мм
+// вместо ~12,5). Признак – сам диск заметно цветнее остальных дисков чашки и внутри зоны цвет насыщеннее газона.
+// Зону не меняем, а просим человека проверить: мерить по краю прозрачной зоны, а не по краю цвета.
+// Насыщенность – max(R,G,B) − min(R,G,B); медианы по кольцам. Подобрано на тестовых фото: у окрашенной зоны диск 168
+// при медиане дисков ~50, зона 104 при газоне 55; на цветном агаре зоны тоже насыщенные, но диски там белые (2–5)
+function markPigment(rgba, w, h, disks) {
+  const sat = (x, y) => {
+    x = Math.round(x); y = Math.round(y);
+    if (x < 0 || y < 0 || x >= w || y >= h) return NaN;
+    const j = (y * w + x) * 4, a = rgba[j], b = rgba[j + 1], c = rgba[j + 2];
+    return Math.max(a, b, c) - Math.min(a, b, c);
+  };
+  const ring = (d, r0, r1) => {
+    const v = [];
+    for (let r = r0; r <= r1; r += 1) for (let t = 0; t < 72; t++) {
+      const q = sat(d.x + Math.cos(t * Math.PI / 36) * r, d.y + Math.sin(t * Math.PI / 36) * r);
+      if (isFinite(q)) v.push(q);
+    }
+    return median(v);
+  };
+  const disk = disks.map(d => ring(d, 0, d.d / 2 * 0.7)), med = median(disk.filter(isFinite));
+  disks.forEach((d, i) => {
+    if (d.none || !(disk[i] >= 90 && disk[i] >= 2 * med)) return;
+    const R = d.zonePx / 2, rd = d.d / 2, zone = ring(d, rd * 1.5, R * 0.9), lawn = ring(d, R * 1.15, R * 1.45);
+    if (zone >= 1.4 * lawn + 10) { d.pigment = true; d.doubt = true; }
+  });
+}
+
 function analyze(rgba, w, h) {
   const { W, Z, B } = features(rgba, w, h);
   const side = Math.min(w, h), minD = side * 0.025, maxD = side * 0.13;
@@ -308,6 +337,7 @@ function analyze(rgba, w, h) {
   const stretch = aligned || few ? median(ok.map(d => d.stretch)) : null;
   measureZones(Z, w, h, disks);
   markColonies(Z, w, h, disks, diskPx);
+  markPigment(rgba, w, h, disks);
   return { disks, diskPx, stretch };
 }
 
