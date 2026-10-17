@@ -960,15 +960,16 @@ function stepDish(k) {
 }
 function renderDishes() {
   renderNav();
-  $("dishes").innerHTML = P.dishes.map((d, i) => {
+  // порядок: «Пример» → чашки → «+ Добавить фото»; «Пример» нужен, только пока чашек нет – добавили хоть одну, плитка исчезает
+  $("dishes").innerHTML = (P.dishes.length ? "" :
+    `<button class="dish sample-tile" type="button" title="Искусственная чашка – попробовать программу"><b>◎</b>Пример</button>`) + P.dishes.map((d, i) => {
     const n = d.items.filter(needsCheck).length;
     return `<div class="dish${i === P.cur ? " cur" : ""}" data-i="${i}" tabindex="0" role="button" aria-label="Открыть ${esc(d.name)}">` +
       `<img src="${d.thumb}" alt="">` +
       `<span class="nm" title="${esc(d.name)}">${esc(d.name)}</span>` +
       `<span class="ct${n ? " warn" : ""}">${d.items.length} ${disksWord(d.items.length)}${n ? ` · ${n} ?` : ""}</span>` +
       `<button class="x" type="button" data-del="${i}" aria-label="Удалить чашку ${esc(d.name)}" title="Удалить чашку">×</button></div>`;
-  }).join("") + `<label class="dish add" for="file" tabindex="0" title="Выбрать фото. Можно и перетащить фото на окно или вставить Ctrl+V"><b>+</b>Добавить фото</label>` +
-    `<button class="dish sample-tile" type="button" title="Искусственная чашка – попробовать программу"><b>◎</b>Пример</button>`;
+  }).join("") + `<label class="dish add" for="file" tabindex="0" title="Выбрать фото. Можно и перетащить фото на окно или вставить Ctrl+V"><b>+</b>Добавить фото</label>`;
   $("delPickBtn").disabled = $("snapEditBtn").disabled = !P.dishes.length;
 }
 
