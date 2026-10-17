@@ -61,6 +61,18 @@ if (!/[#&]ds=/.test(location.hash)) document.body.classList.add("at-home");</scr
           <textarea id="homeDesc" maxlength="1000" rows="2" placeholder="Описание – необязательно: где, кто, какие культуры" aria-label="Описание нового датасета"></textarea>
           <button class="btn primary" type="submit">+ Создать</button>
         </form>
+        <div class="home-cats">
+          <h3>Категории и фильтр</h3>
+          <p class="cat-hint">Нажмите на категорию – останутся датасеты с ней. Кружок слева – свой цвет. Поставить категорию датасету – «+ категория» в его карточке.</p>
+          <ul class="cat-list" id="catList"></ul>
+          <p class="cat-state" id="catState" aria-live="polite"></p>
+          <button class="btn" type="button" id="catReset" hidden>Показать все</button>
+          <form class="cat-new" id="catNew">
+            <label class="cat-color" title="Цвет новой категории – нажмите и выберите любой"><input type="color" id="catColor" value="#3fa9f5" aria-label="Цвет новой категории"></label>
+            <input id="catName" maxlength="40" placeholder="Новая категория" aria-label="Название новой категории">
+            <button class="btn primary" type="submit" title="Добавить категорию">+</button>
+          </form>
+        </div>
         <div class="home-vis">
           <h3>Разметка на фото</h3>
           <label class="hv-row" for="homeVis">Видимость <input type="range" id="homeVis" min="0" max="100" step="5" value="100" title="Вправо – ярче, влево – бледнее; 0 % – видно только фото"><output id="homeVisOut" for="homeVis">100 %</output></label>

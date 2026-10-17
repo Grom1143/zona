@@ -482,6 +482,8 @@ function renderDsBtn() {
 }
 const dsPut = () => idbDo("readwrite", s => s.put(DS.list, "datasets")).catch(() => {});
 async function dsLoadList() {
+  const cats = await idbDo("readonly", s => s.get("dscats")).catch(() => null);
+  DS.cats = Array.isArray(cats) ? cats.filter(c => c && c.id && c.name) : [];
   let list = await idbDo("readonly", s => s.get("datasets")).catch(() => null);
   if (!Array.isArray(list)) {        // сохранение из времён до датасетов становится первым датасетом
     list = [];
@@ -555,8 +557,9 @@ const dsWhen = t => new Date(t).toLocaleString("ru-RU", { day: "2-digit", month:
 let dsLast = null;
 try { dsLast = localStorage.getItem("zona-dataset"); } catch {}
 function renderHome() {
-  const L = DS.list;
-  $("homeList").innerHTML = L.length ? L.map(x => {
+  const L = DS.list, F = L.filter(dsPass);
+  renderCats();
+  $("homeList").innerHTML = L.length ? F.map(x => {
     const th = x.thumbs || [], recent = x.id === DS.cur;
     const photos = th.length ?
       `<button class="ds-cover" type="button" data-open="${esc(x.id)}" data-dish="0" aria-label="Открыть датасет ${esc(x.name)}: фото 1 из ${th.length} – ${esc(th[0][1])}">` +
@@ -580,10 +583,12 @@ function renderHome() {
       `<span class="ds-ct">${x.count || 0} ${dishWord(x.count || 0)} · ${dsWhen(x.savedAt)}${recent ? " · <b>открывали последним</b>" : ""}</span></div>` +
       `<button class="btn icon" type="button" data-ren="${esc(x.id)}" title="Переименовать" aria-label="Переименовать ${esc(x.name)}">✎</button>` +
       `<button class="btn icon ds-del" type="button" data-del="${esc(x.id)}" title="Удалить датасет" aria-label="Удалить датасет ${esc(x.name)}">×</button></div>` +
-      `${photos}${work}${desc}` +
+      `${catsRow(x)}${photos}${work}${desc}` +
       `<button class="btn primary ds-go" type="button" data-open="${esc(x.id)}">Открыть</button></article>`;
   }).join("") : `<div class="ds-none"><p>Датасетов пока нет. Создайте первый на панели «Новый датасет» – или посмотрите, как работает программа, на искусственной чашке.</p>` +
     `<button class="btn" type="button" id="homeSample">◎ Открыть пример</button></div>`;
+  if (L.length && !F.length) $("homeList").innerHTML = `<div class="ds-none"><p>Нет датасетов с выбранными категориями.</p>` +
+    `<button class="btn" type="button" id="homeAll">Показать все датасеты</button></div>`;
 }
 // Разметка для обложки: размер фото и зоны – [x, y, R] для круга или [путь SVG] для контура + состояние:
 // chk – надо проверить (оранжевая), auto – найдена программой, man – поправлена вручную, none – диск без зоны.
@@ -706,6 +711,7 @@ function dsEdit(card, x, field) {
 }
 $("homeList").addEventListener("click", e => {
   if (e.target.closest("#homeSample")) return dsOpen("project").then(loadSample);
+  if (e.target.closest("#homeAll")) { DS.filter = []; saveFilter(); return renderHome(); }
   const open = e.target.closest("[data-open]");
   if (open) return dsOpen(open.dataset.open, open.dataset.dish ? +open.dataset.dish : -1);
   const card = e.target.closest(".ds-card");
@@ -729,12 +735,140 @@ $("homeList").addEventListener("click", e => {
     renderHome();
   })();
 });
+// ----- категории датасетов: свои названия и свои цвета, фильтр на панели -----
+// Список категорий – запись «dscats» в IndexedDB: { id, name, color }; у датасета – x.cats = [id, …].
+// Фильтр: выбраны категории – видны датасеты, у которых есть хотя бы одна из них; выбор запоминается в браузере
+DS.cats = []; DS.filter = [];
+try { const v = JSON.parse(localStorage.getItem("zona-home-filter")); if (Array.isArray(v)) DS.filter = v; } catch {}
+const catsPut = () => idbDo("readwrite", s => s.put(DS.cats, "dscats")).catch(() => {});
+const catOf = id => DS.cats.find(c => c.id === id);
+const dsCats = x => (x.cats || []).filter(catOf);
+const dsPass = x => { const on = DS.filter.filter(catOf); return !on.length || dsCats(x).some(id => on.includes(id)); };
+function saveFilter() { try { localStorage.setItem("zona-home-filter", JSON.stringify(DS.filter)); } catch {} }
+// подпись на цветной метке – тёмная на светлом цвете и белая на тёмном (по яркости цвета)
+function inkOn(hex) {
+  const n = parseInt(String(hex).slice(1), 16), r = n >> 16 & 255, g = n >> 8 & 255, b = n & 255;
+  return (0.299 * r + 0.587 * g + 0.114 * b) > 150 ? "#14191d" : "#ffffff";
+}
+const chip = c => `<span class="cat-chip" style="--cc:${esc(c.color)};--ci:${inkOn(c.color)}">${esc(c.name)}</span>`;
+// новая категория – случайный приятный оттенок, пользователь меняет его на свой
+function randColor() {
+  const h = Math.floor(Math.random() * 360), s = 0.62, l = 0.55, a = s * Math.min(l, 1 - l);
+  const f = k => { const t = (k + h / 30) % 12; return Math.round(255 * (l - a * Math.max(-1, Math.min(t - 3, 9 - t, 1)))).toString(16).padStart(2, "0"); };
+  return "#" + f(0) + f(8) + f(4);
+}
+// метки на карточке + «+ категория»: список с галочками, поставить / снять
+function catsRow(x) {
+  const mine = dsCats(x);
+  const menu = DS.cats.length ? DS.cats.map(c =>
+    `<label class="cat-opt"><input type="checkbox" data-cat="${esc(c.id)}"${mine.includes(c.id) ? " checked" : ""}>${chip(c)}</label>`).join("") :
+    `<p class="cat-hint">Категорий пока нет – создайте на панели справа («Категории»).</p>`;
+  return `<div class="ds-cats">${mine.map(id => chip(catOf(id))).join("")}` +
+    `<details class="cat-pick"><summary title="Поставить или снять категории">${mine.length ? "✎" : "+ категория"}</summary><div class="cat-menu">${menu}</div></details></div>`;
+}
+// панель: категории (нажатие – фильтр), цвет меняется кружком, ✎ – название, × – удалить; внизу – новая категория
+function renderCats() {
+  const on = DS.filter.filter(catOf), cnt = id => DS.list.filter(x => dsCats(x).includes(id)).length;
+  $("catList").innerHTML = DS.cats.length ? DS.cats.map(c =>
+    `<li class="cat-row${on.includes(c.id) ? " on" : ""}" data-cid="${esc(c.id)}">` +
+      `<label class="cat-color" title="Свой цвет – нажмите и выберите любой"><input type="color" value="${esc(c.color)}" data-color="${esc(c.id)}" aria-label="Цвет категории ${esc(c.name)}"></label>` +
+      `<button class="cat-filter" type="button" data-filter="${esc(c.id)}" aria-pressed="${on.includes(c.id)}" title="${on.includes(c.id) ? "Убрать из фильтра" : "Показать только датасеты с этой категорией"}">` +
+        `${chip(c)}<span class="cat-n">${cnt(c.id)}</span></button>` +
+      `<button class="btn icon" type="button" data-cren="${esc(c.id)}" title="Переименовать" aria-label="Переименовать категорию ${esc(c.name)}">✎</button>` +
+      `<button class="btn icon cat-del" type="button" data-cdel="${esc(c.id)}" title="Удалить категорию" aria-label="Удалить категорию ${esc(c.name)}">×</button></li>`).join("") :
+    `<li class="cat-hint">Пока нет. Создайте первую ниже: название и свой цвет.</li>`;
+  $("catReset").hidden = !on.length;
+  $("catState").textContent = on.length ? `Показаны датасеты с категорией: ${on.map(id => catOf(id).name).join(" или ")}` : "";
+  if (!$("catColor").dataset.touched) $("catColor").value = $("catColor").dataset.next || ($("catColor").dataset.next = randColor());
+}
+$("catNew").addEventListener("submit", async e => {
+  e.preventDefault();
+  const name = $("catName").value.trim();
+  if (!name) return $("catName").focus();
+  DS.cats.push({ id: newId(), name, color: $("catColor").value });
+  await catsPut();
+  $("catName").value = ""; delete $("catColor").dataset.touched; delete $("catColor").dataset.next;
+  renderHome();
+});
+$("catColor").addEventListener("input", () => { $("catColor").dataset.touched = "1"; });
+$("catReset").addEventListener("click", () => { DS.filter = []; saveFilter(); renderHome(); });
+// цвет категории: пока тянут по палитре – меняется сразу везде, сохраняется по отпусканию
+$("catList").addEventListener("input", e => {
+  const inp = e.target.closest("[data-color]"), c = inp && catOf(inp.dataset.color);
+  if (!c) return;
+  c.color = inp.value;
+  for (const el of document.querySelectorAll(".cat-chip")) if (el.textContent === c.name) { el.style.setProperty("--cc", c.color); el.style.setProperty("--ci", inkOn(c.color)); }
+});
+$("catList").addEventListener("change", async e => { if (e.target.closest("[data-color]")) { await catsPut(); renderHome(); } });
+$("catList").addEventListener("click", async e => {
+  const fl = e.target.closest("[data-filter]");
+  if (fl) {
+    const id = fl.dataset.filter;
+    DS.filter = DS.filter.includes(id) ? DS.filter.filter(x => x !== id) : [...DS.filter.filter(catOf), id];
+    saveFilter(); return renderHome();
+  }
+  const ren = e.target.closest("[data-cren]");
+  if (ren) {
+    const c = catOf(ren.dataset.cren), row = ren.closest(".cat-row"), btn = row.querySelector(".cat-filter");
+    const inp = document.createElement("input");
+    inp.className = "ds-rename"; inp.value = c.name; inp.maxLength = 40; inp.setAttribute("aria-label", "Название категории");
+    btn.replaceWith(inp); inp.focus(); inp.select();
+    let done = false;
+    const fin = async ok => {
+      if (done) return; done = true;
+      const v = inp.value.trim();
+      if (ok && v && v !== c.name) { c.name = v; await catsPut(); }
+      renderHome();
+    };
+    inp.addEventListener("keydown", ev => { if (ev.key === "Enter") { ev.preventDefault(); fin(true); } if (ev.key === "Escape") { ev.preventDefault(); fin(false); } });
+    inp.addEventListener("blur", () => fin(true));
+    return;
+  }
+  const del = e.target.closest("[data-cdel]");
+  if (!del) return;
+  const c = catOf(del.dataset.cdel);
+  if (!del.classList.contains("arm")) {          // × → «Удалить?»; у датасетов метка снимется, сами датасеты останутся
+    del.classList.add("arm"); del.textContent = "Удалить?"; del.title = `Ещё раз – удалить категорию «${c.name}» (датасеты останутся)`;
+    setTimeout(() => { if (del.isConnected) { del.classList.remove("arm"); del.textContent = "×"; del.title = "Удалить категорию"; } }, 3000);
+    return;
+  }
+  DS.cats = DS.cats.filter(x => x.id !== c.id);
+  DS.filter = DS.filter.filter(x => x !== c.id); saveFilter();
+  for (const x of DS.list) if (x.cats) x.cats = x.cats.filter(id => id !== c.id);
+  await catsPut(); await dsPut(); renderHome();
+});
+// галочки в карточке: поставить / снять категорию датасету
+$("homeList").addEventListener("change", async e => {
+  const cb = e.target.closest("[data-cat]");
+  if (!cb) return;
+  const card = cb.closest(".ds-card"), x = DS.list.find(d => d.id === card.dataset.id);
+  if (!x) return;
+  const id = cb.dataset.cat, set = new Set(dsCats(x));
+  cb.checked ? set.add(id) : set.delete(id);
+  x.cats = [...set];
+  await dsPut();
+  // метки обновляем на месте, меню остаётся открытым – удобно поставить несколько
+  const row = card.querySelector(".ds-cats");
+  row.querySelectorAll(":scope > .cat-chip").forEach(el => el.remove());
+  row.insertAdjacentHTML("afterbegin", x.cats.map(cid => chip(catOf(cid))).join(""));
+  row.querySelector(".cat-pick > summary").textContent = x.cats.length ? "✎" : "+ категория";
+  const counts = DS.cats.map(c => [c.id, DS.list.filter(d => dsCats(d).includes(c.id)).length]);
+  for (const [cid, n] of counts) { const el = $("catList").querySelector(`[data-filter="${CSS.escape(cid)}"] .cat-n`); if (el) el.textContent = n; }
+});
+// меню категорий закрывается кликом мимо него; если включён фильтр – карточка, которую больше не пропускает фильтр, уходит
+document.addEventListener("click", e => {
+  for (const d of document.querySelectorAll(".cat-pick[open]")) if (!d.contains(e.target)) {
+    d.open = false;
+    if (DS.filter.filter(catOf).length) renderHome();
+  }
+});
 $("homeNew").addEventListener("submit", async e => {
   e.preventDefault();
   const name = $("homeName").value.trim() || `Датасет ${DS.list.length + 1}`, desc = $("homeDesc").value.trim();
   // самый первый датасет занимает запись «project» – её видит и телефонная версия
   const id = DS.list.some(x => x.id === "project") ? newId() : "project";
-  DS.list.push({ id, name, ...(desc ? { desc } : {}), count: 0, savedAt: Date.now(), thumbs: [] });
+  const cats = DS.filter.filter(catOf);
+  DS.list.push({ id, name, ...(desc ? { desc } : {}), ...(cats.length ? { cats } : {}), count: 0, savedAt: Date.now(), thumbs: [] });
   await dsPut();
   $("homeName").value = $("homeDesc").value = "";
   await dsOpen(id);
