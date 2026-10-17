@@ -120,6 +120,18 @@ function thumbOf(c) {
   t.getContext("2d").drawImage(c, 0, 0, t.width, t.height);
   return t.toDataURL("image/jpeg", 0.8);
 }
+// превью для обложки датасета на странице выбора: 360 px – чётко на всю ширину карточки и всё ещё лёгкое
+const PREV_PX = 360;
+function prevOf(c) {
+  const t = document.createElement("canvas"), k = Math.min(1, PREV_PX / Math.max(c.width, c.height));
+  t.width = Math.round(c.width * k); t.height = Math.round(c.height * k);
+  t.getContext("2d").drawImage(c, 0, 0, t.width, t.height);
+  return t.toDataURL("image/jpeg", 0.8);
+}
+// у чашек, добавленных до превью, – делаем из самого фото (один раз; дальше хранится с чашкой)
+async function prevFromBlob(b) {
+  try { const bm = await createImageBitmap(b), p = prevOf(bm); bm.close && bm.close(); return p; } catch { return ""; }
+}
 const rgbaOf = d => d._rgba || (d._rgba = d._base.getContext("2d").getImageData(0, 0, d.w, d.h).data);
 // Все диски стандартные, 6 мм: «нет зоны» – ровно диаметр диска (по медиане всех дисков, а не по одному,
 // который на фото мог выйти 5,7 или 6,3), и зона не бывает меньше диска
@@ -135,7 +147,7 @@ async function addDish(src, w, h, name, sample) {
     id: newId(), name, sample: !!sample,
     meta: prev ? { ...prev.meta } : { date: today(), medium: "", group: "опыт", culture: "", person: "", org: "", dishMm: "" },
     diskMm: prev ? prev.diskMm : 6, w: base.width, h: base.height,
-    img: await canvasBlob(base), thumb: thumbOf(base),
+    img: await canvasBlob(base), thumb: thumbOf(base), prev: prevOf(base),
     items: [], scalePx: null, scaleSrc: "auto", nDisks: 0, _base: base, _rgba: null, _undo: [], _redo: [],
   };
   const res = analyze(rgbaOf(d), d.w, d.h);
@@ -376,7 +388,7 @@ function renderSaveState() {
 // hist – добавить историю отмены (последние 50 шагов): в браузере – да, в файл проекта – нет, чтобы он не раздувался
 const HIST_KEEP = 50;
 const pick = (d, hist) => ({
-  ...(hist ? { undo: d._undo.slice(-HIST_KEEP), redo: d._redo.slice(-HIST_KEEP) } : {}),
+  ...(hist ? { undo: d._undo.slice(-HIST_KEEP), redo: d._redo.slice(-HIST_KEEP), prev: d.prev || "" } : {}),
   id: d.id, name: d.name, sample: d.sample && !d._undo.length, meta: { ...d.meta }, diskMm: d.diskMm, w: d.w, h: d.h, img: d.img, thumb: d.thumb,
   items: JSON.parse(JSON.stringify(d.items)), scalePx: d.scalePx, scaleSrc: d.scaleSrc, nDisks: d.nDisks, stretch: d.stretch,
 });
@@ -392,7 +404,7 @@ function hydrate(o) {
     return z;
   });
   const img = o.img instanceof ArrayBuffer ? new Blob([o.img], { type: o.imgType || "image/jpeg" }) : o.img;
-  return { id: o.id || newId(), name: o.name || "Чашка", sample: !!o.sample, meta, diskMm: o.diskMm || 6, w: o.w, h: o.h, img, thumb: o.thumb || "",
+  return { id: o.id || newId(), name: o.name || "Чашка", sample: !!o.sample, meta, diskMm: o.diskMm || 6, w: o.w, h: o.h, img, thumb: o.thumb || "", prev: o.prev || "",
     items, scalePx: o.scalePx || null, scaleSrc: o.scaleSrc || "auto", nDisks: o.nDisks || 0, stretch: o.stretch || null, _base: null, _rgba: null, _undo: histOf(o.undo), _redo: histOf(o.redo) };
 }
 function idb() {
@@ -420,9 +432,12 @@ async function saveBrowser(auto) {
   try {
     // фото храним байтами, а не Blob: в Safari Blob из IndexedDB после перезагрузки иногда не читается
     const dishes = [];
-    for (const d of P.dishes) dishes.push({ ...pick(d, true), img: await d.img.arrayBuffer(), imgType: d.img.type || "image/jpeg" });
+    for (const d of P.dishes) {
+      if (!d.prev) d.prev = d._base ? prevOf(d._base) : await prevFromBlob(d.img);
+      dishes.push({ ...pick(d, true), img: await d.img.arrayBuffer(), imgType: d.img.type || "image/jpeg" });
+    }
     const now = Date.now(), k = DS.list.findIndex(x => x.id === id);
-    const e = { ...(k >= 0 ? DS.list[k] : {}), id, name: dsName(), count: dishes.length, savedAt: now, thumbs: dishes.map(d => [d.thumb, d.name]) };
+    const e = { ...(k >= 0 ? DS.list[k] : {}), id, name: dsName(), count: dishes.length, savedAt: now, v: 2, thumbs: dishes.map(d => [d.prev || d.thumb, d.name]) };
     delete e.thumb;
     k >= 0 ? (DS.list[k] = e) : DS.list.push(e);
     await idbDo("readwrite", s => { s.put(DS.list, "datasets"); return s.put({ v: 5, cur: P.cur, savedAt: now, dishes, breaks: P.breaks, general: P.general }, dsKey(id)); });
@@ -474,13 +489,14 @@ async function dsLoadList() {
     if (o && Array.isArray(o.dishes) && o.dishes.length) list.push({ id: "project", name: "Мой датасет", count: o.dishes.length, savedAt: o.savedAt || Date.now() });
   }
   DS.list = list.filter(x => x && typeof x.id === "string");
-  // у датасетов, сохранённых до миниатюр, миниатюры собираем один раз из самой записи
+  // у датасетов, сохранённых до обложек, превью собираем один раз из самих фото
   let fixed = false;
   for (const x of DS.list) {
-    if (Array.isArray(x.thumbs)) continue;
-    const o = await idbDo("readonly", s => s.get(dsKey(x.id))).catch(() => null);
-    x.thumbs = o && Array.isArray(o.dishes) ? o.dishes.map(d => [d.thumb || "", d.name || ""]) : [];
-    x.count = x.thumbs.length; delete x.thumb; fixed = true;
+    if (x.v === 2) continue;
+    const o = await idbDo("readonly", s => s.get(dsKey(x.id))).catch(() => null), th = [];
+    for (const d of o && Array.isArray(o.dishes) ? o.dishes : [])
+      th.push([d.prev || (d.img ? await prevFromBlob(d.img instanceof ArrayBuffer ? new Blob([d.img], { type: d.imgType || "image/jpeg" }) : d.img) : "") || d.thumb || "", d.name || ""]);
+    x.thumbs = th; x.count = th.length; x.v = 2; delete x.thumb; fixed = true;
   }
   if (fixed) await dsPut();
 }
@@ -539,9 +555,12 @@ function renderHome() {
   const L = DS.list;
   $("homeList").innerHTML = L.length ? L.map(x => {
     const th = x.thumbs || [], recent = x.id === DS.cur;
-    const photos = th.length ? th.map(([t, n], i) =>
-      `<button class="ds-ph" type="button" data-open="${esc(x.id)}" data-dish="${i}" title="${esc(n)} – открыть" aria-label="Открыть чашку ${esc(n)}">` +
-      (t ? `<img src="${t}" alt="">` : `<span>◎</span>`) + `</button>`).join("") : `<p class="ds-empty">Фото пока нет</p>`;
+    const photos = th.length ?
+      `<button class="ds-cover" type="button" data-open="${esc(x.id)}" data-dish="0" aria-label="Открыть датасет ${esc(x.name)}: фото 1 из ${th.length} – ${esc(th[0][1])}">` +
+        `<img src="${th[0][0]}" alt="" draggable="false">` +
+        (th.length > 1 ? `<span class="ds-bars" aria-hidden="true">${th.map((_, i) => `<i${i ? "" : ` class="on"`}></i>`).join("")}</span>` : "") +
+        `<span class="ds-cap" aria-hidden="true"><b>1 / ${th.length}</b> ${esc(th[0][1])}</span>` +
+      `</button>` : `<p class="ds-empty">Фото пока нет</p>`;
     const desc = x.desc ? `<details class="ds-desc"><summary>Описание</summary><p>${esc(x.desc)}</p>` +
       `<button class="linkbtn" type="button" data-desc="${esc(x.id)}">✎ Изменить описание</button></details>` :
       `<button class="linkbtn ds-adddesc" type="button" data-desc="${esc(x.id)}">+ Добавить описание</button>`;
@@ -550,11 +569,40 @@ function renderHome() {
       `<span class="ds-ct">${x.count || 0} ${dishWord(x.count || 0)} · ${dsWhen(x.savedAt)}${recent ? " · <b>открывали последним</b>" : ""}</span></div>` +
       `<button class="btn icon" type="button" data-ren="${esc(x.id)}" title="Переименовать" aria-label="Переименовать ${esc(x.name)}">✎</button>` +
       `<button class="btn icon ds-del" type="button" data-del="${esc(x.id)}" title="Удалить датасет" aria-label="Удалить датасет ${esc(x.name)}">×</button></div>` +
-      `<div class="ds-photos">${photos}</div>${desc}` +
+      `${photos}${desc}` +
       `<button class="btn primary ds-go" type="button" data-open="${esc(x.id)}">Открыть</button></article>`;
   }).join("") : `<div class="ds-none"><p>Датасетов пока нет. Создайте первый ниже – или посмотрите, как работает программа, на искусственной чашке.</p>` +
     `<button class="btn" type="button" id="homeSample">◎ Открыть пример</button></div>`;
 }
+// обложка: показать i-е фото датасета (курсор над левой частью – первые фото, над правой – последние; ← → с клавиатуры)
+function coverShow(cv, i) {
+  const x = DS.list.find(d => d.id === cv.dataset.open), th = x && x.thumbs || [];
+  if (!th.length) return;
+  i = Math.max(0, Math.min(th.length - 1, i));
+  if (+cv.dataset.dish === i) return;
+  cv.dataset.dish = i;
+  cv.querySelector("img").src = th[i][0];
+  cv.querySelectorAll(".ds-bars i").forEach((b, k) => b.classList.toggle("on", k === i));
+  cv.querySelector(".ds-cap").innerHTML = `<b>${i + 1} / ${th.length}</b> ${esc(th[i][1])}`;
+  cv.setAttribute("aria-label", `Открыть датасет ${x.name}: фото ${i + 1} из ${th.length} – ${th[i][1]}`);
+}
+$("homeList").addEventListener("pointermove", e => {
+  const cv = e.target.closest(".ds-cover");
+  if (!cv || e.pointerType !== "mouse") return;
+  const r = cv.getBoundingClientRect(), n = cv.querySelectorAll(".ds-bars i").length || 1;
+  coverShow(cv, Math.floor((e.clientX - r.left) / r.width * n));
+});
+// курсор ушёл с фото – снова первое
+$("homeList").addEventListener("pointerout", e => {
+  const cv = e.target.closest(".ds-cover");
+  if (cv && !cv.contains(e.relatedTarget)) coverShow(cv, 0);
+});
+$("homeList").addEventListener("keydown", e => {
+  const cv = e.target.closest(".ds-cover");
+  if (!cv || (e.key !== "ArrowLeft" && e.key !== "ArrowRight")) return;
+  e.preventDefault();
+  coverShow(cv, +cv.dataset.dish + (e.key === "ArrowLeft" ? -1 : 1));
+});
 async function dsStart() {
   await dsLoadList();
   DS.cur = DS.list.some(x => x.id === dsLast) ? dsLast : DS.list.length ? DS.list[0].id : "project";
