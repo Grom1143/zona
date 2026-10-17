@@ -1,0 +1,17 @@
+{
+  "name": "МикроТест Петри",
+  "short_name": "МикроТест",
+  "description": "Измерение зон подавления роста вокруг дисков с антибиотиком по фото чашки Петри. Учебный инструмент.",
+  "lang": "ru",
+  "start_url": "/zona/phone/?phone&app=1",
+  "scope": "/zona/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#11171c",
+  "theme_color": "#11171c",
+  "icons": [
+    { "src": "icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "icon-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}

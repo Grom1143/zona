@@ -2142,3 +2142,6 @@ function playIconAnim() {
   m[0].animate([{ transform: "scaleX(0)" }, { transform: "scaleX(1)" }], { duration: 520, delay: 2500, easing: ease, ...hold });
   m.slice(1).forEach(p => p.animate([{ opacity: 0, transform: "scaleY(0)" }, { opacity: 1, transform: "scaleY(1)" }], { duration: 260, delay: 2980, easing: back, ...hold }));
 }
+
+// ----- приложение: работа без интернета (sw.js). Только на https (GitHub): по Wi-Fi-адресу http браузер не разрешает -----
+if ("serviceWorker" in navigator && location.protocol === "https:") navigator.serviceWorker.register("sw.js").catch(() => {});
