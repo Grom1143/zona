@@ -20,6 +20,7 @@
 <link rel="stylesheet" href="style.css">
 
 <div class="wrap">
+<script>document.body.classList.add("at-home")   /* сайт начинается с выбора датасета: рабочая часть скрыта сразу, без мигания */</script>
   <header>
     <!-- логотип – векторная иконка из отдельных групп: по нажатию оживает на месте (app.js, playIconAnim) -->
     <span class="brand-logo" role="button" tabindex="0" title="MicroTest Vision" aria-label="Логотип MicroTest Vision – нажмите, чтобы оживить"><svg xmlns="http://www.w3.org/2000/svg" viewBox="96 96 832 832" width="100%" height="100%" aria-hidden="true">
@@ -33,8 +34,8 @@
 </svg></span>
     <div class="title-row">
       <h1>МикроТест Вижн <small>диско-диффузионный метод</small></h1>
-      <!-- датасет – отдельный набор чашек (например, для каждой лаборатории): сменить или создать -->
-      <button class="ds-btn" id="dsBtn" type="button" aria-haspopup="dialog"><span aria-hidden="true">▤</span> <span id="dsBtnName">Мой датасет</span></button>
+      <!-- открытый датасет; нажатие – назад к выбору датасетов -->
+      <button class="ds-btn" id="dsBtn" type="button"><span aria-hidden="true">▤</span> <span id="dsBtnName">Мой датасет</span></button>
       <button class="help-btn" id="helpBtn" type="button" title="Как это работает" aria-label="Справка: как это работает" aria-haspopup="dialog">?</button>
       <button class="help-btn theme-btn" id="themeBtn" type="button"></button>
     </div>
@@ -43,6 +44,21 @@
 
   <!-- фото добавляются плиткой «+ Добавить фото» в ряду чашек, перетаскиванием на окно с фото или Ctrl+V;
        «Сохранено в …» показывает кнопка «Сохранить» в инструментах -->
+  <!-- стартовая страница: выбор датасета (отдельный набор чашек, например для каждой лаборатории) -->
+  <section class="home" id="home" aria-labelledby="homeTitle">
+    <div class="home-head">
+      <h2 id="homeTitle">Датасеты</h2>
+      <p>Датасет – отдельный набор чашек со своей разметкой, например для каждой лаборатории. Выберите, с каким работать, или создайте новый. Хранятся в этом браузере.</p>
+    </div>
+    <div class="home-grid" id="homeList"></div>
+    <form class="home-new" id="homeNew">
+      <h3>Новый датасет</h3>
+      <input id="homeName" maxlength="60" placeholder="Название, например «Лаборатория 2»" aria-label="Название нового датасета">
+      <textarea id="homeDesc" maxlength="1000" rows="2" placeholder="Описание – необязательно: где, кто, какие культуры" aria-label="Описание нового датасета"></textarea>
+      <button class="btn primary" type="submit">+ Создать</button>
+    </form>
+  </section>
+
   <input type="file" id="file" accept="image/*" multiple>
   <span class="savestate" id="saveState" aria-live="polite" hidden></span>
 
@@ -284,19 +300,6 @@
   </dialog>
 
   <!-- выбор чашек для удаления галочками -->
-  <dialog class="how ds" id="dsBox" aria-labelledby="dsTitle">
-    <div class="how-head">
-      <h2 id="dsTitle">С каким датасетом работаем?</h2>
-      <button class="btn icon" id="dsClose" type="button" aria-label="Закрыть">×</button>
-    </div>
-    <p class="crop-hint">Датасет – отдельный набор чашек со своей разметкой, например для каждой лаборатории. Каждый сохраняется в этом браузере отдельно.</p>
-    <div class="ds-list" id="dsList"></div>
-    <form class="ds-new" id="dsNew">
-      <input id="dsName" maxlength="60" placeholder="Название, например «Лаборатория 2»" aria-label="Название нового датасета">
-      <button class="btn primary" type="submit">+ Создать</button>
-    </form>
-  </dialog>
-
   <dialog class="how" id="pickBox" aria-labelledby="pickTitle">
     <div class="how-head">
       <h2 id="pickTitle">Какие чашки удалить?</h2>

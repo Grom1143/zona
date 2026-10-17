@@ -412,6 +412,7 @@ async function idbDo(mode, fn) {
 // auto = true – автосохранение: молча, без сообщения (кроме первой ошибки)
 async function saveBrowser(auto) {
   clearTimeout(saveTimer);
+  if (atHome()) return;            // на странице выбора чашек нет – нечего сохранять (иначе затёрли бы датасет пустым)
   if (saving) { saveTimer = setTimeout(() => saveBrowser(auto), 500); return; }   // прошлая запись ещё идёт
   saving = true;
   const v = P.ver, id = DS.cur;
@@ -419,8 +420,9 @@ async function saveBrowser(auto) {
     // фото храним байтами, а не Blob: в Safari Blob из IndexedDB после перезагрузки иногда не читается
     const dishes = [];
     for (const d of P.dishes) dishes.push({ ...pick(d, true), img: await d.img.arrayBuffer(), imgType: d.img.type || "image/jpeg" });
-    const now = Date.now(), e = { id, name: dsName(), count: dishes.length, savedAt: now, thumb: dishes.length ? dishes[0].thumb : "" };
-    const k = DS.list.findIndex(x => x.id === id);
+    const now = Date.now(), k = DS.list.findIndex(x => x.id === id);
+    const e = { ...(k >= 0 ? DS.list[k] : {}), id, name: dsName(), count: dishes.length, savedAt: now, thumbs: dishes.map(d => [d.thumb, d.name]) };
+    delete e.thumb;
     k >= 0 ? (DS.list[k] = e) : DS.list.push(e);
     await idbDo("readwrite", s => { s.put(DS.list, "datasets"); return s.put({ v: 5, cur: P.cur, savedAt: now, dishes, breaks: P.breaks, general: P.general }, dsKey(id)); });
     renderDsBtn();
@@ -433,7 +435,7 @@ async function saveBrowser(auto) {
     P.saveFailed = true; renderSaveState();
   } finally { saving = false; }
 }
-async function loadBrowser(id = DS.cur) {
+async function loadBrowser(id = DS.cur, dish = -1) {
   try {
     const o = await idbDo("readonly", s => s.get(dsKey(id)));
     if (!o || !Array.isArray(o.dishes) || !o.dishes.length) return false;
@@ -442,155 +444,164 @@ async function loadBrowser(id = DS.cur) {
     if (o.general) P.general = { ...P.general, ...o.general };
     saveBreaks(); renderBreaks(); renderGeneral();
     P.savedAt = o.savedAt ? new Date(o.savedAt) : null; P.dirty = false; renderSaveState();
-    await openDish(Math.min(Math.max(0, o.cur | 0), P.dishes.length - 1));
+    await openDish(Math.min(Math.max(0, dish >= 0 ? dish : o.cur | 0), P.dishes.length - 1));
     setMsg(`${DS.list.length > 1 ? `Датасет «${dsName()}»` : "Открыта сохранённая работа"}: чашек ${P.dishes.length}. ` + summary(D()), !D().items.length);
     return true;
   } catch { return false; }
 }
 
 // ----- датасеты: отдельные наборы чашек (например, своя лаборатория – свой датасет) -----
-// Каждый датасет – отдельная запись в IndexedDB: самый первый – «project» (его же открывает телефонная версия и APK),
-// новые – «project:<id>». Список (название, сколько чашек, когда сохранён, миниатюра) – запись «datasets».
-// При входе на сайт, если датасетов больше одного, – окно выбора; сменить или создать – кнопка с названием в шапке
-const DS = { list: [], cur: "project", start: false };
+// Сайт открывается со стартовой страницы «Датасеты»: карточки с фото, названием и описанием; «Открыть» – работа с чашками,
+// кнопка «▤ Датасеты» в шапке – назад к выбору. Каждый датасет – отдельная запись в IndexedDB: самый первый – «project»
+// (его же открывает телефонная версия и APK), новые – «project:<id>». Список (название, описание, число чашек, время,
+// миниатюры) – запись «datasets»: стартовой странице хватает его, фото целиком она не читает
+const DS = { list: [], cur: "project" };
 const dsKey = id => id === "project" ? "project" : "project:" + id;
 const dsName = () => (DS.list.find(x => x.id === DS.cur) || {}).name || "Мой датасет";
+const atHome = () => document.body.classList.contains("at-home");
 function renderDsBtn() {
   $("dsBtnName").textContent = dsName();
-  $("dsBtn").setAttribute("aria-label", `Датасет «${dsName()}» – сменить или создать`);
-  $("dsBtn").title = `Датасет «${dsName()}» – сменить или создать новый`;
+  $("dsBtn").setAttribute("aria-label", `Датасет «${dsName()}» – к выбору датасетов`);
+  $("dsBtn").title = `Датасет «${dsName()}». Нажмите, чтобы вернуться к выбору датасетов`;
 }
+const dsPut = () => idbDo("readwrite", s => s.put(DS.list, "datasets")).catch(() => {});
 async function dsLoadList() {
   let list = await idbDo("readonly", s => s.get("datasets")).catch(() => null);
   if (!Array.isArray(list)) {        // сохранение из времён до датасетов становится первым датасетом
     list = [];
     const o = await idbDo("readonly", s => s.get("project")).catch(() => null);
-    if (o && Array.isArray(o.dishes) && o.dishes.length)
-      list.push({ id: "project", name: "Мой датасет", count: o.dishes.length, savedAt: o.savedAt || Date.now(), thumb: o.dishes[0].thumb || "" });
+    if (o && Array.isArray(o.dishes) && o.dishes.length) list.push({ id: "project", name: "Мой датасет", count: o.dishes.length, savedAt: o.savedAt || Date.now() });
   }
   DS.list = list.filter(x => x && typeof x.id === "string");
+  // у датасетов, сохранённых до миниатюр, миниатюры собираем один раз из самой записи
+  let fixed = false;
+  for (const x of DS.list) {
+    if (Array.isArray(x.thumbs)) continue;
+    const o = await idbDo("readonly", s => s.get(dsKey(x.id))).catch(() => null);
+    x.thumbs = o && Array.isArray(o.dishes) ? o.dishes.map(d => [d.thumb || "", d.name || ""]) : [];
+    x.count = x.thumbs.length; delete x.thumb; fixed = true;
+  }
+  if (fixed) await dsPut();
 }
 // дождаться текущей записи и сохранить несохранённое – перед сменой датасета
 async function dsFlush() {
   for (let i = 0; i < 100 && saving; i++) await new Promise(r => setTimeout(r, 50));
   if (P.dirty) await saveBrowser(true);
 }
-async function dsOpen(id) {
+// открыть датасет (dish – номер чашки, если нажали на её фото)
+async function dsOpen(id, dish = -1) {
   await dsFlush();
   DS.cur = id;
   try { localStorage.setItem("zona-dataset", id); } catch {}
   clearTimeout(saveTimer);
   P.dishes = []; P.cur = -1; P.sel = -1; P.trash = []; P.drag = null; P.calib = null; P.dirty = false; P.savedAt = null;
-  setMode("idle"); renderDsBtn();
-  if (!(await loadBrowser(id))) {
+  document.body.classList.remove("at-home"); $("home").hidden = true;
+  setMode("idle"); renderDsBtn(); fitCanvas();
+  if (!(await loadBrowser(id, dish))) {
     renderSaveState(); fillMeta(); renderDishes(); render();
     setMsg(`Датасет «${dsName()}»: чашек пока нет – добавьте фото плиткой «+ Добавить фото» или перетащите их на окно.`);
   }
+  window.scrollTo(0, 0);
 }
-const dsWhen = t => new Date(t).toLocaleString("ru-RU", { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" }).replace(",", "");
-function renderDsList() {
-  const cur = DS.list.some(x => x.id === DS.cur) ? DS.cur : null;
-  $("dsList").innerHTML = DS.list.length ? DS.list.map(x =>
-    `<div class="ds-item${x.id === cur ? " cur" : ""}" data-id="${esc(x.id)}">` +
-      `<button class="ds-open" type="button" data-open="${esc(x.id)}" aria-label="Открыть датасет ${esc(x.name)}">` +
-        (x.thumb ? `<img src="${x.thumb}" alt="">` : `<span class="ds-noimg" aria-hidden="true">◎</span>`) +
-        `<span class="ds-nm">${esc(x.name)}</span>` +
-        `<span class="ds-ct">${x.count} ${dishWord(x.count)} · ${dsWhen(x.savedAt)}${x.id === cur ? " · <b>открыт</b>" : ""}</span>` +
-      `</button>` +
+async function showHome() {
+  await dsFlush();
+  await dsLoadList();
+  document.body.classList.add("at-home"); $("home").hidden = false;
+  renderHome(); window.scrollTo(0, 0);
+}
+const dsWhen = t => new Date(t).toLocaleString("ru-RU", { day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit" }).replace(",", "");
+let dsLast = null;
+try { dsLast = localStorage.getItem("zona-dataset"); } catch {}
+function renderHome() {
+  const L = DS.list;
+  $("homeList").innerHTML = L.length ? L.map(x => {
+    const th = x.thumbs || [], recent = x.id === DS.cur;
+    const photos = th.length ? th.map(([t, n], i) =>
+      `<button class="ds-ph" type="button" data-open="${esc(x.id)}" data-dish="${i}" title="${esc(n)} – открыть" aria-label="Открыть чашку ${esc(n)}">` +
+      (t ? `<img src="${t}" alt="">` : `<span>◎</span>`) + `</button>`).join("") : `<p class="ds-empty">Фото пока нет</p>`;
+    const desc = x.desc ? `<details class="ds-desc"><summary>Описание</summary><p>${esc(x.desc)}</p>` +
+      `<button class="linkbtn" type="button" data-desc="${esc(x.id)}">✎ Изменить описание</button></details>` :
+      `<button class="linkbtn ds-adddesc" type="button" data-desc="${esc(x.id)}">+ Добавить описание</button>`;
+    return `<article class="ds-card${recent ? " recent" : ""}" data-id="${esc(x.id)}">` +
+      `<div class="ds-top"><div class="ds-title"><h3 class="ds-nm">${esc(x.name)}</h3>` +
+      `<span class="ds-ct">${x.count || 0} ${dishWord(x.count || 0)} · ${dsWhen(x.savedAt)}${recent ? " · <b>открывали последним</b>" : ""}</span></div>` +
       `<button class="btn icon" type="button" data-ren="${esc(x.id)}" title="Переименовать" aria-label="Переименовать ${esc(x.name)}">✎</button>` +
-      `<button class="btn icon ds-del" type="button" data-del="${esc(x.id)}" title="Удалить датасет" aria-label="Удалить датасет ${esc(x.name)}">×</button>` +
-    `</div>`).join("") : `<p class="crop-hint">Сохранённых датасетов пока нет.</p>`;
-}
-function dsShow(start) {
-  DS.start = !!start;
-  renderDsList();
-  $("dsName").value = "";
-  $("dsClose").hidden = false;
-  if (!$("dsBox").open) $("dsBox").showModal();
-  const c = $("dsList").querySelector(".ds-item.cur .ds-open") || $("dsList").querySelector(".ds-open");
-  if (c) c.focus();
+      `<button class="btn icon ds-del" type="button" data-del="${esc(x.id)}" title="Удалить датасет" aria-label="Удалить датасет ${esc(x.name)}">×</button></div>` +
+      `<div class="ds-photos">${photos}</div>${desc}` +
+      `<button class="btn primary ds-go" type="button" data-open="${esc(x.id)}">Открыть</button></article>`;
+  }).join("") : `<div class="ds-none"><p>Датасетов пока нет. Создайте первый ниже – или посмотрите, как работает программа, на искусственной чашке.</p>` +
+    `<button class="btn" type="button" id="homeSample">◎ Открыть пример</button></div>`;
 }
 async function dsStart() {
   await dsLoadList();
-  let last = null;
-  try { last = localStorage.getItem("zona-dataset"); } catch {}
-  DS.cur = DS.list.some(x => x.id === last) ? last : DS.list.length ? DS.list[0].id : "project";
+  DS.cur = DS.list.some(x => x.id === dsLast) ? dsLast : DS.list.length ? DS.list[0].id : "project";
   renderDsBtn();
-  if (DS.list.length > 1) return dsShow(true);          // несколько датасетов – выбрать, с каким работать
-  if (!(await loadBrowser())) loadSample();             // один или ни одного – сразу работа (новый – из шапки)
+  await showHome();
 }
-$("dsBtn").addEventListener("click", async () => { await dsFlush(); dsShow(false); });
-$("dsClose").addEventListener("click", () => $("dsBox").close());
-// закрыли окно при входе, ничего не выбрав, – открывается последний датасет
-$("dsBox").addEventListener("close", () => { if (DS.start) { DS.start = false; dsOpen(DS.cur); } });
-$("dsBox").addEventListener("click", e => {
-  const b = $("dsBox").getBoundingClientRect();
-  if (e.target === $("dsBox") && (e.clientX < b.left || e.clientX > b.right || e.clientY < b.top || e.clientY > b.bottom)) return $("dsBox").close();
-  const open = e.target.closest("[data-open]");
-  if (open) {
-    const id = open.dataset.open, start = DS.start;
-    DS.start = false; $("dsBox").close();
-    if (start || id !== DS.cur) dsOpen(id);
-    return;
-  }
-  const ren = e.target.closest("[data-ren]");
-  if (ren) {
-    const item = ren.closest(".ds-item"), x = DS.list.find(d => d.id === ren.dataset.ren), nm = item.querySelector(".ds-nm");
-    const inp = document.createElement("input");
-    inp.className = "ds-rename"; inp.value = x.name; inp.maxLength = 60; inp.setAttribute("aria-label", "Новое название");
-    nm.replaceWith(inp); inp.focus(); inp.select();
-    let done = false;
-    const finish = async ok => {
-      if (done) return;
-      done = true;
-      const v = inp.value.trim();
-      if (ok && v && v !== x.name) {
-        x.name = v;
-        try { await idbDo("readwrite", s => s.put(DS.list, "datasets")); } catch {}
-        renderDsBtn();
-      }
-      renderDsList();
-    };
-    inp.addEventListener("keydown", ev => {
-      if (ev.key === "Enter") { ev.preventDefault(); finish(true); }
-      if (ev.key === "Escape") { ev.preventDefault(); ev.stopPropagation(); finish(false); }
-    });
-    inp.addEventListener("blur", () => finish(true));
-    return;
-  }
-  const del = e.target.closest("[data-del]");
-  if (del) {
-    const x = DS.list.find(d => d.id === del.dataset.del);
-    if (!del.classList.contains("arm")) {         // первое нажатие: × → «Удалить?»; 3 с без нажатия – снова ×
-      for (const b of $("dsList").querySelectorAll(".ds-del.arm")) { b.classList.remove("arm"); b.textContent = "×"; }
-      del.classList.add("arm"); del.textContent = "Удалить навсегда?";
-      del.title = `Нажмите ещё раз: датасет «${x.name}» (${x.count} ${dishWord(x.count)}) удалится из браузера без возврата`;
-      setTimeout(() => { if (del.isConnected) { del.classList.remove("arm"); del.textContent = "×"; del.title = "Удалить датасет"; } }, 3000);
-      return;
+$("dsBtn").addEventListener("click", () => showHome());
+// редактор прямо в карточке: название (одна строка) или описание (несколько строк)
+function dsEdit(card, x, field) {
+  const multi = field === "desc", inp = document.createElement(multi ? "textarea" : "input");
+  inp.className = multi ? "ds-desc-edit" : "ds-rename"; inp.value = x[field] || "";
+  inp.maxLength = multi ? 1000 : 60; if (multi) inp.rows = 4;
+  inp.placeholder = multi ? "Например: лаборатория, кто делает, культуры, среда, даты посева" : "Название";
+  inp.setAttribute("aria-label", multi ? "Описание датасета" : "Название датасета");
+  const box = document.createElement("div"); box.className = "ds-editbox";
+  box.innerHTML = `<div class="row"><button class="btn primary" type="button" data-ok>Сохранить</button><button class="btn" type="button" data-no>Отмена</button></div>`;
+  box.prepend(inp);
+  const place = multi ? (card.querySelector(".ds-desc") || card.querySelector(".ds-adddesc")) : card.querySelector(".ds-title");
+  place.replaceWith(box); inp.focus(); inp.select();
+  const finish = async ok => {
+    const v = inp.value.trim();
+    if (ok && (v || multi) && v !== (x[field] || "")) {
+      if (v) x[field] = v; else delete x[field];
+      await dsPut(); renderDsBtn();
     }
-    (async () => {
-      DS.list = DS.list.filter(d => d.id !== x.id);
-      try { await idbDo("readwrite", s => { s.put(DS.list, "datasets"); return s.delete(dsKey(x.id)); }); } catch {}
-      if (x.id === DS.cur) {                         // удалили открытый – открываем другой (или пустой новый)
-        P.dirty = false; clearTimeout(saveTimer);
-        await dsOpen(DS.list.length ? DS.list[0].id : "project");
-      }
-      setMsg(`Датасет «${x.name}» удалён.`);
-      renderDsList();
-    })();
+    renderHome();
+    if (multi && ok && v) { const d = $("homeList").querySelector(`[data-id="${CSS.escape(x.id)}"] .ds-desc`); if (d) d.open = true; }
+  };
+  box.querySelector("[data-ok]").addEventListener("click", () => finish(true));
+  box.querySelector("[data-no]").addEventListener("click", () => finish(false));
+  inp.addEventListener("keydown", e => {
+    if (e.key === "Enter" && (!multi || e.ctrlKey)) { e.preventDefault(); finish(true); }
+    if (e.key === "Escape") { e.preventDefault(); finish(false); }
+  });
+}
+$("homeList").addEventListener("click", e => {
+  if (e.target.closest("#homeSample")) return dsOpen("project").then(loadSample);
+  const open = e.target.closest("[data-open]");
+  if (open) return dsOpen(open.dataset.open, open.dataset.dish ? +open.dataset.dish : -1);
+  const card = e.target.closest(".ds-card");
+  const x = card && DS.list.find(d => d.id === card.dataset.id);
+  if (!x) return;
+  if (e.target.closest("[data-ren]")) return dsEdit(card, x, "name");
+  if (e.target.closest("[data-desc]")) return dsEdit(card, x, "desc");
+  const del = e.target.closest("[data-del]");
+  if (!del) return;
+  if (!del.classList.contains("arm")) {         // первое нажатие: × → «Удалить навсегда?»; 3 с без нажатия – снова ×
+    for (const b of $("homeList").querySelectorAll(".ds-del.arm")) { b.classList.remove("arm"); b.textContent = "×"; }
+    del.classList.add("arm"); del.textContent = "Удалить навсегда?";
+    del.title = `Нажмите ещё раз: датасет «${x.name}» (${x.count || 0} ${dishWord(x.count || 0)}) удалится из браузера без возврата`;
+    setTimeout(() => { if (del.isConnected) { del.classList.remove("arm"); del.textContent = "×"; del.title = "Удалить датасет"; } }, 3000);
+    return;
   }
+  (async () => {
+    DS.list = DS.list.filter(d => d.id !== x.id);
+    try { await idbDo("readwrite", s => { s.put(DS.list, "datasets"); return s.delete(dsKey(x.id)); }); } catch {}
+    if (x.id === DS.cur) { DS.cur = DS.list.length ? DS.list[0].id : "project"; renderDsBtn(); }
+    renderHome();
+  })();
 });
-$("dsNew").addEventListener("submit", async e => {
+$("homeNew").addEventListener("submit", async e => {
   e.preventDefault();
-  const name = $("dsName").value.trim() || `Датасет ${DS.list.length + 1}`;
-  await dsFlush();
-  const id = newId();
-  DS.list.push({ id, name, count: 0, savedAt: Date.now(), thumb: "" });
-  try { await idbDo("readwrite", s => s.put(DS.list, "datasets")); } catch {}
-  DS.start = false; $("dsBox").close();
+  const name = $("homeName").value.trim() || `Датасет ${DS.list.length + 1}`, desc = $("homeDesc").value.trim();
+  // самый первый датасет занимает запись «project» – её видит и телефонная версия
+  const id = DS.list.some(x => x.id === "project") ? newId() : "project";
+  DS.list.push({ id, name, ...(desc ? { desc } : {}), count: 0, savedAt: Date.now(), thumbs: [] });
+  await dsPut();
+  $("homeName").value = $("homeDesc").value = "";
   await dsOpen(id);
 });
-
 // Скачивание файла: в окне Claude – через разрешение «downloads», в обычном браузере – ссылкой
 const dlP = window.claude && window.claude.use ? window.claude.use("downloads").catch(() => null) : Promise.resolve(null);
 // Если сайт открыт по ссылке не участником организации, платформа скачивание запрещает –
@@ -1982,6 +1993,7 @@ const HOTKEYS = { KeyA: "addBtn", KeyC: "axisBtn", KeyR: "roundBtn", KeyL: "cali
 document.addEventListener("keydown", e => {
   const typing = /^(INPUT|SELECT|TEXTAREA)$/.test(document.activeElement.tagName);
   if (document.querySelector("dialog[open]")) return;   // открыта обрезка или справка
+  if (atHome()) return;                                  // на странице выбора датасета клавиши работы с чашками не действуют
   const ctrl = e.ctrlKey || e.metaKey, key = e.key.toLowerCase();
   if (ctrl && (key === "s" || key === "ы")) { e.preventDefault(); saveBrowser(); return; }
   if (typing) return;
@@ -2011,7 +2023,7 @@ stage.addEventListener("drop", e => { e.preventDefault(); stage.classList.remove
 // Вставка из буфера обмена (Ctrl+V): снимок экрана, скопированная картинка из браузера, документа или чата.
 // В текстовом поле обычная вставка текста не мешает: перехватываем, только если в буфере есть картинка
 document.addEventListener("paste", e => {
-  if (document.querySelector("dialog[open]")) return;            // открыта обрезка, редактор или справка
+  if (document.querySelector("dialog[open]") || atHome()) return;   // открыта обрезка, редактор, справка или выбор датасета
   const items = [...(e.clipboardData ? e.clipboardData.items : [])].filter(it => it.kind === "file" && it.type.startsWith("image/"));
   if (!items.length) return;
   e.preventDefault();
