@@ -378,7 +378,7 @@ body.at-home .ds-btn, body.at-home .main, body.at-home .projbar, body.at-home .r
 .home-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 14px; align-items: start; }
 /* панель справа не уезжает при прокрутке списка */
 .home-side { position: sticky; top: 16px; display: grid; gap: 10px; max-height: calc(100vh - 32px); overflow-y: auto; overflow-x: hidden; scrollbar-width: thin; background: none; border: 0; border-radius: 0; padding: 0; min-width: 0; }
-.home-side > * { background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 12px; min-width: 0; }
+.home-side > * { background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 12px; min-width: 0; grid-template-columns: minmax(0, 1fr); }   /* блок не раздувается под содержимое */
 .home-side h3 { margin: 0; font: 700 15px var(--font-display); }
 .side-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
 .side-head .linkbtn { font-size: 13px; }
@@ -502,7 +502,8 @@ body.at-home .ds-btn, body.at-home .main, body.at-home .projbar, body.at-home .r
 .cp-warn { margin: 0; font-size: 12px; color: var(--warn); }
 .cpick.bad .cp-prev { box-shadow: 0 0 0 2px var(--warn); }
 .cat-new { display: flex; align-items: center; gap: 6px; padding-top: 6px; border-top: 1px solid var(--line); }
-.cat-new input { flex: 1; min-width: 0; font: 14px var(--font-body); padding: 6px 10px; border: 1px solid var(--line); border-radius: 8px; background: var(--panel); color: var(--ink); }
+.cat-new input { flex: 1 1 0; width: 0; min-width: 0;   /* width: 0 – поле не диктует ширину строки (его «естественная» ширина зависит от шрифтов системы) */
+  font: 14px var(--font-body); padding: 6px 10px; border: 1px solid var(--line); border-radius: 8px; background: var(--panel); color: var(--ink); }
 /* справка – окно поверх страницы по кнопке «?» */
 .how { color: var(--ink); background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 18px; gap: 12px;
   width: min(820px, calc(100vw - 32px)); max-height: calc(100vh - 48px); overflow-y: auto; box-sizing: border-box; }
