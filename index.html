@@ -20,8 +20,8 @@
 <link rel="stylesheet" href="style.css">
 
 <div class="wrap">
-<script>/* новый заход – с выбора датасета (рабочая часть скрыта сразу, без мигания); перезагрузка – остаёмся в открытом датасете */
-try { if (!sessionStorage.getItem("zona-open-ds")) document.body.classList.add("at-home"); } catch { document.body.classList.add("at-home"); }</script>
+<script>/* …/zona/ – выбор датасета (рабочая часть скрыта сразу, без мигания); …/zona/#ds=… – сразу открытый датасет */
+if (!/[#&]ds=/.test(location.hash)) document.body.classList.add("at-home");</script>
   <header>
     <!-- логотип – векторная иконка из отдельных групп: по нажатию оживает на месте (app.js, playIconAnim) -->
     <span class="brand-logo" role="button" tabindex="0" title="MicroTest Vision" aria-label="Логотип MicroTest Vision – нажмите, чтобы оживить"><svg xmlns="http://www.w3.org/2000/svg" viewBox="96 96 832 832" width="100%" height="100%" aria-hidden="true">

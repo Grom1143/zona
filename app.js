@@ -272,7 +272,7 @@ function cropImage(img, n, total) {
 
 async function openDish(i) {
   P.cur = i; P.sel = -1; P.calib = null; P.drag = null; setMode("idle");
-  try { sessionStorage.setItem("zona-open-dish", i); } catch {}   // после F5 – та же чашка
+  if (!atHome()) setRoute(DS.cur, i, false);                       // в адресе – и чашка: после F5 откроется она же
   const d = D();
   for (const o of P.dishes) if (o !== d) { o._base = null; o._rgba = null; }   // освобождаем память закрытых чашек
   if (d && !d._base) {
@@ -489,11 +489,32 @@ async function dsFlush() {
   for (let i = 0; i < 100 && saving; i++) await new Promise(r => setTimeout(r, 50));
   if (P.dirty) await saveBrowser(true);
 }
-// открыть датасет (dish – номер чашки, если нажали на её фото)
-async function dsOpen(id, dish = -1) {
+// Адрес страницы показывает, где мы: …/zona/ – выбор датасетов, …/zona/#ds=<id>&c=<номер чашки> – открыт датасет.
+// Часть после # остаётся в браузере (сервер её не видит), поэтому страница та же, а F5, закладка, ссылка
+// и кнопки браузера «Назад/Вперёд» сами попадают туда, где были
+function routeOf() {
+  const h = location.hash, m = /[#&]ds=([^&]+)/.exec(h), c = /[#&]c=(\d+)/.exec(h);
+  let id = null;
+  try { id = m ? decodeURIComponent(m[1]) : null; } catch {}
+  return { id, dish: c ? +c[1] - 1 : -1 };
+}
+function setRoute(id, dish, push) {
+  const base = location.pathname + location.search, url = base + (id ? `#ds=${encodeURIComponent(id)}${dish >= 0 ? `&c=${dish + 1}` : ""}` : "");
+  if (url === base + location.hash) return;
+  try { history[push ? "pushState" : "replaceState"](null, "", url); } catch {}   // в песочнице (artifact) история может быть запрещена
+}
+const dsKnown = id => !!id && (id === "project" || DS.list.some(x => x.id === id));
+window.addEventListener("popstate", () => {
+  const r = routeOf();
+  if (dsKnown(r.id)) { if (atHome() || r.id !== DS.cur) dsOpen(r.id, r.dish, true); else if (r.dish >= 0 && r.dish !== P.cur && r.dish < P.dishes.length) openDish(r.dish); }
+  else if (!atHome()) showHome(true);
+});
+// открыть датасет (dish – номер чашки, если нажали на её фото; fromRoute – пришли по адресу, адрес уже верный)
+async function dsOpen(id, dish = -1, fromRoute = false) {
   await dsFlush();
   DS.cur = id;
-  try { localStorage.setItem("zona-dataset", id); sessionStorage.setItem("zona-open-ds", id); } catch {}
+  if (!fromRoute) setRoute(id, dish, true);
+  try { localStorage.setItem("zona-dataset", id); } catch {}
   clearTimeout(saveTimer);
   P.dishes = []; P.cur = -1; P.sel = -1; P.trash = []; P.drag = null; P.calib = null; P.dirty = false; P.savedAt = null;
   document.body.classList.remove("at-home"); $("home").hidden = true;
@@ -504,9 +525,9 @@ async function dsOpen(id, dish = -1) {
   }
   window.scrollTo(0, 0);
 }
-async function showHome() {
+async function showHome(fromRoute = false) {
   await dsFlush();
-  try { sessionStorage.removeItem("zona-open-ds"); } catch {}
+  if (!fromRoute) setRoute(null, -1, true);
   await dsLoadList();
   document.body.classList.add("at-home"); $("home").hidden = false;
   renderHome(); window.scrollTo(0, 0);
@@ -538,18 +559,13 @@ async function dsStart() {
   await dsLoadList();
   DS.cur = DS.list.some(x => x.id === dsLast) ? dsLast : DS.list.length ? DS.list[0].id : "project";
   renderDsBtn();
-  // перезагрузка страницы (или «назад» в той же вкладке) – остаёмся в открытом датасете;
-  // sessionStorage живёт, пока открыта вкладка, поэтому новая вкладка или новый заход начинаются с выбора
-  let open = null;
-  try { open = sessionStorage.getItem("zona-open-ds"); } catch {}
-  if (open && (DS.list.some(x => x.id === open) || open === "project")) {
-    let dish = -1;
-    try { dish = parseInt(sessionStorage.getItem("zona-open-dish"), 10); } catch {}
-    return dsOpen(open, dish >= 0 ? dish : -1);
-  }
-  await showHome();
+  // в адресе есть датасет (F5, закладка, ссылка) – сразу он; нет или такого уже нет – выбор
+  const r = routeOf();
+  if (dsKnown(r.id)) return dsOpen(r.id, r.dish, true);
+  if (r.id) setRoute(null, -1, false);
+  await showHome(true);
 }
-$("dsBtn").addEventListener("click", () => showHome());
+$("dsBtn").addEventListener("click", () => showHome());   // браузерная «Назад» делает то же самое
 // редактор прямо в карточке: название (одна строка) или описание (несколько строк)
 function dsEdit(card, x, field) {
   const multi = field === "desc", inp = document.createElement(multi ? "textarea" : "input");
