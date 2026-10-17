@@ -92,6 +92,12 @@ input.num:focus { border-color: var(--accent); outline: none; }
   flex: 0 0 auto; width: 118px; border: 1px solid var(--line); border-radius: 8px; background: var(--panel);
   padding: 6px; display: grid; gap: 3px; cursor: pointer; position: relative; align-content: start;
 }
+/* перетаскивание чашек */
+.dish[data-i] { touch-action: pan-x; -webkit-touch-callout: none; }
+.dish img { -webkit-user-drag: none; user-select: none; }
+.dishes.sorting { user-select: none; -webkit-user-select: none; cursor: grabbing; }
+.dishes.sorting .dish { cursor: grabbing; }
+.dish.lift { z-index: 2; border-color: var(--accent); box-shadow: 0 6px 18px rgba(0, 0, 0, .28); opacity: .96; }
 .dish:hover { border-color: var(--accent); }
 .dish.cur { border-color: var(--accent); box-shadow: inset 0 0 0 1px var(--accent); }
 .dish img { width: 100%; aspect-ratio: 1; object-fit: cover; border-radius: 5px; display: block; background: var(--stage); }

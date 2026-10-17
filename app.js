@@ -964,8 +964,8 @@ function renderDishes() {
   $("dishes").innerHTML = (P.dishes.length ? "" :
     `<button class="dish sample-tile" type="button" title="Искусственная чашка – попробовать программу"><b>◎</b>Пример</button>`) + P.dishes.map((d, i) => {
     const n = d.items.filter(needsCheck).length;
-    return `<div class="dish${i === P.cur ? " cur" : ""}" data-i="${i}" tabindex="0" role="button" aria-label="Открыть ${esc(d.name)}">` +
-      `<img src="${d.thumb}" alt="">` +
+    return `<div class="dish${i === P.cur ? " cur" : ""}" data-i="${i}" tabindex="0" role="button" aria-label="Открыть ${esc(d.name)}" title="Открыть. Перетащите, чтобы поменять порядок (Shift + ← →)">` +
+      `<img src="${d.thumb}" alt="" draggable="false">` +
       `<span class="nm" title="${esc(d.name)}">${esc(d.name)}</span>` +
       `<span class="ct${n ? " warn" : ""}">${d.items.length} ${disksWord(d.items.length)}${n ? ` · ${n} ?` : ""}</span>` +
       `<button class="x" type="button" data-del="${i}" aria-label="Удалить чашку ${esc(d.name)}" title="Удалить чашку">×</button></div>`;
@@ -1599,6 +1599,100 @@ $("dishes").addEventListener("keydown", e => {
   if (e.key !== "Enter" && e.key !== " ") return;
   if (e.target.matches(".dish.add")) { e.preventDefault(); $("file").click(); }
   else if (e.target.matches(".dish[data-i]")) { e.preventDefault(); openDish(+e.target.dataset.i); }
+});
+
+// Перетаскивание чашек: порядок в ряду = порядок в P.dishes (стрелки ← →, таблица, Excel, проект).
+// Мышь – тянуть сразу; палец – подержать ~0,3 с (иначе это прокрутка ряда), потом тянуть. С клавиатуры – Shift + ← →
+function moveDish(from, to) {
+  if (from === to || from < 0 || to < 0 || from >= P.dishes.length || to >= P.dishes.length) return renderDishes();
+  const open = D();
+  P.dishes.splice(to, 0, P.dishes.splice(from, 1)[0]);
+  P.cur = open ? P.dishes.indexOf(open) : -1;
+  markDirty(); renderDishes(); render();
+  setMsg(`Чашка «${P.dishes[to].name}» теперь ${to + 1}-я из ${P.dishes.length}.`);
+}
+const dd = { t: null, done: 0 };   // текущее перетаскивание; done – когда закончили (чтобы не сработал щелчок)
+const dishTiles = () => [...$("dishes").querySelectorAll(".dish[data-i]")];
+function startDishDrag() {
+  const t = dd.t;
+  if (!t || t.on) return;
+  t.on = true; clearTimeout(t.timer); disarmDel();
+  const r = t.tile.getBoundingClientRect();
+  t.grab = t.x0 - r.left;
+  t.tile.classList.add("lift"); $("dishes").classList.add("sorting");
+  try { $("dishes").setPointerCapture(t.id); } catch (_) {}
+  if (t.touch && navigator.vibrate) navigator.vibrate(15);
+  const loop = () => {                       // у края ряда – прокручиваем его сами
+    if (dd.t !== t || !t.on) return;
+    const s = $("dishes"), b = s.getBoundingClientRect(), edge = 40;
+    const v = t.x < b.left + edge ? -12 : t.x > b.right - edge ? 12 : 0;
+    if (v) { s.scrollLeft += v; placeDrag(); }
+    requestAnimationFrame(loop);
+  };
+  requestAnimationFrame(loop);
+  placeDrag();
+}
+function placeDrag() {
+  const t = dd.t, tile = t.tile;
+  tile.style.transform = "";
+  const r = tile.getBoundingClientRect(), mid = t.x - t.grab + r.width / 2;
+  // соседи, середину которых перешли, меняются местами с чашкой (плавно – FLIP: запомнили место, переставили, «доехали»)
+  const others = dishTiles().filter(el => el !== tile);
+  let before = others.find(el => { const q = el.getBoundingClientRect(); return mid < q.left + q.width / 2; }) || null;
+  const next = before || (others.length ? others[others.length - 1].nextElementSibling : null);
+  if (tile.nextElementSibling !== next && next !== tile) {
+    const old = new Map(others.map(el => [el, el.getBoundingClientRect().left]));
+    $("dishes").insertBefore(tile, next);
+    for (const el of others) {
+      const dx = old.get(el) - el.getBoundingClientRect().left;
+      if (dx) el.animate([{ transform: `translateX(${dx}px)` }, { transform: "none" }], { duration: 160, easing: "ease-out" });
+    }
+  }
+  const r2 = tile.getBoundingClientRect();
+  tile.style.transform = `translateX(${t.x - t.grab - r2.left}px) scale(1.04)`;
+}
+function endDishDrag(apply) {
+  const t = dd.t;
+  if (!t) return;
+  clearTimeout(t.timer); dd.t = null;
+  if (!t.on) return;
+  dd.done = Date.now();
+  t.tile.classList.remove("lift"); t.tile.style.transform = ""; $("dishes").classList.remove("sorting");
+  const to = dishTiles().indexOf(t.tile);
+  apply ? moveDish(+t.tile.dataset.i, to) : renderDishes();
+}
+$("dishes").addEventListener("pointerdown", e => {
+  const tile = e.target.closest(".dish[data-i]");
+  if (!tile || e.target.closest(".x") || e.button !== 0 || P.dishes.length < 2 || dd.t) return;
+  const touch = e.pointerType !== "mouse";
+  dd.t = { tile, id: e.pointerId, x0: e.clientX, y0: e.clientY, x: e.clientX, on: false, touch, timer: 0 };
+  if (touch) dd.t.timer = setTimeout(startDishDrag, 300);
+});
+$("dishes").addEventListener("pointermove", e => {
+  const t = dd.t;
+  if (!t || e.pointerId !== t.id) return;
+  t.x = e.clientX;
+  if (!t.on) {
+    if (Math.hypot(e.clientX - t.x0, e.clientY - t.y0) < 6) return;
+    if (t.touch) return endDishDrag(false);     // палец поехал раньше, чем «подержали», – это прокрутка
+    startDishDrag();
+  }
+  placeDrag();
+});
+$("dishes").addEventListener("pointerup", e => { if (dd.t && e.pointerId === dd.t.id) endDishDrag(true); });
+$("dishes").addEventListener("pointercancel", e => { if (dd.t && e.pointerId === dd.t.id) endDishDrag(true); });
+// пока тянем пальцем, ряд не прокручивается под ним и не всплывает меню картинки
+$("dishes").addEventListener("touchmove", e => { if (dd.t && dd.t.on) e.preventDefault(); }, { passive: false });
+$("dishes").addEventListener("contextmenu", e => { if (dd.t && dd.t.touch) e.preventDefault(); });
+$("dishes").addEventListener("click", e => { if (Date.now() - dd.done < 300) { e.stopImmediatePropagation(); e.preventDefault(); } }, true);
+$("dishes").addEventListener("keydown", e => {
+  if (!e.shiftKey || (e.key !== "ArrowLeft" && e.key !== "ArrowRight") || !e.target.matches(".dish[data-i]")) return;
+  e.preventDefault(); e.stopPropagation();
+  const i = +e.target.dataset.i, j = i + (e.key === "ArrowLeft" ? -1 : 1);
+  if (j < 0 || j >= P.dishes.length) return;
+  moveDish(i, j);
+  const el = $("dishes").querySelector(`.dish[data-i="${j}"]`);
+  if (el) el.focus();
 });
 
 const metaKeys = { mDate: "date", mGroup: "group", mMedium: "medium", mCulture: "culture", mPerson: "person", mOrg: "org", mDishMm: "dishMm" };
