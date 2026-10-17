@@ -24,7 +24,7 @@
    Нужная страница видна сразу, без мигания */
 if (!/[#&]ds=/.test(location.hash)) { document.body.classList.add("at-home"); if (!/[#&]m=/.test(location.hash)) document.body.classList.add("at-methods"); }</script>
   <header>
-    <!-- логотип – векторная иконка из отдельных групп: по нажатию оживает на месте (app.js, playIconAnim) -->
+    <!-- логотип – векторная иконка из отдельных групп: по нажатию оживает на месте (logo.js, playIconAnim) -->
     <span class="brand-logo" role="button" tabindex="0" title="MicroTest Vision" aria-label="Логотип MicroTest Vision – нажмите, чтобы оживить"><svg xmlns="http://www.w3.org/2000/svg" viewBox="96 96 832 832" width="100%" height="100%" aria-hidden="true">
 <circle id="ia-background" cx="512" cy="512" r="414.0" fill="#FFFFFF"/>
 <g id="ia-petri_outline"><circle pathLength="1" class="ring" cx="512" cy="512" r="404" fill="none" stroke="#102F66" stroke-width="20"/></g>
@@ -394,4 +394,8 @@ if (!/[#&]ds=/.test(location.hash)) { document.body.classList.add("at-home"); if
 <!-- анализ изображения (без интерфейса) и интерфейс – в отдельных файлах -->
 <script src="analysis.js" charset="utf-8"></script>
 
-<script src="app.js" charset="utf-8"></script>
+<!-- код разложен по файлам; порядок важен: основа → страницы выбора → блок F:1 → логотип -->
+<script src="core.js" charset="utf-8"></script>
+<script src="home.js" charset="utf-8"></script>
+<script src="f1.js" charset="utf-8"></script>
+<script src="logo.js" charset="utf-8"></script>
