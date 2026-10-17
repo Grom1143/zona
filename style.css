@@ -471,7 +471,7 @@ body.at-home .ds-btn, body.at-home .main, body.at-home .projbar, body.at-home .r
 .cat-hint { margin: 0; font-size: 13px; color: var(--muted); }
 .home-cats { display: grid; gap: 6px; }
 .cat-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 4px; }
-.cat-row { display: flex; align-items: center; gap: 4px; padding: 2px 3px; border-radius: 8px; border: 1px solid transparent; min-width: 0; }
+.cat-row { display: flex; align-items: center; gap: 4px; padding: 2px 3px; margin-inline: -4px; border-radius: 8px; border: 1px solid transparent; min-width: 0; }   /* отступ и рамка – для подсветки фильтра; -4px – чтобы кружки и × стояли ровно по краям, как у остальных строк */
 .cat-row.on { border-color: var(--accent); background: var(--accent-soft); }
 .cat-row .btn.icon { padding: 2px 6px; font-size: 13px; flex: none; }
 .cat-row .ds-rename { padding: 5px 8px; font-size: 14px; }
