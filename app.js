@@ -933,7 +933,7 @@ function draw() {
     ctx.fillStyle = "#1b2329"; ctx.fillRect(0, 0, cv.width, cv.height);
     ctx.fillStyle = "#c9d3da"; ctx.font = `500 ${Math.round(cv.width / 30)}px "Onest", "Segoe UI", sans-serif`;
     ctx.textAlign = "center"; ctx.textBaseline = "middle";
-    ctx.fillText(d ? "Фото этой чашки не открылось – загрузите его заново" : "Загрузите фото чашки или нажмите «Пример»", cv.width / 2, cv.height / 2);
+    ctx.fillText(d ? "Фото этой чашки не открылось – загрузите его заново" : "Перетащите фото чашки сюда или нажмите «+ Добавить фото»", cv.width / 2, cv.height / 2);
     return;
   }
   const k = d.w / (cv.getBoundingClientRect().width || d.w);   // 1 экранный пиксель в пикселях фото
@@ -967,7 +967,8 @@ function renderDishes() {
       `<span class="nm" title="${esc(d.name)}">${esc(d.name)}</span>` +
       `<span class="ct${n ? " warn" : ""}">${d.items.length} ${disksWord(d.items.length)}${n ? ` · ${n} ?` : ""}</span>` +
       `<button class="x" type="button" data-del="${i}" aria-label="Удалить чашку ${esc(d.name)}" title="Удалить чашку">×</button></div>`;
-  }).join("") + `<label class="dish add" for="file" tabindex="0"><b>+</b>Добавить фото</label>`;
+  }).join("") + `<label class="dish add" for="file" tabindex="0" title="Выбрать фото. Можно и перетащить фото на окно или вставить Ctrl+V"><b>+</b>Добавить фото</label>` +
+    `<button class="dish sample-tile" type="button" title="Искусственная чашка – попробовать программу"><b>◎</b>Пример</button>`;
   $("delPickBtn").disabled = $("snapEditBtn").disabled = !P.dishes.length;
 }
 
@@ -1219,10 +1220,9 @@ const calibMm = () => { const v = parseFloat($("calibMm").value); return v > 0 ?
 
 $("file").addEventListener("change", e => { addFiles(e.target.files); e.target.value = ""; });
 $("projFile").addEventListener("change", e => { openProject(e.target.files[0]); e.target.value = ""; });
-for (const id of ["uploadBtn", "projOpenBtn"]) $(id).addEventListener("keydown", e => {
-  if (e.key === "Enter" || e.key === " ") { e.preventDefault(); $(id === "uploadBtn" ? "file" : "projFile").click(); }
+$("projOpenBtn").addEventListener("keydown", e => {
+  if (e.key === "Enter" || e.key === " ") { e.preventDefault(); $("projFile").click(); }
 });
-$("sampleBtn").addEventListener("click", loadSample);
 $("helpBtn").addEventListener("click", () => $("helpBox").showModal());
 // тема: по кругу «как в системе» → светлая → тёмная; выбор запоминается в этом браузере
 const THEMES = [["", "◐", "как в системе"], ["light", "☀", "светлая"], ["dark", "☾", "тёмная"]];
@@ -1528,6 +1528,7 @@ function armDel(x) {
 }
 document.addEventListener("pointerdown", e => { if (!e.target.closest(".x.arm")) disarmDel(); });
 $("dishes").addEventListener("click", e => {
+  if (e.target.closest(".dish.sample-tile")) return loadSample();   // плитка «Пример» в ряду чашек
   const x = e.target.closest("[data-del]");
   if (x) {
     const i = +x.dataset.del;

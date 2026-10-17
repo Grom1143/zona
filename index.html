@@ -38,13 +38,10 @@
     <p>Загрузите фото чашек Петри – программа найдёт диски и измерит зоны подавления. Неверную границу поправьте мышью.</p>
   </header>
 
-  <div class="toolbar">
-    <input type="file" id="file" accept="image/*" multiple>
-    <label class="btn primary" for="file" id="uploadBtn" tabindex="0" title="Выбрать файлы. Можно и перетащить фото на окно или вставить из буфера обмена – Ctrl+V">Загрузить фото</label>
-    <button class="btn" id="sampleBtn" type="button">Пример</button>
-    <span class="spacer"></span>
-    <span class="savestate" id="saveState" aria-live="polite"></span>
-  </div>
+  <!-- фото добавляются плиткой «+ Добавить фото» в ряду чашек, перетаскиванием на окно с фото или Ctrl+V;
+       «Сохранено в …» показывает кнопка «Сохранить» в инструментах -->
+  <input type="file" id="file" accept="image/*" multiple>
+  <span class="savestate" id="saveState" aria-live="polite" hidden></span>
 
   <div class="main">
     <div class="left">
