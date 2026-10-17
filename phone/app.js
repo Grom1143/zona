@@ -2145,3 +2145,5 @@ function playIconAnim() {
 
 // ----- приложение: работа без интернета (sw.js). Только на https (GitHub): по Wi-Fi-адресу http браузер не разрешает -----
 if ("serviceWorker" in navigator && location.protocol === "https:") navigator.serviceWorker.register("sw.js").catch(() => {});
+// ссылка «Приложение для Android» – только на Android и только в браузере (внутри самого приложения она не нужна)
+if (/Android/i.test(navigator.userAgent) && !/[?&]app=1/.test(location.search) && !matchMedia("(display-mode: standalone)").matches) $("apkLink").hidden = false;

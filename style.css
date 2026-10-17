@@ -310,6 +310,7 @@ input.drug::placeholder { color: var(--muted); font-weight: 400; }
 .brand-logo svg * { transform-box: fill-box; transform-origin: center; }
 .brand-logo .ring { transform: rotate(-90deg); }   /* окружность прорисовывается сверху */
 .brand-logo:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
+.disclaimer-foot a { color: var(--accent); display: inline-block; margin-top: 8px; }
 .disclaimer-foot { margin: 8px 0 0; padding-top: 12px; border-top: 1px solid var(--line); font-size: 12px; color: var(--muted); text-align: center; }   /* лягушка в чашке – логотип МикроТест Вижн */
 .help-btn {
   flex: none; width: 34px; height: 34px; border-radius: 50%; border: 1px solid var(--line); background: var(--panel);
