@@ -613,9 +613,9 @@ function workOf(m) {
 }
 const zonesWord = n => n % 10 === 1 && n % 100 !== 11 ? "зона" : [2, 3, 4].includes(n % 10) && ![12, 13, 14].includes(n % 100) ? "зоны" : "зон";
 const photosWord = n => n % 10 === 1 && n % 100 !== 11 ? "фото" : "фото";
-function coverSvg(m) {
+function coverSvg(m, k = 160) {
   if (!m || !m.w || !m.z.length) return "";
-  const sw = Math.max(m.w, m.h) / 160;          // толщина линии ~ одинаковая на любом фото
+  const sw = Math.max(m.w, m.h) / k;            // толщина линии ~ одинаковая на любом фото (на маленькой миниатюре – k меньше, линия толще)
   return `<svg class="ds-marks" viewBox="0 0 ${m.w} ${m.h}" preserveAspectRatio="xMidYMid slice" aria-hidden="true">` + m.z.map(q => {
     const st = q[q.length - 1], col = ZCOL[st] || ZCOL.auto;
     const shape = q.length === 2 ? `<path d="${q[0]}"` : `<circle cx="${q[0]}" cy="${q[1]}" r="${q[2]}"`;
@@ -665,7 +665,7 @@ $("homeList").addEventListener("keydown", e => {
 function homeVis(v, keep) {
   v = Math.max(0, Math.min(100, Math.round(+v || 0)));
   $("homeVis").value = v; $("homeVisOut").value = v + " %";
-  $("home").style.setProperty("--mk-op", v / 100);
+  document.documentElement.style.setProperty("--mk-op", v / 100);   // и на обложках, и на миниатюрах чашек
   if (keep) try { localStorage.setItem("zona-home-vis", v); } catch {}
 }
 $("homeVis").addEventListener("input", () => homeVis($("homeVis").value, true));
@@ -1497,7 +1497,7 @@ function renderDishes() {
     `<button class="dish sample-tile" type="button" title="Искусственная чашка – попробовать программу"><b>◎</b>Пример</button>`) + P.dishes.map((d, i) => {
     const n = d.items.filter(needsCheck).length;
     return `<div class="dish${i === P.cur ? " cur" : ""}" data-i="${i}" tabindex="0" role="button" aria-label="Открыть ${esc(d.name)}" title="Открыть. Перетащите, чтобы поменять порядок (Shift + ← →)">` +
-      `<img src="${d.thumb}" alt="" draggable="false">` +
+      `<span class="dish-ph"><img src="${d.thumb}" alt="" draggable="false">${coverSvg(markOf(d), 70)}</span>` +   // разметка – как на обложках датасетов
       `<span class="nm" title="${esc(d.name)}">${esc(d.name)}</span>` +
       `<span class="ct${n ? " warn" : ""}">${d.items.length} ${disksWord(d.items.length)}${n ? ` · ${n} ?` : ""}</span>` +
       `<button class="x" type="button" data-del="${i}" aria-label="Удалить чашку ${esc(d.name)}" title="Удалить чашку">×</button></div>`;
