@@ -215,10 +215,11 @@ async function saveXlsx() {
 }
 
 // Подпись кнопки с иконкой: меняем только текст, иконка остаётся; в свёрнутом виде он виден как подсказка
-function setLabel(id, text) {
+// text – подпись на кнопке; full – полное название для подсказки и экранного диктора (если подпись сокращена)
+function setLabel(id, text, full = text) {
   const b = $(id);
   b.querySelector(".lbl").textContent = text;
-  b.setAttribute("aria-label", text); b.title = b.dataset.hk ? `${text} (${b.dataset.hk})` : text;
+  b.setAttribute("aria-label", full); b.title = b.dataset.hk ? `${full} (${b.dataset.hk})` : full;
 }
 // Свернуть / развернуть инструменты; выбор запоминается в этом браузере
 function foldTools(on, restoring) {
@@ -293,16 +294,31 @@ $("msgFold").addEventListener("click", () => {
 
 function setMode(m) {
   P.mode = m;
+  if (m !== "idle" && P.hand) setHand(false);        // добавление зоны или масштаб – рука выключается
   $("addBtn").classList.toggle("on", m === "add");
   $("calibBtn").classList.toggle("on", m === "calib");
-  setLabel("calibBtn", m === "calib" ? "Готово" : "Масштаб по линейке");
+  setLabel("calibBtn", m === "calib" ? "Готово" : "Масштаб", m === "calib" ? "Готово – применить масштаб" : "Масштаб по линейке");   // рядом «Рука» – подпись короче
   $("calibField").hidden = m !== "calib";
   cv.classList.toggle("adding", m === "add");
   $("hint").textContent =
     m === "add" ? "Нажмите в центр диска, вокруг которого нужна зона." :
     m === "calib" ? "Поставьте жёлтую линейку на отрезок известной длины, введите длину и нажмите «Готово»." :
+    P.hand ? (P.zoom > 1 ? "Рука: тяните фото – зоны не задеваются. Выключить – H или Esc." : "Рука: приблизьте фото (+ или колёсико мыши), чтобы было что двигать. Выключить – H или Esc.") :
     "";
 }
+// ----- «Рука»: двигать фото, не задевая зоны -----
+// Три способа: кнопка «Рука» / клавиша H (включить и выключить); зажатое колёсико мыши; зажатый пробел над фото (на время)
+P.hand = false;
+let spaceHand = false, overStage = false;
+const handOn = () => P.hand || spaceHand;
+function setHand(on) {
+  P.hand = on;
+  $("handBtn").classList.toggle("on", on); $("handBtn").setAttribute("aria-pressed", on);
+  handCursor();
+  if (P.mode === "idle") setMode("idle");          // обновить подсказку под фото
+}
+function handCursor() { if (!P.drag) cv.style.cursor = handOn() ? "grab" : ""; }
+$("handBtn").addEventListener("click", () => { if (D()) setHand(!P.hand); });
 
 // ----- рисование -----
 function drawRuler(r, color, k) {
@@ -609,9 +625,24 @@ function pullPt(it, i, dx, dy) {
   }
 }
 
+function startPan(e, hand) {
+  P.drag = { what: "pan", hand, sx: e.clientX, sy: e.clientY, sl: $("view").scrollLeft, st: $("view").scrollTop, moved: false, pre: null };
+  cv.setPointerCapture(e.pointerId); e.preventDefault(); cv.style.cursor = "grabbing";
+}
+// нажатое колёсико: браузер не включает своё «автопрокручивание» (значок со стрелками) – ни над рабочей областью,
+// ни в режиме «Во весь экран»; над рабочей областью вне фото колёсико тоже двигает фото
+const noAutoScroll = e => e.button === 1 && !atHome() && (document.body.classList.contains("focus") || e.target.closest("#stage"));
+document.addEventListener("mousedown", e => { if (noAutoScroll(e)) e.preventDefault(); });
+document.addEventListener("auxclick", e => { if (noAutoScroll(e)) e.preventDefault(); });
+$("stage").addEventListener("pointerdown", e => {
+  if (e.button !== 1 || e.target === cv || !D() || !D()._base) return;
+  startPan(e, true);            // события дальше идут к фото (захват указателя) – там их уже обрабатывают
+});
 cv.addEventListener("pointerdown", e => {
   const d = D();
-  if (!d || !d._base || e.button !== 0) return;     // правая кнопка – отдельно, через contextmenu
+  if (!d || !d._base) return;
+  if (e.button === 1 || (e.button === 0 && handOn())) return startPan(e, true);   // колёсико или рука – только двигаем фото
+  if (e.button !== 0) return;                       // правая кнопка – отдельно, через contextmenu
   const p = pos(e), hit = 16 * p.k;
   const grab = g => {
     P.drag = { ...g, last: p, p: null, pre: P.mode === "calib" ? null : snap(d), moved: false, sx: e.clientX, sy: e.clientY };
@@ -644,6 +675,7 @@ cv.addEventListener("pointermove", e => {
   const d = D();
   if (!d || !d._base) return;
   if (!P.drag) {                      // без нажатия: подсветка точки и вид курсора
+    if (handOn()) { cv.style.cursor = "grab"; if (P.hover !== -1) { P.hover = -1; draw(); } return; }
     const p = pos(e), g = P.mode === "idle" ? hitZone(p) : null, hov = g && g.what === "pt" ? g.i : -1;
     cv.style.cursor = !g ? (P.zoom > 1 && P.mode === "idle" ? "grab" : "") : g.what === "pick" ? "pointer" : g.what === "move" ? "move" : "grab";
     if (hov !== P.hover) { P.hover = hov; draw(); }
@@ -681,7 +713,7 @@ const endDrag = () => {
   const g = P.drag;
   if (!g) return;
   P.drag = null;
-  if (g.what === "pan") { cv.style.cursor = "grab"; if (!g.moved) { select(-1); } return; }
+  if (g.what === "pan") { cv.style.cursor = handOn() || P.zoom > 1 ? "grab" : ""; if (!g.moved && !g.hand) { select(-1); } return; }   // рукой – зону не снимаем
   // Зону потрогали (например, проверяли край в лупе), но вернули на место с точностью до 0,1 мм – это проверка,
   // а не правка: зона остаётся как была, с прежней отметкой, и вопрос «Всё верно?» не пропадает
   if (g.pre && g.moved && P.sel >= 0) {
@@ -1322,7 +1354,7 @@ $("copyBtn").addEventListener("click", async () => {
 });
 
 // Клавиши кнопок инструментов. e.code – физическая клавиша: работает и в русской раскладке (A = Ф, C = С …)
-const HOTKEYS = { KeyA: "addBtn", KeyC: "axisBtn", KeyR: "roundBtn", KeyL: "calibBtn", KeyP: "snapEditBtn", KeyF: "focusBtn", KeyT: "toolsToggle",
+const HOTKEYS = { KeyH: "handBtn", KeyA: "addBtn", KeyC: "axisBtn", KeyR: "roundBtn", KeyL: "calibBtn", KeyP: "snapEditBtn", KeyF: "focusBtn", KeyT: "toolsToggle",
   Equal: "zoomPlus", NumpadAdd: "zoomPlus", Minus: "zoomMinus", NumpadSubtract: "zoomMinus", Digit0: "zoomFit", Numpad0: "zoomFit" };
 document.addEventListener("keydown", e => {
   const typing = /^(INPUT|SELECT|TEXTAREA)$/.test(document.activeElement.tagName);
@@ -1343,6 +1375,7 @@ document.addEventListener("keydown", e => {
   }
   else if (e.key === "Escape") {
     // Esc сначала отменяет режим (добавление зоны, масштаб), а если ничего не было – выходит из «Во весь экран»
+    if (P.hand) return setHand(false);
     if (P.mode === "idle" && document.body.classList.contains("focus")) return setFocus(false);
     P.calib = null; setMode("idle"); render();
   }
@@ -1351,6 +1384,19 @@ window.addEventListener("beforeunload", e => { if (P.dirty) { e.preventDefault()
 // ушли со вкладки (свернули, переключились, закрывают телефоном) – сохраняем сразу, не дожидаясь 2 с
 document.addEventListener("visibilitychange", () => { if (document.hidden && P.dirty && !P.saveFailed) saveBrowser(true); });
 const stage = $("stage");
+// пробел над фото – рука, пока держишь (как в графических редакторах); над кнопками и полями пробел работает как обычно
+stage.addEventListener("pointerenter", () => { overStage = true; });
+stage.addEventListener("pointerleave", () => { overStage = false; });
+document.addEventListener("keydown", e => {
+  if (e.code !== "Space" || !overStage || atHome() || !D() || document.querySelector("dialog[open]") || /^(INPUT|SELECT|TEXTAREA)$/.test(document.activeElement.tagName)) return;
+  e.preventDefault();
+  if (!spaceHand) { spaceHand = true; handCursor(); }
+});
+document.addEventListener("keyup", e => {
+  if (e.code !== "Space" || !spaceHand) return;
+  e.preventDefault(); spaceHand = false; handCursor();
+});
+addEventListener("blur", () => { if (spaceHand) { spaceHand = false; handCursor(); } });   // ушли в другое окно с зажатым пробелом
 stage.addEventListener("dragover", e => { e.preventDefault(); stage.classList.add("drop"); });
 stage.addEventListener("dragleave", () => stage.classList.remove("drop"));
 stage.addEventListener("drop", e => { e.preventDefault(); stage.classList.remove("drop"); addFiles(e.dataTransfer.files); });
@@ -1381,6 +1427,7 @@ function setZoom(z, cx, cy) {
   if (cx === undefined) { const r = v.getBoundingClientRect(); cx = r.left + r.width / 2; cy = r.top + r.height / 2; }
   const fx = (cx - was.left) / was.width, fy = (cy - was.top) / was.height;
   P.zoom = Math.min(8, Math.max(1, z));
+  if (P.hand && P.mode === "idle") setMode("idle");   // подсказка руки зависит от приближения
   fitCanvas();
   const now = cv.getBoundingClientRect();
   v.scrollLeft += now.left + fx * now.width - cx;
@@ -1402,10 +1449,12 @@ function setZoom(z, cx, cy) {
 }
 window.addEventListener("resize", () => { fitCanvas(); draw(); });
 $("view").addEventListener("scroll", () => draw(), { passive: true });
-$("view").addEventListener("wheel", e => {         // лупа – Shift + колёсико; без Shift страница прокручивается как обычно
-  const d = D();
-  if (!d || !d._base || !e.shiftKey) return;
+// Колёсико над рабочей областью – лупа к точке под курсором; страница при этом не прокручивается (раньше лупа была только с Shift)
+$("stage").addEventListener("wheel", e => {
+  if (atHome() || e.ctrlKey) return;                // Ctrl + колёсико – масштаб всей страницы браузером, его не трогаем
   e.preventDefault();
+  const d = D();
+  if (!d || !d._base) return;
   // с Shift браузеры (Safari на Mac) часто отдают прокрутку как горизонтальную – берём ту ось, что не ноль
   const raw = e.deltaY || e.deltaX, dy = raw * (e.deltaMode === 1 ? 40 : e.deltaMode === 2 ? 400 : 1);   // строки и страницы – в пиксели
   setZoom(P.zoom * Math.exp(-dy * 0.002), e.clientX, e.clientY);
