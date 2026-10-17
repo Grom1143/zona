@@ -365,7 +365,7 @@ input.drug::placeholder { color: var(--muted); font-weight: 400; }
 .ds-btn:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 body.at-home .ds-btn, body.at-home .main, body.at-home .projbar, body.at-home .results { display: none; }
 .home { display: grid; gap: 16px; }
-.home[hidden] { display: none; }
+.home[hidden], body:not(.at-home) .home { display: none; }
 .home-head h2 { margin: 0 0 4px; font: 700 24px var(--font-display); }
 .home-head p { margin: 0; color: var(--muted); max-width: 80ch; }
 .home-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(340px, 1fr)); gap: 14px; align-items: start; }

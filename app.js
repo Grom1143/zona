@@ -272,6 +272,7 @@ function cropImage(img, n, total) {
 
 async function openDish(i) {
   P.cur = i; P.sel = -1; P.calib = null; P.drag = null; setMode("idle");
+  try { sessionStorage.setItem("zona-open-dish", i); } catch {}   // после F5 – та же чашка
   const d = D();
   for (const o of P.dishes) if (o !== d) { o._base = null; o._rgba = null; }   // освобождаем память закрытых чашек
   if (d && !d._base) {
@@ -492,7 +493,7 @@ async function dsFlush() {
 async function dsOpen(id, dish = -1) {
   await dsFlush();
   DS.cur = id;
-  try { localStorage.setItem("zona-dataset", id); } catch {}
+  try { localStorage.setItem("zona-dataset", id); sessionStorage.setItem("zona-open-ds", id); } catch {}
   clearTimeout(saveTimer);
   P.dishes = []; P.cur = -1; P.sel = -1; P.trash = []; P.drag = null; P.calib = null; P.dirty = false; P.savedAt = null;
   document.body.classList.remove("at-home"); $("home").hidden = true;
@@ -505,6 +506,7 @@ async function dsOpen(id, dish = -1) {
 }
 async function showHome() {
   await dsFlush();
+  try { sessionStorage.removeItem("zona-open-ds"); } catch {}
   await dsLoadList();
   document.body.classList.add("at-home"); $("home").hidden = false;
   renderHome(); window.scrollTo(0, 0);
@@ -536,6 +538,15 @@ async function dsStart() {
   await dsLoadList();
   DS.cur = DS.list.some(x => x.id === dsLast) ? dsLast : DS.list.length ? DS.list[0].id : "project";
   renderDsBtn();
+  // перезагрузка страницы (или «назад» в той же вкладке) – остаёмся в открытом датасете;
+  // sessionStorage живёт, пока открыта вкладка, поэтому новая вкладка или новый заход начинаются с выбора
+  let open = null;
+  try { open = sessionStorage.getItem("zona-open-ds"); } catch {}
+  if (open && (DS.list.some(x => x.id === open) || open === "project")) {
+    let dish = -1;
+    try { dish = parseInt(sessionStorage.getItem("zona-open-dish"), 10); } catch {}
+    return dsOpen(open, dish >= 0 ? dish : -1);
+  }
   await showHome();
 }
 $("dsBtn").addEventListener("click", () => showHome());
