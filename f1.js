@@ -313,12 +313,13 @@ let spaceHand = false, overStage = false;
 const handOn = () => P.hand || spaceHand;
 function setHand(on) {
   P.hand = on;
-  $("handBtn").classList.toggle("on", on); $("handBtn").setAttribute("aria-pressed", on);
+  for (const id of ["handBtn", "handHeadBtn"]) { $(id).classList.toggle("on", on); $(id).setAttribute("aria-pressed", on); }
   handCursor();
   if (P.mode === "idle") setMode("idle");          // обновить подсказку под фото
 }
 function handCursor() { if (!P.drag) cv.style.cursor = handOn() ? "grab" : ""; }
 $("handBtn").addEventListener("click", () => { if (D()) setHand(!P.hand); });
+$("handHeadBtn").addEventListener("click", () => { if (D()) setHand(!P.hand); });   // та же «Рука» – в верхней строке свёрнутых инструментов
 
 // ----- рисование -----
 function drawRuler(r, color, k) {

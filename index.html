@@ -164,6 +164,8 @@ if (!/[#&]ds=/.test(location.hash)) { document.body.classList.add("at-home"); if
             <button class="btn icon" id="focusBtn" type="button" aria-keyshortcuts="F" title="Во весь экран (F, выход – Esc)" aria-label="Во весь экран" aria-pressed="false">
               <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/></svg>
             </button>
+            <!-- «Рука» в верхней строке – только в свёрнутых инструментах (по наброску «Инструменты.png»); в развёрнутых она рядом с «Масштабом» -->
+            <button class="btn icon" id="handHeadBtn" type="button" aria-keyshortcuts="H" aria-pressed="false" title="Рука: двигать фото, не задевая зоны (H). Временно – зажать колёсико мыши или пробел" aria-label="Рука"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 12.5V6a1.5 1.5 0 0 1 3 0v5.5M11 11V4.5a1.5 1.5 0 0 1 3 0V11M14 11V5.5a1.5 1.5 0 0 1 3 0V12M17 9.5a1.5 1.5 0 0 1 3 0V14a7 7 0 0 1-7 7h-1a6 6 0 0 1-4.7-2.3L4.2 15.4a1.6 1.6 0 0 1 2.5-2L8 14.6"/></svg></button>
             <button class="btn icon fold" id="toolsToggle" type="button" aria-keyshortcuts="T" title="Свернуть инструменты в иконки (T)" aria-expanded="true" aria-label="Свернуть инструменты">
               <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 15l6-6 6 6"/></svg>
             </button>

@@ -238,6 +238,10 @@ body.focus .navcount { top: calc(10px + 100vh - 24px - 20px - 48px - 34px); }
 .tools.folded .zoombar output { min-width: 5ch; font-size: 12px; }
 .tools.folded .wide { grid-column: auto; }
 .tools.folded #calibField:not([hidden]) { flex-basis: 100%; }
+/* «Рука»: развёрнуто – в сетке рядом с «Масштабом», свёрнуто – в верхней строке между «Во весь экран» и стрелкой */
+#handHeadBtn { display: none; }
+.tools.folded #handHeadBtn { display: inline-flex; }
+.tools.folded #handBtn { display: none; }
 /* свёрнутые инструменты – сетка по картинке «Кнопки.png» (20 узких колонок): «Сохранить» на половину ширины,
    добавить / удалить зону; «Снимок» на всю ширину; контур, скругление, линейка и лупа со «Всё фото» */
 .tools.folded .tools-grid { display: grid; grid-template-columns: repeat(20, minmax(0, 1fr)); gap: 6px 3px; align-items: stretch;
