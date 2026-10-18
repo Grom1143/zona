@@ -518,8 +518,8 @@ function refreshCats() {
 function renderTable() {
   const d = D(), mpp = mmPerPx();
   if (!d || !d.items.length) { $("tableBox").innerHTML = `<p class="empty">Зон пока нет.</p>`; return; }
-  // как таблица в лабораторном протоколе: обычная сетка, заголовки словами, без «таблеток»
-  $("tableBox").innerHTML = `<table class="protocol"><colgroup><col class="c-n"><col class="c-code"><col><col class="c-zone"><col class="c-cat"><col class="c-note"></colgroup>` +
+  // как аккуратная таблица в лабораторном протоколе: заголовки словами, без «таблеток» и повторяющихся статусов
+  $("tableBox").innerHTML = `<table class="protocol"><colgroup><col class="c-n"><col class="c-code"><col class="c-name"><col class="c-zone"><col class="c-cat"><col></colgroup>` +
     `<thead><tr><th>№</th><th>Препарат</th><th>Антибиотик</th><th class="num">Зона, мм</th><th>Категория</th><th>Примечание</th></tr></thead><tbody>` +
     d.items.map((it, i) => {
       const [note, cls] = noteOf(it);
