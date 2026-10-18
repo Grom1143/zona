@@ -172,14 +172,7 @@ const drugName = s => DRUG_NAMES[drugKey(s)] || BY_NAME[drugKey(s)] || (guessOf(
 const drugNameEn = s => EN_NAMES[drugName(s)] || (guessOf(s) ? guessOf(s)[1] + " (?)" : "");                         // по-английски
 
 // подпись под полем «Препарат»: полное название на русском и английском
-const dnameText = it => drugName(it.drug) || "";       // в таблице на странице – только по-русски (английское – в Excel)
-// «Примечание» в таблице: пусто, когда всё обычно (найдено программой); иначе – коротко и по делу
-function noteOf(it) {
-  if (it.src === "none") return it.ok ? ["нет зоны", ""] : ["нет зоны – проверить", "warn"];
-  if (needsCheck(it)) return [it.colonies ? "проверить: колонии в зоне?" : it.pigment ? "проверить: цветной диск" : "проверить", "warn"];
-  if (it.src === "auto") return [it.ok ? "подтверждено" : "", ""];
-  return [it.src === "manual" ? "добавлено вручную" : "исправлено вручную", ""];
-}
+const dnameText = it => [drugName(it.drug), drugNameEn(it.drug)].filter(Boolean).join(" / ");
 
 // ----- таблица Excel -----
 function tableRows() {
@@ -503,7 +496,7 @@ function catCell(it) {
       (r.atu ? `, ЗТН ${r.atu[0] === r.atu[1] ? r.atu[0] : r.atu.join("–")}` : "") + (r.disk ? `, диск ${r.disk} мкг` : "") +
       `.\nИсточник: ${r.src}${r.note ? ` (${r.note})` : ""}.` + (r.br ? "\nЗначения в таблице в скобках – применяются ограниченно, см. примечания." : "") +
       (c.atu ? "\nЗона попала в ЗТН – зону технической неопределённости: результат ненадёжен, по рекомендациям его не сообщают как «чувствительный» без подтверждения." : "");
-    return `<span class="cat cat-${c.cat}" title="${esc(why)}">${c.cat}</span>` + (c.atu ? ` <span class="atu" title="${esc(why)}">(ЗТН)</span>` : "");
+    return `<span class="chip cat cat-${c.cat}" title="${esc(why)}">${c.cat}</span>` + (c.atu ? ` <span class="chip check" title="${esc(why)}">ЗТН</span>` : "");
   }
   if (!it.drug) return `<span class="nobreak" title="Впишите препарат (код с диска), чтобы узнать категорию">–</span>`;
   if (!d.meta.org) return `<span class="nobreak" title="Выберите микроорганизм в паспорте чашки – пороги подставятся из рекомендаций">выберите микроорганизм</span>`;
@@ -518,18 +511,12 @@ function refreshCats() {
 function renderTable() {
   const d = D(), mpp = mmPerPx();
   if (!d || !d.items.length) { $("tableBox").innerHTML = `<p class="empty">Зон пока нет.</p>`; return; }
-  // как аккуратная таблица в лабораторном протоколе: заголовки словами, без «таблеток» и повторяющихся статусов
-  $("tableBox").innerHTML = `<table class="protocol"><colgroup><col class="c-n"><col class="c-code"><col class="c-name"><col class="c-zone"><col class="c-cat"><col></colgroup>` +
-    `<thead><tr><th>№</th><th>Препарат</th><th>Антибиотик</th><th class="num">Зона, мм</th><th>Категория</th><th>Примечание</th></tr></thead><tbody>` +
-    d.items.map((it, i) => {
-      const [note, cls] = noteOf(it);
-      return `<tr data-i="${i}" tabindex="0" class="${i === P.sel ? "sel" : ""}"><td class="n">${i + 1}</td>` +
-        `<td><input class="drug" id="drug-${d.id}-${i}" data-i="${i}" list="drugList" value="${esc(it.drug)}" placeholder="код" aria-label="Препарат у диска ${i + 1}" autocomplete="off"></td>` +
-        `<td><span class="dname" data-i="${i}"${guessOf(it.drug) ? ` title="Название предположительное – уточнить у тёти"` : ""}>${esc(dnameText(it))}</span></td>` +
-        `<td class="num">${mpp ? fmt(diamPx(it) * mpp) : "–"}${it.pts && mpp && spanPx(it).max - spanPx(it).min > 0.5 / mpp ? ` <span class="sub">(${fmt(spanPx(it).min * mpp)}–${fmt(spanPx(it).max * mpp)})</span>` : ""}</td>` +
-        `<td class="catcell" data-i="${i}">${catCell(it)}</td>` +
-        `<td class="note${cls ? " " + cls : ""}">${note}</td></tr>`;
-    }).join("") +
+  $("tableBox").innerHTML = `<table><thead><tr><th>№</th><th>Препарат</th><th class="num">Зона, мм</th><th>Категория</th><th>Отметка</th></tr></thead><tbody>` +
+    d.items.map((it, i) => `<tr data-i="${i}" tabindex="0" class="${i === P.sel ? "sel" : ""}"><td>${i + 1}</td>` +
+      `<td><input class="drug" id="drug-${d.id}-${i}" data-i="${i}" list="drugList" value="${esc(it.drug)}" placeholder="–" aria-label="Препарат у диска ${i + 1}" autocomplete="off"><span class="dname" data-i="${i}"${guessOf(it.drug) ? ` title="Название предположительное – уточнить у тёти"` : ""}>${esc(dnameText(it))}</span></td>` +
+      `<td class="num">${mpp ? fmt(diamPx(it) * mpp) : "–"}${it.pts && mpp && spanPx(it).max - spanPx(it).min > 0.5 / mpp ? `<span class="sub">${fmt(spanPx(it).min * mpp)}–${fmt(spanPx(it).max * mpp)}</span>` : ""}</td>` +
+      `<td class="catcell" data-i="${i}">${catCell(it)}</td>` +
+      `<td><span class="chip ${needsCheck(it) ? "check" : it.src === "none" ? "none" : it.src === "auto" ? (it.ok ? "ok" : "") : "edited"}">${STATUS(it)}</span></td></tr>`).join("") +
     `</tbody></table>`;
 }
 

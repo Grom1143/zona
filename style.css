@@ -552,29 +552,6 @@ body.at-methods header h1 small, body.at-methods header > p { display: none; }
 .crumb span { color: var(--muted); font-weight: 500; }
 .crumb:hover { color: var(--accent); }
 @media (max-width: 760px) { .m-grid { grid-template-columns: 1fr; } .m-tile { min-height: 0; } }
-/* таблица измерений – как аккуратная таблица в лабораторном протоколе: только горизонтальные тонкие линии, шапка без заливки,
-   обычные веса шрифта, числа рядом с названиями; без «таблеток» и повторяющихся статусов */
-#tableBox table.protocol { table-layout: fixed; border-top: 1.5px solid var(--ink); border-bottom: 1.5px solid var(--ink); }
-#tableBox .protocol th { text-transform: none; letter-spacing: 0; font: 600 13px/1.3 var(--font-body); color: var(--ink); background: none;
-  padding: 8px 10px 6px; border: 0; border-bottom: 1px solid var(--ink); vertical-align: bottom; }
-#tableBox .protocol td { padding: 4px 10px; border: 0; border-bottom: 1px solid color-mix(in srgb, var(--line) 70%, transparent); font-size: 14px; }
-#tableBox .protocol tbody tr:last-child td { border-bottom: 0; }
-#tableBox .protocol td.n, #tableBox .protocol th:first-child { color: var(--muted); text-align: right; padding-right: 6px; }
-#tableBox .protocol th:first-child { color: var(--ink); }
-#tableBox .protocol td.num { font: 500 14px var(--font-body); font-variant-numeric: tabular-nums; text-align: right; }
-#tableBox .protocol td.num .sub { display: inline; font-size: 12px; font-weight: 400; color: var(--muted); }
-#tableBox .protocol .dname { display: inline; padding: 0; font-size: 14px; color: var(--ink); }
-#tableBox .protocol input.drug { width: 100%; box-sizing: border-box; font-weight: 500; padding: 4px; margin-left: -4px; }
-#tableBox .protocol td:nth-child(5), #tableBox .protocol th:nth-child(5) { text-align: center; }
-#tableBox .protocol .cat { font-weight: 600; }
-#tableBox .protocol .cat-S { color: #2e9e5b; } #tableBox .protocol .cat-I { color: #c48a12; } #tableBox .protocol .cat-R { color: var(--warn); }
-#tableBox .protocol .atu { color: var(--warn); font-size: 13px; }
-#tableBox .protocol td.note { color: var(--muted); font-size: 13px; }
-#tableBox .protocol td.note.warn { color: var(--warn); }
-#tableBox .protocol col.c-n { width: 34px; } #tableBox .protocol col.c-code { width: 84px; } #tableBox .protocol col.c-name { width: 230px; }
-#tableBox .protocol col.c-zone { width: 84px; } #tableBox .protocol col.c-cat { width: 90px; }
-#tableBox .protocol tbody tr:hover td { background: color-mix(in srgb, var(--accent-soft) 40%, transparent); }
-#tableBox .protocol tbody tr.sel td { background: var(--accent-soft); }
 /* справка – окно поверх страницы по кнопке «?» */
 .how { color: var(--ink); background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 18px; gap: 12px;
   width: min(820px, calc(100vw - 32px)); max-height: calc(100vh - 48px); overflow-y: auto; box-sizing: border-box; }
