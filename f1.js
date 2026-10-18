@@ -234,7 +234,7 @@ function foldTools(on, restoring) {
 function setFocus(on) {
   document.body.classList.toggle("focus", on);
   const strip = $("dishes");
-  if (on) document.querySelector(".tools").after(strip); else document.querySelector(".left").append(strip);
+  if (on) document.querySelector(".tools").after(strip); else document.querySelector(".left").insertBefore(strip, $("projBar"));   // обратно – над тремя кнопками
   const b = $("focusBtn"), t = on ? "Обычный вид (F или Esc)" : "Во весь экран (F, выход – Esc)";
   b.setAttribute("aria-pressed", String(on)); b.title = t; b.setAttribute("aria-label", t);
   b.classList.toggle("on", on);
@@ -479,6 +479,7 @@ function renderDishes() {
       `<button class="x" type="button" data-del="${i}" aria-label="Удалить чашку ${esc(d.name)}" title="Удалить чашку">×</button></div>`;
   }).join("") + `<label class="dish add" for="file" tabindex="0" title="Выбрать фото. Можно и перетащить фото на окно или вставить Ctrl+V"><b>+</b>Добавить фото</label>`;
   $("delPickBtn").disabled = $("snapEditBtn").disabled = !P.dishes.length;
+  if (sizeView()) { fitCanvas(); draw(); }
 }
 
 function fillMeta() {
@@ -1417,7 +1418,19 @@ document.addEventListener("paste", e => {
 });
 // Окно разметки постоянного размера; фото вписывается в него целиком, с сохранением пропорций,
 // и увеличивается лупой в P.zoom раз (1 – вписано)
+// Окно с фото – по высоте экрана: фото, ряд чашек и три кнопки помещаются целиком, листать нужно только к таблице.
+// «Во весь экран» и узкие экраны – по своим правилам из style.css. Возвращает true, если высота поменялась
+function sizeView() {
+  const v = $("view"), old = v.style.height;
+  if (document.body.classList.contains("focus") || innerWidth <= 900 || atHome()) { v.style.height = ""; return old !== ""; }
+  const stage = $("stage"), top = stage.getBoundingClientRect().top + scrollY;
+  const below = (stage.offsetHeight - v.offsetHeight) + 12 + $("dishes").offsetHeight + 12 + $("projBar").offsetHeight + 16;
+  const hh = Math.max(360, Math.floor(innerHeight - top - below)) + "px";
+  v.style.height = hh;
+  return old !== hh;
+}
 function fitCanvas() {
+  sizeView();
   const v = $("view"), k = Math.min(v.clientWidth / cv.width, v.clientHeight / cv.height) * P.zoom;
   cv.style.width = Math.floor(cv.width * k) + "px";
   cv.style.height = Math.floor(cv.height * k) + "px";

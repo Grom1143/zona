@@ -132,6 +132,13 @@ if (!/[#&]ds=/.test(location.hash)) { document.body.classList.add("at-home"); if
       </div>
       <!-- фото чашек – под окном разметки -->
       <div class="dishes" id="dishes" aria-label="Чашки"></div>
+      <!-- файл проекта и удаление – сразу под чашками: видны без прокрутки -->
+      <div class="toolbar projbar" id="projBar">
+        <button class="btn" id="projSaveBtn" type="button" title="Файл со всеми фото и разметкой, чтобы перенести на другой компьютер">Скачать проект</button>
+        <input type="file" id="projFile" accept=".json,application/json">
+        <label class="btn" for="projFile" id="projOpenBtn" tabindex="0">Открыть проект</label>
+        <button class="btn" id="delPickBtn" type="button" title="Отметить галочками, какие чашки удалить" disabled>Выбрать и удалить…</button>
+      </div>
     </div>
     <aside>
       <!-- инструменты быстрого доступа: справа от фото, на компьютере не уезжают при прокрутке -->
@@ -256,12 +263,6 @@ if (!/[#&]ds=/.test(location.hash)) { document.body.classList.add("at-home"); if
   </div>
 
   <!-- файл проекта: между чашками и таблицей -->
-  <div class="toolbar projbar">
-    <button class="btn" id="projSaveBtn" type="button" title="Файл со всеми фото и разметкой, чтобы перенести на другой компьютер">Скачать проект</button>
-    <input type="file" id="projFile" accept=".json,application/json">
-    <label class="btn" for="projFile" id="projOpenBtn" tabindex="0">Открыть проект</label>
-    <button class="btn" id="delPickBtn" type="button" title="Отметить галочками, какие чашки удалить" disabled>Выбрать и удалить…</button>
-  </div>
 
   <section class="results">
     <div class="results-head">
