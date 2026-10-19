@@ -110,13 +110,14 @@ input.num:focus { border-color: var(--accent); outline: none; }
 .dish.lift { z-index: 2; border-color: var(--accent); box-shadow: 0 6px 18px rgba(0, 0, 0, .28); opacity: .96; }
 .dish:hover { border-color: var(--accent); }
 .dish.cur { border-color: var(--accent); box-shadow: inset 0 0 0 1px var(--accent); }
-/* рамка по состоянию чашки: оранжевая – проверить, красная – ошибка, зелёная – исправлено; открытая чашка – та же рамка, но толще */
+/* фон чашки по состоянию: оранжевый – проверить, красный – ошибка, зелёный – исправлено; открытая чашка – ярче и с рамкой акцентного цвета */
 :root { --err: #d32f2f; }
 @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { --err: #ef5350; } }
 :root[data-theme="dark"] { --err: #ef5350; }
 .dish.st-chk { --st: var(--warn); } .dish.st-err { --st: var(--err); } .dish.st-fixed { --st: var(--cat-s); }
-.dish[class*="st-"] { border-color: var(--st); box-shadow: inset 0 0 0 1px var(--st); }
-.dish[class*="st-"].cur { box-shadow: inset 0 0 0 2px var(--st), 0 0 0 2px color-mix(in srgb, var(--st) 35%, transparent); }
+.dish[class*="st-"] { background: color-mix(in srgb, var(--st) 30%, var(--panel)); border-color: color-mix(in srgb, var(--st) 45%, var(--panel)); }
+.dish[class*="st-"]:hover { border-color: var(--accent); }
+.dish[class*="st-"].cur { background: color-mix(in srgb, var(--st) 42%, var(--panel)); border-color: var(--accent); }
 .dish img { width: 100%; aspect-ratio: 1; object-fit: cover; border-radius: 5px; display: block; background: var(--stage); }
 .dish-ph { position: relative; display: block; border-radius: 5px; overflow: hidden; }   /* миниатюра + разметка зон поверх (.ds-marks) */
 .dish .nm { font-size: 13px; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
@@ -302,6 +303,11 @@ details.meta summary span { font-weight: 400; color: var(--muted); }
 .scale .tilt.seen { color: var(--muted); }   /* с ошибкой уже поработали */
 .msg { font-size: 14px; padding: 8px 10px 10px 12px; border-radius: 8px; background: var(--accent-soft); }
 .msg.warn { background: transparent; border: 1px solid var(--warn); color: var(--warn); }
+/* ошибка, которую оператор уже проверил: окошко зелёное и свёрнуто, текст – приглушённый красный (видно, что ошибка, но не режет глаз) */
+.msg.handled { background: color-mix(in srgb, var(--cat-s) 18%, var(--panel)); border: 1px solid color-mix(in srgb, var(--cat-s) 45%, var(--panel));
+  color: color-mix(in srgb, var(--err) 60%, var(--ink)); }
+.msg.handled .msg-head b { opacity: 1; }
+.msg.warn.err { border-color: var(--err); color: var(--err); background: color-mix(in srgb, var(--err) 8%, transparent); }   /* ошибка чашки, ещё не проверенная */
 /* сообщения – списком, «−» сворачивает до заголовка, «+» разворачивает */
 .msg-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
 .msg-head b { font-weight: 400; font-size: 13px; opacity: .75; }

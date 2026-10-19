@@ -277,13 +277,15 @@ function setMsg(t, warn, fold) {
   $("msgList").innerHTML = items.map(x => `<li>${esc(x)}</li>`).join("");
   $("msg").dataset.n = items.length;
   $("msg").classList.toggle("warn", !!warn);
+  $("msg").classList.toggle("handled", !!fold);
+  $("msg").classList.remove("err");   // красное окошко ставит только msgFor – для ошибки чашки
   showMsgFold();
 }
 function showMsgFold() {
   const n = +$("msg").dataset.n || 0;
   const shut = msgShut || msgFold;
   $("msg").classList.toggle("shut", shut);
-  $("msgTitle").textContent = shut && n ? `свёрнуто: ${n}` : "";   // без заголовка; в свёрнутом виде – сколько пунктов
+  $("msgTitle").textContent = !shut || !n ? "" : $("msg").classList.contains("handled") ? `⚠ ошибка, проверено оператором · ${n}` : `свёрнуто: ${n}`;   // без заголовка; в свёрнутом виде – сколько пунктов
   $("msgFold").textContent = shut ? "+" : "−";
   $("msgFold").title = shut ? "Показать подсказки" : "Свернуть подсказки";
   $("msgFold").setAttribute("aria-expanded", String(!shut));

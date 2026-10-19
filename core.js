@@ -309,6 +309,7 @@ async function openDish(i) {
 function msgFor(d, text) {
   const err = dishState(d) === "err";
   setMsg(text || summary(d), err, dishErr(d) && !err);
+  $("msg").classList.toggle("err", err);
 }
 
 function summary(d) {
