@@ -110,6 +110,13 @@ input.num:focus { border-color: var(--accent); outline: none; }
 .dish.lift { z-index: 2; border-color: var(--accent); box-shadow: 0 6px 18px rgba(0, 0, 0, .28); opacity: .96; }
 .dish:hover { border-color: var(--accent); }
 .dish.cur { border-color: var(--accent); box-shadow: inset 0 0 0 1px var(--accent); }
+/* рамка по состоянию чашки: оранжевая – проверить, красная – ошибка, зелёная – исправлено; открытая чашка – та же рамка, но толще */
+:root { --err: #d32f2f; }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { --err: #ef5350; } }
+:root[data-theme="dark"] { --err: #ef5350; }
+.dish.st-chk { --st: var(--warn); } .dish.st-err { --st: var(--err); } .dish.st-fixed { --st: var(--cat-s); }
+.dish[class*="st-"] { border-color: var(--st); box-shadow: inset 0 0 0 1px var(--st); }
+.dish[class*="st-"].cur { box-shadow: inset 0 0 0 2px var(--st), 0 0 0 2px color-mix(in srgb, var(--st) 35%, transparent); }
 .dish img { width: 100%; aspect-ratio: 1; object-fit: cover; border-radius: 5px; display: block; background: var(--stage); }
 .dish-ph { position: relative; display: block; border-radius: 5px; overflow: hidden; }   /* миниатюра + разметка зон поверх (.ds-marks) */
 .dish .nm { font-size: 13px; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
@@ -292,6 +299,7 @@ details.meta summary span { font-weight: 400; color: var(--muted); }
 .scale { font-family: var(--font-mono); font-size: 13px; color: var(--muted); display: grid; gap: 2px; }
 .scale b { color: var(--ink); font-weight: 600; }
 .scale .tilt { color: var(--warn); }
+.scale .tilt.seen { color: var(--muted); }   /* с ошибкой уже поработали */
 .msg { font-size: 14px; padding: 8px 10px 10px 12px; border-radius: 8px; background: var(--accent-soft); }
 .msg.warn { background: transparent; border: 1px solid var(--warn); color: var(--warn); }
 /* сообщения – списком, «−» сворачивает до заголовка, «+» разворачивает */
@@ -586,27 +594,32 @@ body.at-methods header h1 small, body.at-methods header > p { display: none; }
   .tiltbar span { min-width: 0; }
 }
 
-/* Таблица измерений – плотная (вариант C от заказчицы): строки-полосы без линий, препарат и название в одну строку,
-   S / I / R и пометки – плашки, целиком залитые своим цветом; «авто» не пишем – пометка только там, где есть что сказать */
-:root { --cat-s: #2e9e5b; --cat-i: #c48a12; --cat-ink: #ffffff; }
-@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { --cat-s: #3fae6b; --cat-i: #d9a02a; --cat-ink: #10161b; } }
-:root[data-theme="dark"] { --cat-s: #3fae6b; --cat-i: #d9a02a; --cat-ink: #10161b; }
+/* Таблица измерений – плотная (вариант C от заказчицы): строки-полосы без линий, препарат и название в одну строку;
+   вся строка подкрашена цветом своей категории (S – зелёная, I – жёлтая, R – оранжевая), плашки – как на картинке;
+   «авто» не пишем – пометка только там, где есть что сказать */
+:root { --cat-s: #2e9e5b; --cat-i: #c48a12; }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { --cat-s: #3fae6b; --cat-i: #d9a02a; } }
+:root[data-theme="dark"] { --cat-s: #3fae6b; --cat-i: #d9a02a; }
 #tableBox table { border-collapse: separate; border-spacing: 0 4px; margin-top: -4px; }
 #tableBox th { white-space: nowrap; text-transform: none; letter-spacing: 0; font-size: 12px; font-weight: 600; padding: 0 8px 6px; }
 #tableBox td { border-bottom: 0; padding: 4px 8px; height: 32px; }
-#tableBox tbody tr:nth-child(odd) td { background: color-mix(in srgb, var(--ink) 5%, transparent); }
-#tableBox tbody tr.sel td { background: var(--accent-soft); }
+#tableBox tbody tr { --row: var(--ink); }
+#tableBox tbody tr.row-S { --row: var(--cat-s); } #tableBox tbody tr.row-I { --row: var(--cat-i); } #tableBox tbody tr.row-R { --row: var(--warn); }
+#tableBox tbody td { background: color-mix(in srgb, var(--row) 7%, transparent); }
+#tableBox tbody tr[class*="row-"] td { background: color-mix(in srgb, var(--row) 16%, transparent); }
 #tableBox tbody td:first-child { border-radius: 6px 0 0 6px; }
 #tableBox tbody td:last-child { border-radius: 0 6px 6px 0; }
+/* выбранная строка – рамка акцентного цвета, подкраска категории остаётся */
+#tableBox tbody tr.sel td { box-shadow: inset 0 2px 0 var(--accent), inset 0 -2px 0 var(--accent); }
+#tableBox tbody tr.sel td:first-child { box-shadow: inset 2px 0 0 var(--accent), inset 0 2px 0 var(--accent), inset 0 -2px 0 var(--accent); }
+#tableBox tbody tr.sel td:last-child { box-shadow: inset -2px 0 0 var(--accent), inset 0 2px 0 var(--accent), inset 0 -2px 0 var(--accent); }
 #tableBox td:nth-child(2) { white-space: nowrap; width: 60%; }
 #tableBox input.drug { width: 7ch; min-width: 7ch; vertical-align: middle; font-weight: 600; }
 #tableBox .dname { display: inline-block; vertical-align: middle; padding-left: 4px; max-width: 34ch; overflow: hidden; text-overflow: ellipsis; }
 #tableBox td.num .sub { display: inline; margin-left: 6px; }
-#tableBox .chip { display: inline-block; border-radius: 5px; padding: 2px 9px; font-weight: 700; border: 0; }
-#tableBox .chip.cat { min-width: 34px; box-sizing: border-box; text-align: center; color: var(--cat-ink); }
-#tableBox .chip.cat-S { background: var(--cat-s); }
-#tableBox .chip.cat-I { background: var(--cat-i); }
-#tableBox .chip.cat-R { background: var(--warn); color: var(--warn-ink); }
-#tableBox .chip.check, #tableBox .chip.none { background: var(--warn); color: var(--warn-ink); }
-#tableBox .chip.edited { background: var(--ruler); color: var(--cat-ink); }
-#tableBox .chip.ok { background: var(--accent); color: var(--accent-ink); }
+#tableBox .chip { display: inline-block; border-radius: 5px; padding: 1px 8px; font-weight: 700; border: 1px solid transparent; }
+#tableBox .chip.cat { min-width: 34px; box-sizing: border-box; text-align: center; --c: var(--ink); color: var(--c); background: color-mix(in srgb, var(--c) 22%, transparent); }
+#tableBox .chip.cat-S { --c: var(--cat-s); } #tableBox .chip.cat-I { --c: var(--cat-i); } #tableBox .chip.cat-R { --c: var(--warn); }
+#tableBox .chip.check, #tableBox .chip.none { color: var(--warn); background: color-mix(in srgb, var(--warn) 22%, transparent); }
+#tableBox .chip.edited { color: var(--ruler); border-color: var(--ruler); border-radius: 99px; background: none; }
+#tableBox .chip.ok { color: var(--accent); border-color: var(--accent); border-radius: 99px; background: none; }

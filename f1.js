@@ -269,9 +269,10 @@ try { if (localStorage.getItem("zona-look-shut") === "1") foldLook(true); } catc
 // ----- сообщения и подтверждения -----
 // Сообщение показывается списком: каждое предложение – отдельный пункт. «−» сворачивает список до заголовка
 // (видно, сколько там пунктов), «+» разворачивает; выбор запоминается в браузере
-let msgShut = false;
+let msgShut = false, msgFold = false;   // msgFold – свёрнуто только для этого сообщения (ошибка, с которой уже поработали)
 try { msgShut = localStorage.getItem("zona-msg-shut") === "1"; } catch {}
-function setMsg(t, warn) {
+function setMsg(t, warn, fold) {
+  msgFold = !!fold;
   const items = String(t).split(/(?<=[.!?])\s+(?=[«"(]?[А-ЯЁA-Z0-9⚠])/).map(x => x.trim()).filter(Boolean);
   $("msgList").innerHTML = items.map(x => `<li>${esc(x)}</li>`).join("");
   $("msg").dataset.n = items.length;
@@ -280,13 +281,15 @@ function setMsg(t, warn) {
 }
 function showMsgFold() {
   const n = +$("msg").dataset.n || 0;
-  $("msg").classList.toggle("shut", msgShut);
-  $("msgTitle").textContent = msgShut && n ? `свёрнуто: ${n}` : "";   // без заголовка; в свёрнутом виде – сколько пунктов
-  $("msgFold").textContent = msgShut ? "+" : "−";
-  $("msgFold").title = msgShut ? "Показать подсказки" : "Свернуть подсказки";
-  $("msgFold").setAttribute("aria-expanded", String(!msgShut));
+  const shut = msgShut || msgFold;
+  $("msg").classList.toggle("shut", shut);
+  $("msgTitle").textContent = shut && n ? `свёрнуто: ${n}` : "";   // без заголовка; в свёрнутом виде – сколько пунктов
+  $("msgFold").textContent = shut ? "+" : "−";
+  $("msgFold").title = shut ? "Показать подсказки" : "Свернуть подсказки";
+  $("msgFold").setAttribute("aria-expanded", String(!shut));
 }
 $("msgFold").addEventListener("click", () => {
+  if (msgFold) { msgFold = false; if (!msgShut) return showMsgFold(); }
   msgShut = !msgShut;
   try { localStorage.setItem("zona-msg-shut", msgShut ? "1" : "0"); } catch {}
   showMsgFold();
@@ -472,7 +475,7 @@ function renderDishes() {
   $("dishes").innerHTML = (P.dishes.length ? "" :
     `<button class="dish sample-tile" type="button" title="Искусственная чашка – попробовать программу"><b>◎</b>Пример</button>`) + P.dishes.map((d, i) => {
     const n = d.items.filter(needsCheck).length;
-    return `<div class="dish${i === P.cur ? " cur" : ""}" data-i="${i}" tabindex="0" role="button" aria-label="Открыть ${esc(d.name)}" title="Открыть. Перетащите, чтобы поменять порядок (Shift + ← →)">` +
+    return `<div class="dish${i === P.cur ? " cur" : ""}${dishState(d) ? " st-" + dishState(d) : ""}" data-i="${i}" tabindex="0" role="button" aria-label="Открыть ${esc(d.name)}" title="Открыть. Перетащите, чтобы поменять порядок (Shift + ← →)">` +
       `<span class="dish-ph"><img src="${d.thumb}" alt="" draggable="false">${coverSvg(markOf(d), 70)}</span>` +   // разметка – как на обложках датасетов
       `<span class="nm" title="${esc(d.name)}">${esc(d.name)}</span>` +
       `<span class="ct${n ? " warn" : ""}">${d.items.length} ${disksWord(d.items.length)}${n ? ` · ${n} ?` : ""}</span>` +
@@ -480,6 +483,20 @@ function renderDishes() {
   }).join("") + `<label class="dish add" for="file" tabindex="0" title="Выбрать фото. Можно и перетащить фото на окно или вставить Ctrl+V"><b>+</b>Добавить фото</label>`;
   $("delPickBtn").disabled = $("snapEditBtn").disabled = !P.dishes.length;
   if (sizeView()) { fitCanvas(); draw(); }
+}
+// После каждой правки: цвет рамок чашек и счётчик «?» – без пересборки ряда; ошибка, с которой поработали, уходит из виду
+const ST_TITLE = { err: "Ошибка: дисков не найдено или фото под углом", chk: "Есть зоны, которые нужно проверить", fixed: "Исправлено и проверено" };
+function refreshDishStates() {
+  for (const el of $("dishes").querySelectorAll(".dish[data-i]")) {
+    const d = P.dishes[+el.dataset.i];
+    if (!d) continue;
+    const st = dishState(d), n = d.items.filter(needsCheck).length, ct = el.querySelector(".ct");
+    for (const k of ["err", "chk", "fixed"]) el.classList.toggle("st-" + k, st === k);
+    if (ct) { ct.classList.toggle("warn", !!n); ct.textContent = `${d.items.length} ${disksWord(d.items.length)}${n ? ` · ${n} ?` : ""}`; }
+  }
+  const d = D();
+  if (d && $("msg").classList.contains("warn") && dishState(d) !== "err") msgFor(d);   // оператор начал разметку – ошибку сворачиваем
+  renderTiltBar();
 }
 
 function fillMeta() {
@@ -507,13 +524,21 @@ function catCell(it) {
 function refreshCats() {
   const d = D();
   if (!d) return;
-  for (const td of $("tableBox").querySelectorAll(".catcell")) { const it = d.items[+td.dataset.i]; if (it) td.innerHTML = catCell(it); }
+  for (const td of $("tableBox").querySelectorAll(".catcell")) {
+    const it = d.items[+td.dataset.i];
+    if (it) { td.innerHTML = catCell(it); td.parentNode.className = rowClass(it, +td.dataset.i); }
+  }
+}
+// строка таблицы целиком подкрашена цветом своей категории S / I / R
+function rowClass(it, i) {
+  const c = categoryOf(it, D());
+  return [i === P.sel ? "sel" : "", c ? "row-" + c.cat : ""].filter(Boolean).join(" ");
 }
 function renderTable() {
   const d = D(), mpp = mmPerPx();
   if (!d || !d.items.length) { $("tableBox").innerHTML = `<p class="empty">Зон пока нет.</p>`; return; }
   $("tableBox").innerHTML = `<table><thead><tr><th>№</th><th>Препарат</th><th class="num">Зона, мм</th><th>Категория</th><th>Отметка</th></tr></thead><tbody>` +
-    d.items.map((it, i) => `<tr data-i="${i}" tabindex="0" class="${i === P.sel ? "sel" : ""}"><td>${i + 1}</td>` +
+    d.items.map((it, i) => `<tr data-i="${i}" tabindex="0" class="${rowClass(it, i)}"><td>${i + 1}</td>` +
       `<td><input class="drug" id="drug-${d.id}-${i}" data-i="${i}" list="drugList" value="${esc(it.drug)}" placeholder="–" aria-label="Препарат у диска ${i + 1}" autocomplete="off"><span class="dname" data-i="${i}" title="${esc([drugNameEn(it.drug), guessOf(it.drug) ? "Название предположительное – уточнить у тёти" : ""].filter(Boolean).join("\n"))}">${esc(dnameText(it))}</span></td>` +
       `<td class="num">${mpp ? fmt(diamPx(it) * mpp) : "–"}${it.pts && mpp && spanPx(it).max - spanPx(it).min > 0.5 / mpp ? `<span class="sub">${fmt(spanPx(it).min * mpp)}–${fmt(spanPx(it).max * mpp)}</span>` : ""}</td>` +
       `<td class="catcell" data-i="${i}">${catCell(it)}</td>` +
@@ -538,7 +563,7 @@ function renderSide() {
     ? `<span>Масштаб: <b>1 мм = ${fmt(1 / mpp)} px</b></span><span>${d.scaleSrc === "manual" ? "задан линейкой вручную" : `по ${d.nDisks} дискам, медиана`} · диск ${fmt(diskMm())} мм</span>`
     : `<span>Масштаб: <b>не задан</b></span>`;
   const tilt = tiltOf(d);
-  if (tilt) $("scale").innerHTML += `<span class="tilt">⚠ фото под углом ~${tilt.deg}°: диски вытянуты на ${tilt.pct} %</span>`;
+  if (tilt) $("scale").innerHTML += `<span class="tilt${dishState(d) === "err" ? "" : " seen"}">⚠ фото под углом ~${tilt.deg}°: диски вытянуты на ${tilt.pct} %</span>`;
   renderZoom(d, it);
   $("check").hidden = !(it && needsCheck(it));
   if (it && needsCheck(it)) {
@@ -564,9 +589,9 @@ function renderSide() {
 }
 
 function render() { draw(); renderTable(); renderSide(); renderTiltBar(); }
-// Красная плашка над фото, если оно снято под углом. Крестик прячет её для этой чашки до перезагрузки
+// Красная плашка над фото, если оно снято под углом. Крестик прячет её для этой чашки до перезагрузки, разметка оператора – насовсем
 function renderTiltBar() {
-  const d = D(), t = d && d._base && P.mode !== "calib" ? tiltOf(d) : null, show = !!t && !d._tiltHidden;
+  const d = D(), t = d && d._base && P.mode !== "calib" ? tiltOf(d) : null, show = !!t && !d._tiltHidden && dishState(d) === "err";   // поработали с чашкой – плашки нет
   $("tiltBar").hidden = !show;
   if (show) $("tiltBarText").textContent = `⚠ Фото под углом (~${t.deg}°): диски вытянуты на ${t.pct} %`;
 }
@@ -947,7 +972,7 @@ $("resetBtn").addEventListener("click", async () => {
     if (o) it.drug = o.drug;
   }
   P.sel = -1; renderDishes(); render();
-  setMsg("Найдено заново. Прежнюю разметку можно вернуть стрелкой ↶. " + summary(d), !d.items.length || !!tiltOf(d));
+  msgFor(d, "Найдено заново. Прежнюю разметку можно вернуть стрелкой ↶. " + summary(d));
 });
 $("addBtn").addEventListener("click", () => { if (D()) setMode(P.mode === "add" ? "idle" : "add"); draw(); });
 $("calibBtn").addEventListener("click", () => {

@@ -98,6 +98,11 @@ const needsCheck = it => !it.ok && (it.src === "none" || (it.doubt && it.src ===
 const TILT_WARN = 1.06, TILT_FEW = 1.2;   // TILT_FEW – порог, когда дисков найдено всего 1–2
 const tiltOf = d => d && d.stretch >= TILT_WARN
   ? { pct: Math.round((d.stretch - 1) * 100), deg: Math.round(Math.acos(1 / d.stretch) * 180 / Math.PI) } : null;
+// Состояние чашки – для цвета рамки миниатюры: err – ошибка (дисков нет / фото под углом), пока оператор ничего не разметил;
+// chk – есть зоны «?»; fixed – оператор поправил или подтвердил и проверять больше нечего; "" – только автоматическая разметка
+const dishErr = d => !d.items.length || !!tiltOf(d);
+const dishWorked = d => d.items.some(it => it.ok || it.src === "edited" || it.src === "manual");
+const dishState = d => dishErr(d) && !dishWorked(d) ? "err" : d.items.some(needsCheck) ? "chk" : dishWorked(d) ? "fixed" : "";
 const tiltText = t => `Фото под углом (~${t.deg}°): диски вытянуты на ${t.pct} %. Лучше переснять сверху.`;
 const STATUS = it => it.src === "none" ? (it.ok ? "нет зоны ✓" : "нет зоны?") :
   it.doubt && it.src === "auto" ? (it.ok ? "подтверждено" : "проверить?") : { auto: "авто", edited: "исправлено", manual: "вручную" }[it.src];
@@ -298,7 +303,12 @@ async function openDish(i) {
   }
   if (d) { cv.width = d.w; cv.height = d.h; $("diskMm").value = d.diskMm; P.zoom = 1; fitCanvas(); setZoom(1); }
   fillMeta(); renderDishes(); render();
-  if (d) setMsg(summary(d), !d.items.length || !!tiltOf(d));
+  if (d) msgFor(d);
+}
+// Сообщение о чашке. Ошибку, с которой оператор уже поработал, не выделяем красным – она остаётся в окошке справа свёрнутой
+function msgFor(d, text) {
+  const err = dishState(d) === "err";
+  setMsg(text || summary(d), err, dishErr(d) && !err);
 }
 
 function summary(d) {
@@ -373,6 +383,7 @@ document.addEventListener("change", e => {
 let saveTimer = 0, saving = false, persistAsked = false;
 function markDirty() {
   P.dirty = true; P.ver++; renderSaveState();
+  if (typeof refreshDishStates === "function") refreshDishStates();
   clearTimeout(saveTimer); saveTimer = setTimeout(() => saveBrowser(true), 2000);
 }
 // Просим браузер не стирать данные сайта при нехватке места (Chrome решает сам, Firefox может спросить)
