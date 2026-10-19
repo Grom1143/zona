@@ -321,21 +321,43 @@ const catOf = id => DS.cats.find(c => c.id === id);
 const dsCats = x => (x.cats || []).filter(catOf);
 const dsPass = x => { const on = DS.filter.filter(catOf); return !on.length || dsCats(x).some(id => on.includes(id)); };
 function saveFilter() { try { localStorage.setItem("zona-home-filter", JSON.stringify(DS.filter)); } catch {} }
-// Поиск (название, описание, названия чашек, категории; без учёта регистра и «ё») и фильтр по работе.
+// Поиск (название, описание, названия чашек; без учёта регистра и «ё») и фильтр по работе. Категории – отдельной кнопкой-списком.
 // Фильтр запоминается в браузере, поиск – нет
 DS.q = ""; DS.st = "all";
 try { DS.st = localStorage.getItem("zona-home-st") || "all"; } catch {}
 const HOME_ST = [["all", "Все"], ["chk", "Есть что проверить"], ["empty", "Без разметки"], ["done", "Всё готово"], ["nophoto", "Без фото"]];
 if (!HOME_ST.some(f => f[0] === DS.st)) DS.st = "all";
 const norm = s => String(s || "").toLowerCase().replace(/ё/g, "е");
-const dsText = x => norm([x.name, x.desc, ...(x.thumbs || []).map(t => t[1]), ...dsCats(x).map(id => catOf(id).name)].join("\n"));
+const dsText = x => norm([x.name, x.desc, ...(x.thumbs || []).map(t => t[1])].join("\n"));
 const dsFind = x => norm(DS.q).split(/\s+/).filter(Boolean).every(w => dsText(x).includes(w));   // все слова запроса
 function dsStOf(x) {
   const W = (x.thumbs || []).map(t => workOf(t[2]));
   return { chk: W.some(w => w.st === "chk"), empty: W.some(w => w.st === "empty"), done: !!W.length && W.every(w => w.st === "done"), nophoto: !W.length };
 }
 const dsStPass = (x, st = DS.st) => st === "all" || dsStOf(x)[st];
+// кнопка «Категории»: список с галочками; отмеченные – как фильтр на панели справа (ИЛИ), выбор запоминается
+function renderHomeCats() {
+  const on = DS.filter.filter(catOf), cnt = id => DS.list.filter(x => dsCats(x).includes(id)).length;
+  $("homeCatSum").textContent = on.length ? `Категории: ${on.length === 1 ? catOf(on[0]).name : on.length} ▾` : "Категории ▾";
+  $("homeCatPick").classList.toggle("on", !!on.length);
+  const focus = document.activeElement && document.activeElement.dataset.hcat;
+  $("homeCatMenu").innerHTML = DS.cats.length ? DS.cats.map(c =>
+    `<label class="cat-opt"><input type="checkbox" data-hcat="${esc(c.id)}"${on.includes(c.id) ? " checked" : ""}>${chip(c)}<span class="cat-n">${cnt(c.id)}</span></label>`).join("") +
+    (on.length ? `<button class="linkbtn" type="button" id="homeCatNone">Снять все</button>` : "") :
+    `<p class="cat-hint">Категорий пока нет – создайте их на панели «Категории» справа.</p>`;
+  if (focus) { const el = $("homeCatMenu").querySelector(`[data-hcat="${CSS.escape(focus)}"]`); if (el) el.focus(); }
+}
+$("homeCatMenu").addEventListener("change", e => {
+  const id = e.target.dataset.hcat;
+  if (!id) return;
+  DS.filter = e.target.checked ? [...DS.filter.filter(catOf).filter(x => x !== id), id] : DS.filter.filter(x => x !== id);
+  saveFilter(); renderHome();
+});
+$("homeCatMenu").addEventListener("click", e => {
+  if (e.target.closest("#homeCatNone")) { DS.filter = []; saveFilter(); renderHome(); }
+});
 function renderHomeTools(base) {             // base – датасеты после поиска и категорий: по ним считаем, сколько в каждом фильтре
+  renderHomeCats();
   $("homeSt").innerHTML = HOME_ST.map(([k, t]) => {
     const n = base.filter(x => dsStPass(x, k)).length;
     return `<button class="hf-b${k === DS.st ? " on" : ""}" type="button" data-st="${k}" aria-pressed="${k === DS.st}">${t} <span>${n}</span></button>`;

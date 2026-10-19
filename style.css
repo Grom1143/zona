@@ -417,6 +417,11 @@ body.at-home .ds-btn, body.at-home .main, body.at-home .projbar, body.at-home .r
   background: var(--panel); color: var(--ink); }
 #homeSearch:focus { border-color: var(--accent); outline: none; }
 .hf { display: flex; flex-wrap: wrap; gap: 6px; }
+.hf-cats.cat-pick > summary { display: block; font: 500 13px var(--font-body); padding: 6px 10px; border: 1px solid var(--line); border-style: solid; border-radius: 8px; background: var(--panel); color: var(--ink); }
+.hf-cats.cat-pick.on > summary { border-color: var(--accent); color: var(--accent); }
+.hf-cats .cat-menu { min-width: 220px; }
+.hf-cats .cat-n { margin-left: auto; }
+.hf-cats .linkbtn { font-size: 13px; }
 .hf-b { font: 500 13px var(--font-body); padding: 6px 10px; border: 1px solid var(--line); border-radius: 8px; background: var(--panel); color: var(--ink); cursor: pointer; }
 .hf-b span { color: var(--muted); font: 600 12px var(--font-mono); margin-left: 2px; }
 .hf-b:hover { border-color: var(--accent); }
