@@ -411,6 +411,18 @@ body.at-home .ds-btn, body.at-home .main, body.at-home .projbar, body.at-home .r
 .ds-card.moved { animation: dsMoved 1.2s ease-out; }
 @keyframes dsMoved { from { box-shadow: 0 0 0 3px var(--accent); } to { box-shadow: 0 0 0 0 transparent; } }
 .home-head p { margin: 0; color: var(--muted); max-width: 80ch; }
+/* поиск и фильтр по работе над карточками */
+.home-tools { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; margin-top: 12px; }
+#homeSearch { flex: 1 1 260px; width: 0; min-width: 0; max-width: 420px; font: 14px var(--font-body); padding: 8px 10px; border: 1px solid var(--line); border-radius: 8px;
+  background: var(--panel); color: var(--ink); }
+#homeSearch:focus { border-color: var(--accent); outline: none; }
+.hf { display: flex; flex-wrap: wrap; gap: 6px; }
+.hf-b { font: 500 13px var(--font-body); padding: 6px 10px; border: 1px solid var(--line); border-radius: 8px; background: var(--panel); color: var(--ink); cursor: pointer; }
+.hf-b span { color: var(--muted); font: 600 12px var(--font-mono); margin-left: 2px; }
+.hf-b:hover { border-color: var(--accent); }
+.hf-b.on { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); }
+.hf-b.on span { color: inherit; opacity: .8; }
+.hf-b:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
 .home-body { display: grid; grid-template-columns: minmax(0, 1fr) 300px; gap: 16px; align-items: start; }
 .home-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px; align-items: start; }   /* три датасета в ряд */
 /* панель справа не уезжает при прокрутке списка */

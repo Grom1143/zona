@@ -124,8 +124,8 @@ const dsWhen = t => new Date(t).toLocaleString("ru-RU", { day: "2-digit", month:
 let dsLast = null;
 try { dsLast = localStorage.getItem("zona-dataset"); } catch {}
 function renderHome() {
-  const L = DS.list, F = L.filter(dsPass);
-  renderCats();
+  const L = DS.list, base = L.filter(x => dsPass(x) && dsFind(x)), F = base.filter(x => dsStPass(x));
+  renderCats(); renderHomeTools(base);
   $("homeList").innerHTML = L.length ? F.map(x => {
     const th = x.thumbs || [], recent = x.id === DS.cur;
     const photos = th.length ?
@@ -157,7 +157,8 @@ function renderHome() {
         `<span class="ds-no">№ ${L.indexOf(x) + 1}</span>`) + `</article>`;
   }).join("") : `<div class="ds-none"><p>Датасетов пока нет. Создайте первый на панели «Новый датасет» – или посмотрите, как работает программа, на искусственной чашке.</p>` +
     `<button class="btn" type="button" id="homeSample">◎ Открыть пример</button></div>`;
-  if (L.length && !F.length) $("homeList").innerHTML = `<div class="ds-none"><p>Нет датасетов с выбранными категориями.</p>` +
+  if (L.length && !F.length) $("homeList").innerHTML = `<div class="ds-none"><p>Ничего не найдено` +
+    (DS.q.trim() ? ` по запросу «${esc(DS.q.trim())}»` : "") + `. Попробуйте другое слово или сбросьте фильтры.</p>` +
     `<button class="btn" type="button" id="homeAll">Показать все датасеты</button></div>`;
 }
 // Разметка для обложки: размер фото и зоны – [x, y, R] для круга или [путь SVG] для контура + состояние:
@@ -282,7 +283,11 @@ function dsEdit(card, x, field) {
 }
 $("homeList").addEventListener("click", e => {
   if (e.target.closest("#homeSample")) return dsOpen("project").then(loadSample);
-  if (e.target.closest("#homeAll")) { DS.filter = []; saveFilter(); return renderHome(); }
+  if (e.target.closest("#homeAll")) {          // сбросить всё: категории, поиск, фильтр по работе
+    DS.filter = []; saveFilter(); DS.q = $("homeSearch").value = ""; DS.st = "all";
+    try { localStorage.setItem("zona-home-st", "all"); } catch {}
+    return renderHome();
+  }
   const open = e.target.closest("[data-open]");
   if (open) return DS.edit ? undefined : dsOpen(open.dataset.open, open.dataset.dish ? +open.dataset.dish : -1);   // в режиме «Порядок» не открываем
   const card = e.target.closest(".ds-card");
@@ -316,6 +321,34 @@ const catOf = id => DS.cats.find(c => c.id === id);
 const dsCats = x => (x.cats || []).filter(catOf);
 const dsPass = x => { const on = DS.filter.filter(catOf); return !on.length || dsCats(x).some(id => on.includes(id)); };
 function saveFilter() { try { localStorage.setItem("zona-home-filter", JSON.stringify(DS.filter)); } catch {} }
+// Поиск (название, описание, названия чашек, категории; без учёта регистра и «ё») и фильтр по работе.
+// Фильтр запоминается в браузере, поиск – нет
+DS.q = ""; DS.st = "all";
+try { DS.st = localStorage.getItem("zona-home-st") || "all"; } catch {}
+const HOME_ST = [["all", "Все"], ["chk", "Есть что проверить"], ["empty", "Без разметки"], ["done", "Всё готово"], ["nophoto", "Без фото"]];
+if (!HOME_ST.some(f => f[0] === DS.st)) DS.st = "all";
+const norm = s => String(s || "").toLowerCase().replace(/ё/g, "е");
+const dsText = x => norm([x.name, x.desc, ...(x.thumbs || []).map(t => t[1]), ...dsCats(x).map(id => catOf(id).name)].join("\n"));
+const dsFind = x => norm(DS.q).split(/\s+/).filter(Boolean).every(w => dsText(x).includes(w));   // все слова запроса
+function dsStOf(x) {
+  const W = (x.thumbs || []).map(t => workOf(t[2]));
+  return { chk: W.some(w => w.st === "chk"), empty: W.some(w => w.st === "empty"), done: !!W.length && W.every(w => w.st === "done"), nophoto: !W.length };
+}
+const dsStPass = (x, st = DS.st) => st === "all" || dsStOf(x)[st];
+function renderHomeTools(base) {             // base – датасеты после поиска и категорий: по ним считаем, сколько в каждом фильтре
+  $("homeSt").innerHTML = HOME_ST.map(([k, t]) => {
+    const n = base.filter(x => dsStPass(x, k)).length;
+    return `<button class="hf-b${k === DS.st ? " on" : ""}" type="button" data-st="${k}" aria-pressed="${k === DS.st}">${t} <span>${n}</span></button>`;
+  }).join("");
+}
+$("homeSearch").addEventListener("input", e => { DS.q = e.target.value; renderHome(); });
+$("homeSt").addEventListener("click", e => {
+  const b = e.target.closest("[data-st]");
+  if (!b) return;
+  DS.st = b.dataset.st;
+  try { localStorage.setItem("zona-home-st", DS.st); } catch {}
+  renderHome();
+});
 // подпись на цветной метке – тёмная на светлом цвете и белая на тёмном (по яркости цвета)
 function inkOn(hex) {
   const n = parseInt(String(hex).slice(1), 16), r = n >> 16 & 255, g = n >> 8 & 255, b = n & 255;
