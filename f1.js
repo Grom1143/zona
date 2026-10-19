@@ -271,10 +271,12 @@ try { if (localStorage.getItem("zona-look-shut") === "1") foldLook(true); } catc
 // (видно, сколько там пунктов), «+» разворачивает; выбор запоминается в браузере
 let msgShut = false, msgFold = false;   // msgFold – свёрнуто только для этого сообщения (ошибка, с которой уже поработали)
 try { msgShut = localStorage.getItem("zona-msg-shut") === "1"; } catch {}
-function setMsg(t, warn, fold) {
+// errText – текст ошибки чашки: в проверенной (свёрнутой зелёной) его пункты мягко-красные, остальные – обычные
+function setMsg(t, warn, fold, errText) {
   msgFold = !!fold;
-  const items = String(t).split(/(?<=[.!?])\s+(?=[«"(]?[А-ЯЁA-Z0-9⚠])/).map(x => x.trim()).filter(Boolean);
-  $("msgList").innerHTML = items.map(x => `<li>${esc(x)}</li>`).join("");
+  const split = s => String(s).split(/(?<=[.!?])\s+(?=[«"(]?[А-ЯЁA-Z0-9⚠])/).map(x => x.trim()).filter(Boolean);
+  const items = split(t), errs = new Set(errText ? split(errText) : []);
+  $("msgList").innerHTML = items.map(x => `<li${errs.has(x) ? ` class="e"` : ""}>${esc(x)}</li>`).join("");
   $("msg").dataset.n = items.length;
   $("msg").classList.toggle("warn", !!warn);
   $("msg").classList.toggle("handled", !!fold);

@@ -308,7 +308,8 @@ async function openDish(i) {
 // Сообщение о чашке. Ошибку, с которой оператор уже поработал, не выделяем красным – она остаётся в окошке справа свёрнутой
 function msgFor(d, text) {
   const err = dishState(d) === "err";
-  setMsg(text || summary(d), err, dishErr(d) && !err);
+  const t = tiltOf(d), errText = !d.items.length ? summary(d) : t ? tiltText(t) : "";
+  setMsg(text || summary(d), err, dishErr(d) && !err, errText);
   $("msg").classList.toggle("err", err);
 }
 
