@@ -448,7 +448,14 @@ function draw() {
     ctx.fillStyle = "#1b2329"; ctx.fillRect(0, 0, cv.width, cv.height);
     ctx.fillStyle = "#c9d3da"; ctx.font = `500 ${Math.round(cv.width / 30)}px "Onest", "Segoe UI", sans-serif`;
     ctx.textAlign = "center"; ctx.textBaseline = "middle";
-    ctx.fillText(d ? "Фото этой чашки не открылось – загрузите его заново" : "Перетащите фото чашки сюда или нажмите «+ Добавить фото»", cv.width / 2, cv.height / 2);
+    // перенос по словам: ширина текста зависит от шрифтов системы, одной строкой он может не влезть
+    const words = (d ? "Фото этой чашки не открылось – загрузите его заново" : "Перетащите фото чашки сюда или нажмите «+ Добавить фото»").split(" "), lines = [];
+    for (const w of words) {
+      const t = lines.length ? lines[lines.length - 1] + " " + w : w;
+      if (lines.length && ctx.measureText(t).width <= cv.width * 0.8) lines[lines.length - 1] = t; else lines.push(w);
+    }
+    const lh = Math.round(cv.width / 30 * 1.4);
+    lines.forEach((t, i) => ctx.fillText(t, cv.width / 2, cv.height / 2 + (i - (lines.length - 1) / 2) * lh));
     return;
   }
   const k = d.w / (cv.getBoundingClientRect().width || d.w);   // 1 экранный пиксель в пикселях фото
