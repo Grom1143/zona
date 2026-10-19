@@ -416,18 +416,12 @@ body.at-home .ds-btn, body.at-home .main, body.at-home .projbar, body.at-home .r
 #homeSearch { flex: 1 1 260px; width: 0; min-width: 0; max-width: 420px; font: 14px var(--font-body); padding: 8px 10px; border: 1px solid var(--line); border-radius: 8px;
   background: var(--panel); color: var(--ink); }
 #homeSearch:focus { border-color: var(--accent); outline: none; }
-.hf { display: flex; flex-wrap: wrap; gap: 6px; }
 .hf-cats.cat-pick > summary { display: block; font: 500 13px var(--font-body); padding: 6px 10px; border: 1px solid var(--line); border-style: solid; border-radius: 8px; background: var(--panel); color: var(--ink); }
 .hf-cats.cat-pick.on > summary { border-color: var(--accent); color: var(--accent); }
 .hf-cats .cat-menu { min-width: 220px; }
 .hf-cats .cat-n { margin-left: auto; }
 .hf-cats .linkbtn { font-size: 13px; }
-.hf-b { font: 500 13px var(--font-body); padding: 6px 10px; border: 1px solid var(--line); border-radius: 8px; background: var(--panel); color: var(--ink); cursor: pointer; }
-.hf-b span { color: var(--muted); font: 600 12px var(--font-mono); margin-left: 2px; }
-.hf-b:hover { border-color: var(--accent); }
-.hf-b.on { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); }
-.hf-b.on span { color: inherit; opacity: .8; }
-.hf-b:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+.hf-cats .st-chk { color: var(--warn); } .hf-cats .st-done { color: var(--cat-s); }
 .home-body { display: grid; grid-template-columns: minmax(0, 1fr) 300px; gap: 16px; align-items: start; }
 .home-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px; align-items: start; }   /* три датасета в ряд */
 /* панель справа не уезжает при прокрутке списка */

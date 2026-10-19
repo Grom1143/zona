@@ -64,7 +64,7 @@ if (!/[#&]ds=/.test(location.hash)) { document.body.classList.add("at-home"); if
         <input type="search" id="homeSearch" placeholder="Поиск: название, описание, чашка" aria-label="Поиск датасетов" autocomplete="off">
         <!-- выбор категорий: открыть и отметить одну или несколько (тот же фильтр, что на панели справа) -->
         <details class="cat-pick hf-cats" id="homeCatPick"><summary id="homeCatSum">Категории ▾</summary><div class="cat-menu" id="homeCatMenu"></div></details>
-        <div class="hf" id="homeSt" role="group" aria-label="Показать датасеты"></div>
+        <details class="cat-pick hf-cats" id="homeStPick"><summary id="homeStSum">Состояние ▾</summary><div class="cat-menu" id="homeStMenu"></div></details>
       </div>
     </div>
     <div class="home-body">

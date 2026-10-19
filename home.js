@@ -284,8 +284,7 @@ function dsEdit(card, x, field) {
 $("homeList").addEventListener("click", e => {
   if (e.target.closest("#homeSample")) return dsOpen("project").then(loadSample);
   if (e.target.closest("#homeAll")) {          // сбросить всё: категории, поиск, фильтр по работе
-    DS.filter = []; saveFilter(); DS.q = $("homeSearch").value = ""; DS.st = "all";
-    try { localStorage.setItem("zona-home-st", "all"); } catch {}
+    DS.filter = []; saveFilter(); DS.q = $("homeSearch").value = ""; DS.st = []; saveSt();
     return renderHome();
   }
   const open = e.target.closest("[data-open]");
@@ -323,10 +322,11 @@ const dsPass = x => { const on = DS.filter.filter(catOf); return !on.length || d
 function saveFilter() { try { localStorage.setItem("zona-home-filter", JSON.stringify(DS.filter)); } catch {} }
 // Поиск (название, описание, названия чашек; без учёта регистра и «ё») и фильтр по работе. Категории – отдельной кнопкой-списком.
 // Фильтр запоминается в браузере, поиск – нет
-DS.q = ""; DS.st = "all";
-try { DS.st = localStorage.getItem("zona-home-st") || "all"; } catch {}
-const HOME_ST = [["all", "Все"], ["chk", "Есть что проверить"], ["empty", "Без разметки"], ["done", "Всё готово"], ["nophoto", "Без фото"]];
-if (!HOME_ST.some(f => f[0] === DS.st)) DS.st = "all";
+// фильтр по работе – кнопка-список с галочками, можно несколько (ИЛИ); ничего не отмечено – показываем все
+DS.q = ""; DS.st = [];
+const HOME_ST = [["chk", "Есть что проверить"], ["empty", "Без разметки"], ["done", "Всё готово"], ["nophoto", "Без фото"]];
+try { const v = JSON.parse(localStorage.getItem("zona-home-st")); if (Array.isArray(v)) DS.st = v.filter(k => HOME_ST.some(f => f[0] === k)); } catch {}
+function saveSt() { try { localStorage.setItem("zona-home-st", JSON.stringify(DS.st)); } catch {} }
 const norm = s => String(s || "").toLowerCase().replace(/ё/g, "е");
 const dsText = x => norm([x.name, x.desc, ...(x.thumbs || []).map(t => t[1])].join("\n"));
 const dsFind = x => norm(DS.q).split(/\s+/).filter(Boolean).every(w => dsText(x).includes(w));   // все слова запроса
@@ -334,7 +334,7 @@ function dsStOf(x) {
   const W = (x.thumbs || []).map(t => workOf(t[2]));
   return { chk: W.some(w => w.st === "chk"), empty: W.some(w => w.st === "empty"), done: !!W.length && W.every(w => w.st === "done"), nophoto: !W.length };
 }
-const dsStPass = (x, st = DS.st) => st === "all" || dsStOf(x)[st];
+const dsStPass = (x, sts = DS.st) => !sts.length || sts.some(k => dsStOf(x)[k]);
 // кнопка «Категории»: список с галочками; отмеченные – как фильтр на панели справа (ИЛИ), выбор запоминается
 function renderHomeCats() {
   const on = DS.filter.filter(catOf), cnt = id => DS.list.filter(x => dsCats(x).includes(id)).length;
@@ -358,18 +358,23 @@ $("homeCatMenu").addEventListener("click", e => {
 });
 function renderHomeTools(base) {             // base – датасеты после поиска и категорий: по ним считаем, сколько в каждом фильтре
   renderHomeCats();
-  $("homeSt").innerHTML = HOME_ST.map(([k, t]) => {
-    const n = base.filter(x => dsStPass(x, k)).length;
-    return `<button class="hf-b${k === DS.st ? " on" : ""}" type="button" data-st="${k}" aria-pressed="${k === DS.st}">${t} <span>${n}</span></button>`;
-  }).join("");
+  const on = DS.st, focus = document.activeElement && document.activeElement.dataset.st;
+  $("homeStSum").textContent = on.length ? `Состояние: ${on.length === 1 ? HOME_ST.find(f => f[0] === on[0])[1].toLowerCase() : on.length} ▾` : "Состояние ▾";
+  $("homeStPick").classList.toggle("on", !!on.length);
+  $("homeStMenu").innerHTML = HOME_ST.map(([k, t]) =>
+    `<label class="cat-opt"><input type="checkbox" data-st="${k}"${on.includes(k) ? " checked" : ""}><span class="st-${k}">${t}</span><span class="cat-n">${base.filter(x => dsStPass(x, [k])).length}</span></label>`).join("") +
+    (on.length ? `<button class="linkbtn" type="button" id="homeStNone">Снять все</button>` : "");
+  if (focus) { const el = $("homeStMenu").querySelector(`[data-st="${focus}"]`); if (el) el.focus(); }
 }
 $("homeSearch").addEventListener("input", e => { DS.q = e.target.value; renderHome(); });
-$("homeSt").addEventListener("click", e => {
-  const b = e.target.closest("[data-st]");
-  if (!b) return;
-  DS.st = b.dataset.st;
-  try { localStorage.setItem("zona-home-st", DS.st); } catch {}
-  renderHome();
+$("homeStMenu").addEventListener("change", e => {
+  const k = e.target.dataset.st;
+  if (!k) return;
+  DS.st = e.target.checked ? [...DS.st.filter(x => x !== k), k] : DS.st.filter(x => x !== k);
+  saveSt(); renderHome();
+});
+$("homeStMenu").addEventListener("click", e => {
+  if (e.target.closest("#homeStNone")) { DS.st = []; saveSt(); renderHome(); }
 });
 // подпись на цветной метке – тёмная на светлом цвете и белая на тёмном (по яркости цвета)
 function inkOn(hex) {
