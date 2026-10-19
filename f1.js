@@ -171,8 +171,8 @@ const guessOf = s => GUESS_NAMES[drugKey(s)];
 const drugName = s => DRUG_NAMES[drugKey(s)] || BY_NAME[drugKey(s)] || (guessOf(s) ? guessOf(s)[0] + " (?)" : "");   // по-русски
 const drugNameEn = s => EN_NAMES[drugName(s)] || (guessOf(s) ? guessOf(s)[1] + " (?)" : "");                         // по-английски
 
-// подпись под полем «Препарат»: полное название на русском и английском
-const dnameText = it => [drugName(it.drug), drugNameEn(it.drug)].filter(Boolean).join(" / ");
+// подпись рядом с полем «Препарат»: полное название
+const dnameText = it => drugName(it.drug);   // в таблице – только по-русски; английское – в подсказке и в Excel
 
 // ----- таблица Excel -----
 function tableRows() {
@@ -514,10 +514,10 @@ function renderTable() {
   if (!d || !d.items.length) { $("tableBox").innerHTML = `<p class="empty">Зон пока нет.</p>`; return; }
   $("tableBox").innerHTML = `<table><thead><tr><th>№</th><th>Препарат</th><th class="num">Зона, мм</th><th>Категория</th><th>Отметка</th></tr></thead><tbody>` +
     d.items.map((it, i) => `<tr data-i="${i}" tabindex="0" class="${i === P.sel ? "sel" : ""}"><td>${i + 1}</td>` +
-      `<td><input class="drug" id="drug-${d.id}-${i}" data-i="${i}" list="drugList" value="${esc(it.drug)}" placeholder="–" aria-label="Препарат у диска ${i + 1}" autocomplete="off"><span class="dname" data-i="${i}"${guessOf(it.drug) ? ` title="Название предположительное – уточнить у тёти"` : ""}>${esc(dnameText(it))}</span></td>` +
+      `<td><input class="drug" id="drug-${d.id}-${i}" data-i="${i}" list="drugList" value="${esc(it.drug)}" placeholder="–" aria-label="Препарат у диска ${i + 1}" autocomplete="off"><span class="dname" data-i="${i}" title="${esc([drugNameEn(it.drug), guessOf(it.drug) ? "Название предположительное – уточнить у тёти" : ""].filter(Boolean).join("\n"))}">${esc(dnameText(it))}</span></td>` +
       `<td class="num">${mpp ? fmt(diamPx(it) * mpp) : "–"}${it.pts && mpp && spanPx(it).max - spanPx(it).min > 0.5 / mpp ? `<span class="sub">${fmt(spanPx(it).min * mpp)}–${fmt(spanPx(it).max * mpp)}</span>` : ""}</td>` +
       `<td class="catcell" data-i="${i}">${catCell(it)}</td>` +
-      `<td><span class="chip ${needsCheck(it) ? "check" : it.src === "none" ? "none" : it.src === "auto" ? (it.ok ? "ok" : "") : "edited"}">${STATUS(it)}</span></td></tr>`).join("") +
+      `<td>${it.src === "auto" && !it.doubt ? "" : `<span class="chip ${needsCheck(it) ? "check" : it.src === "none" ? "none" : it.ok ? "ok" : "edited"}">${STATUS(it)}</span>`}</td></tr>`).join("") +
     `</tbody></table>`;
 }
 

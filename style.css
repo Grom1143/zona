@@ -585,3 +585,28 @@ body.at-methods header h1 small, body.at-methods header > p { display: none; }
   .tiltbar { white-space: normal; max-width: calc(100% - 40px); width: max-content; font-size: 14px; padding: 8px 6px 8px 12px; }
   .tiltbar span { min-width: 0; }
 }
+
+/* Таблица измерений – плотная (вариант C от заказчицы): строки-полосы без линий, препарат и название в одну строку,
+   S / I / R и пометки – плашки, целиком залитые своим цветом; «авто» не пишем – пометка только там, где есть что сказать */
+:root { --cat-s: #2e9e5b; --cat-i: #c48a12; --cat-ink: #ffffff; }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { --cat-s: #3fae6b; --cat-i: #d9a02a; --cat-ink: #10161b; } }
+:root[data-theme="dark"] { --cat-s: #3fae6b; --cat-i: #d9a02a; --cat-ink: #10161b; }
+#tableBox table { border-collapse: separate; border-spacing: 0 4px; margin-top: -4px; }
+#tableBox th { white-space: nowrap; text-transform: none; letter-spacing: 0; font-size: 12px; font-weight: 600; padding: 0 8px 6px; }
+#tableBox td { border-bottom: 0; padding: 4px 8px; height: 32px; }
+#tableBox tbody tr:nth-child(odd) td { background: color-mix(in srgb, var(--ink) 5%, transparent); }
+#tableBox tbody tr.sel td { background: var(--accent-soft); }
+#tableBox tbody td:first-child { border-radius: 6px 0 0 6px; }
+#tableBox tbody td:last-child { border-radius: 0 6px 6px 0; }
+#tableBox td:nth-child(2) { white-space: nowrap; width: 60%; }
+#tableBox input.drug { width: 7ch; min-width: 7ch; vertical-align: middle; font-weight: 600; }
+#tableBox .dname { display: inline-block; vertical-align: middle; padding-left: 4px; max-width: 34ch; overflow: hidden; text-overflow: ellipsis; }
+#tableBox td.num .sub { display: inline; margin-left: 6px; }
+#tableBox .chip { display: inline-block; border-radius: 5px; padding: 2px 9px; font-weight: 700; border: 0; }
+#tableBox .chip.cat { min-width: 34px; box-sizing: border-box; text-align: center; color: var(--cat-ink); }
+#tableBox .chip.cat-S { background: var(--cat-s); }
+#tableBox .chip.cat-I { background: var(--cat-i); }
+#tableBox .chip.cat-R { background: var(--warn); color: var(--warn-ink); }
+#tableBox .chip.check, #tableBox .chip.none { background: var(--warn); color: var(--warn-ink); }
+#tableBox .chip.edited { background: var(--ruler); color: var(--cat-ink); }
+#tableBox .chip.ok { background: var(--accent); color: var(--accent-ink); }
