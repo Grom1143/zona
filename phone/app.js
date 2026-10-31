@@ -99,7 +99,32 @@ const STATUS = it => it.src === "none" ? (it.ok ? "нет зоны ✓" : "не�
   it.doubt && it.src === "auto" ? (it.ok ? "подтверждено" : "проверить?") : { auto: "авто", edited: "исправлено", manual: "вручную" }[it.src];
 
 // ----- картинки -----
-function fileToImage(blob) {
+// HEIC/HEIF (фото с iPhone): Safari открывает сам, остальные браузеры – нет. Тогда переводим в JPEG
+// декодером vendor/heic-to.js (libheif, ~3 МБ, LGPL – отдельным файлом без изменений) – грузим его только при первом таком фото
+async function isHeic(blob) {
+  if (/\.hei[cf]$/i.test(blob.name || "") || /image\/hei[cf]/i.test(blob.type)) return true;
+  const h = new Uint8Array(await blob.slice(4, 12).arrayBuffer());   // байты 4–11: "ftyp" + марка
+  const s = String.fromCharCode(...h);
+  return /^ftyp(heic|heix|hevc|hevx|heim|heis|mif1|msf1)$/.test(s);
+}
+let heicLib = null;
+const loadHeic = () => heicLib || (heicLib = new Promise((res, rej) => {
+  const s = document.createElement("script");
+  s.src = "vendor/heic-to.js";
+  s.onload = () => window.HeicTo ? res(window.HeicTo) : rej(new Error("no HeicTo"));
+  s.onerror = () => { heicLib = null; rej(new Error("heic-to not loaded")); };
+  document.head.appendChild(s);
+}));
+async function fileToImage(blob) {
+  try { return await blobToImage(blob); }
+  catch (e) {
+    if (!(await isHeic(blob))) throw e;
+    setMsg("Перевожу фото HEIC в JPG…"); await tick();
+    const conv = await (await loadHeic())({ blob, toType: "image/jpeg", quality: 0.92 });
+    return blobToImage(Array.isArray(conv) ? conv[0] : conv);   // в HEIC может быть серия – берём первый кадр
+  }
+}
+function blobToImage(blob) {
   return new Promise((res, rej) => {
     const url = URL.createObjectURL(blob), img = new Image();
     img.onload = () => { URL.revokeObjectURL(url); res(img); };
@@ -192,7 +217,7 @@ async function addFiles(files) {
   if (first < 0) {
     P.cur = keep ? P.dishes.indexOf(keep) : -1;
     renderDishes(); render();
-    if (bad) return setMsg("Не удалось открыть файл. Подойдут фото JPG или PNG (HEIC с iPhone сначала сохраните как JPG).", true);
+    if (bad) return setMsg("Не удалось открыть файл. Подойдут фото JPG, PNG, WEBP или HEIC (с iPhone).", true);
     return setMsg("Фото не добавлены.");
   }
   markDirty();
